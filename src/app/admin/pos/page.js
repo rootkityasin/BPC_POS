@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/modules/auth/session-service";
 import { FEATURE_KEYS, canView } from "@/core/policies/permission-policy";
-import { getPosCategories, getPosDishes } from "@/modules/pos/pos-actions";
+import { getPosCategories, getPosProducts } from "@/modules/pos/pos-actions";
 import { PosClient } from "./pos-client";
 
 export default async function PosPage() {
@@ -17,7 +17,7 @@ export default async function PosPage() {
 
   const storeId = sessionUser.storeId;
   const categories = await getPosCategories(storeId);
-  const dishes = await getPosDishes(storeId);
+  const products = await getPosProducts(storeId);
 
-  return <PosClient categories={categories} dishes={dishes} storeId={storeId} userEmail={sessionUser.email} />;
+  return <PosClient categories={categories} products={products} storeId={storeId} userEmail={sessionUser.email} />;
 }

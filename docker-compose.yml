@@ -19,5 +19,19 @@ services:
     volumes:
       - valkey_data:/data
 
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: bpc-pos-libretranslate
+    ports:
+      - "5000:5000"
+    environment:
+      LT_LOAD_ONLY: en,bn
+      LT_THREADS: 2
+      LT_CHAR_LIMIT: 2000
+    volumes:
+      - libretranslate_data:/home/libretranslate/.local
+
 volumes:
+  postgres_data:
   valkey_data:
+  libretranslate_data:

@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { I18nText } from "@/components/i18n/i18n-text";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
 import { requireFeatureView } from "@/modules/rbac/access";
 import { listNotifications } from "@/modules/notifications/notification-service";
@@ -11,8 +12,8 @@ export default async function NotificationsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-black text-slate-900">Notifications</h2>
-        <p className="text-sm text-slate-500">Live notification history scoped by role and store.</p>
+        <h2 className="text-2xl font-black text-slate-900"><I18nText k="notificationsPage.title" fallback="Notifications" /></h2>
+        <p className="text-sm text-slate-500"><I18nText k="notificationsPage.subtitle" fallback="Live notification history scoped by role and store." /></p>
       </div>
       {notifications.map((notification) => (
         <Card key={notification.id} className="p-5">
@@ -23,7 +24,7 @@ export default async function NotificationsPage() {
             </div>
             <div className="text-right text-xs text-slate-400">
               <div>{notification.severity}</div>
-              <div>{formatDistanceToNow(notification.createdAt)} ago</div>
+              <div><I18nText k="notificationsPage.ago" fallback="{{time}} ago" values={{ time: formatDistanceToNow(notification.createdAt) }} /></div>
             </div>
           </div>
         </Card>

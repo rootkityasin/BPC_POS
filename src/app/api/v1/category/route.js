@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
+import { translateTexts } from "@/modules/i18n/libretranslate-service";
 
 export async function GET(request) {
   const user = await getSessionUser();
@@ -26,7 +27,7 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { nameEn, nameBn, color } = body;
+  const { nameEn, color } = body;
 
   if (!nameEn) {
     return NextResponse.json({ error: "Category name is required" }, { status: 400 });
@@ -36,10 +37,12 @@ export async function POST(request) {
     data: {
       storeId: user.storeId,
       nameEn,
-      nameBn: nameBn || "",
+      nameBn: "",
       color: color || "#ff242d"
     }
   });
+
+  await translateTexts({ texts: [nameEn], sourceLanguage: "en", targetLanguage: "bn" });
 
   return NextResponse.json(category);
 }

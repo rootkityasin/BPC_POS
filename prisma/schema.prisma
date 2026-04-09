@@ -180,6 +180,7 @@ model Dish {
   category       Category @relation(fields: [categoryId], references: [id])
   subCategory    SubCategory? @relation(fields: [subCategoryId], references: [id])
   stockItems     StockItem[]
+  ingredients    DishIngredient[]
   orderItems     OrderItem[]
 }
 
@@ -188,6 +189,7 @@ model StockItem {
   storeId        String
   dishId         String?
   name           String?
+  price          Float?
   quantity       Int @default(0)
   lowStockLevel  Int @default(5)
   supplier       String @default("Local Vendor")
@@ -196,8 +198,21 @@ model StockItem {
   updatedAt      DateTime @updatedAt
   store          Store @relation(fields: [storeId], references: [id])
   dish           Dish? @relation(fields: [dishId], references: [id])
+  ingredientLinks DishIngredient[]
+  orderItems     OrderItem[]
 
   @@unique([storeId, dishId])
+}
+
+model DishIngredient {
+  id          String @id @default(cuid())
+  dishId      String
+  stockItemId String
+  createdAt   DateTime @default(now())
+  dish        Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  stockItem   StockItem @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+
+  @@unique([dishId, stockItemId])
 }
 
 model Order {
@@ -217,11 +232,14 @@ model Order {
 model OrderItem {
   id         String @id @default(cuid())
   orderId    String
-  dishId     String
+  dishId     String?
+  stockItemId String?
+  itemName   String
   quantity   Int
   unitPrice  Float
   order      Order @relation(fields: [orderId], references: [id])
-  dish       Dish @relation(fields: [dishId], references: [id])
+  dish       Dish? @relation(fields: [dishId], references: [id])
+  stockItem  StockItem? @relation(fields: [stockItemId], references: [id])
 }
 
 model Notification {
@@ -236,4 +254,16 @@ model Notification {
   read       Boolean @default(false)
   createdAt  DateTime @default(now())
   store      Store? @relation(fields: [storeId], references: [id])
+}
+
+model TranslationCache {
+  id             String   @id @default(cuid())
+  sourceLanguage String
+  targetLanguage String
+  sourceText     String
+  translatedText String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([sourceLanguage, targetLanguage, sourceText])
 }

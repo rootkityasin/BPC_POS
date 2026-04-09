@@ -7,26 +7,28 @@ import {
   Clock3,
   Heart,
   PencilLine,
-  Search,
-  Star,
   Trash2,
-  UsersRound
 } from "lucide-react";
 import { usePosStore } from "@/modules/pos/pos-store";
 import { createOrder } from "@/modules/pos/pos-actions";
+import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
+import { useTranslation } from "react-i18next";
 
-const TAX_RATE = 0.05;
+const NOOP = () => {};
 
 function formatCurrency(value) {
   return `৳${Number(value || 0).toFixed(2)}`;
 }
 
 function ProductCard({ product, onAddToCart }) {
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
+
   return (
     <article className="group relative rounded-[26px] border border-slate-100 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_20px_50px_rgba(15,23,42,0.1)]">
       <div className="relative h-28 rounded-[20px] bg-gradient-to-br from-slate-100 to-slate-200">
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-4xl">{product.category?.icon || "🍽️"}</span>
+          <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
         </div>
         <button
           type="button"
@@ -36,20 +38,20 @@ function ProductCard({ product, onAddToCart }) {
         </button>
         {product.isLowStock && (
           <div className="absolute left-2 top-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
-            Low Stock
+            {t("pos.lowStock")}
           </div>
         )}
       </div>
       <div className="pt-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[15px] font-semibold text-slate-900">{product.nameEn}</h3>
+          <h3 className="text-[15px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h3>
         </div>
         <p className="mt-2 min-h-[21px] text-xs leading-[14px] text-slate-500">
-          {product.category?.nameEn || ""}
+          {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || "")}
         </p>
         <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
           <span className="flex items-center gap-1">
-            <Clock3 className="h-3.5 w-3.5" /> {product.stock || 0} Bowls
+            <Clock3 className="h-3.5 w-3.5" /> {t("pos.inStock", { count: product.stock || 0 })}
           </span>
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
@@ -61,7 +63,7 @@ function ProductCard({ product, onAddToCart }) {
             onClick={() => onAddToCart(product)}
             className="rounded-2xl bg-[#ff242d] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#ea1d26] active:scale-95"
           >
-            Add to Cart
+            {t("pos.addToCart")}
           </button>
         </div>
       </div>
@@ -72,6 +74,8 @@ function ProductCard({ product, onAddToCart }) {
 function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState(item.note || "");
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
 
   return (
     <div className="border-b border-slate-200 pb-5 last:border-b-0 last:pb-0">
@@ -82,9 +86,9 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h4 className="text-sm font-medium text-slate-800">{item.name}</h4>
+                <h4 className="text-sm font-medium text-slate-800">{translateContent(item.name)}</h4>
               {item.note && (
-                <p className="mt-1 text-xs leading-5 text-slate-500">Note: {item.note}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">{t("pos.note", { note: item.note })}</p>
               )}
             </div>
             <div className="flex items-center gap-2 text-[#ff242d]">
@@ -103,7 +107,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add note..."
+                placeholder={t("pos.addNote")}
                 className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs"
               />
               <button
@@ -111,7 +115,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
                 onClick={() => { onEditNote(item.id, note); setShowNote(false); }}
                 className="rounded-lg bg-slate-900 px-2 py-1 text-xs text-white"
               >
-                Save
+                {t("pos.saveNote")}
               </button>
             </div>
           )}
@@ -144,8 +148,10 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
   );
 }
 
-export function PosClient({ categories, dishes, storeId, userEmail }) {
+export function PosClient({ categories, products, storeId, userEmail }) {
   const store = usePosStore();
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
   
   const cart = store?.cart || [];
   const currentOrderId = store?.currentOrderId || null;
@@ -155,15 +161,14 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
   const searchQuery = store?.searchQuery || "";
   const isSearching = store?.isSearching || false;
 
-  const setSearchQuery = store?.setSearchQuery || (() => {});
-  const setSelectedCategory = store?.setSelectedCategory || (() => {});
-  const setCustomerInfo = store?.setCustomerInfo || (() => {});
-  const initializeOrder = store?.initializeOrder || (() => {});
-  const addToCart = store?.addToCart || (() => {});
-  const updateQuantity = store?.updateQuantity || (() => {});
-  const removeFromCart = store?.removeFromCart || (() => {});
-  const updateItemNote = store?.updateItemNote || (() => {});
-  const clearCart = store?.clearCart || (() => {});
+  const setSearchQuery = store?.setSearchQuery || NOOP;
+  const setSelectedCategory = store?.setSelectedCategory || NOOP;
+  const initializeOrder = store?.initializeOrder || NOOP;
+  const addToCart = store?.addToCart || NOOP;
+  const updateQuantity = store?.updateQuantity || NOOP;
+  const removeFromCart = store?.removeFromCart || NOOP;
+  const updateItemNote = store?.updateItemNote || NOOP;
+  const clearCart = store?.clearCart || NOOP;
   const getSubtotal = store?.getSubtotal || (() => 0);
   const getTax = store?.getTax || (() => 0);
   const getTotal = store?.getTotal || (() => 0);
@@ -181,33 +186,31 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
     initOrder();
   }, [initOrder]);
 
-  const suggestionDishes = useMemo(() => {
+  const suggestionProducts = useMemo(() => {
     if (isSearching && searchQuery) {
-      return dishes.filter(d => 
-        d.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        d.nameBn.includes(searchQuery)
+      return products.filter((product) => 
+        product.nameEn.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     return [];
-  }, [dishes, searchQuery, isSearching]);
+  }, [products, searchQuery, isSearching]);
 
-  const filteredDishes = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     if (submittedSearch) {
-      return dishes.filter(d => 
-        d.nameEn.toLowerCase().includes(submittedSearch.toLowerCase()) ||
-        d.nameBn.includes(submittedSearch)
+      return products.filter((product) => 
+        product.nameEn.toLowerCase().includes(submittedSearch.toLowerCase())
       );
     }
     if (selectedCategory) {
-      return dishes.filter(d => d.categoryId === selectedCategory);
+      return products.filter((product) => product.categoryId === selectedCategory);
     }
-    return dishes;
-  }, [dishes, selectedCategory, submittedSearch]);
+    return products;
+  }, [products, selectedCategory, submittedSearch]);
 
-  const lowStockItems = useMemo(() => dishes.filter(d => d.isLowStock), [dishes]);
+  const lowStockItems = useMemo(() => products.filter((product) => product.isLowStock), [products]);
 
-  const handleAddToCart = (dish) => {
-    addToCart(dish);
+  const handleAddToCart = (product) => {
+    addToCart(product);
   };
 
   const handleCheckout = async () => {
@@ -219,7 +222,8 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
         customerName,
         customerPhone,
         items: cart.map(item => ({
-          dishId: item.dishId,
+          productId: item.productId,
+          productType: item.productType,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
@@ -250,10 +254,14 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
     }
   };
 
-  const allCategories = useMemo(() => [
-    { id: null, nameEn: "All", nameBn: "সব" },
-    ...categories
-  ], [categories]);
+  const allCategories = useMemo(
+    () => [
+      { id: null, nameEn: "All" },
+      ...categories,
+      { id: "__inventory__", nameEn: "Inventory" }
+    ],
+    [categories]
+  );
 
   return (
     <div className="space-y-6">
@@ -261,14 +269,14 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
         <section className="space-y-5 rounded-[30px] bg-[#f8f8f8] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="text-[26px] font-bold text-slate-900">BPC POS</div>
+              <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
               <div className="mt-1 text-sm text-slate-500">{userEmail}</div>
             </div>
             <div className="relative z-50 flex w-full max-w-[540px] items-center gap-3">
               <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
                 <input
                   type="text"
-                  placeholder="Search for menus or orders"
+                  placeholder={t("common.searchMenusOrders")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
@@ -287,31 +295,31 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
                 Search
               </button>
 
-              {searchQuery && suggestionDishes.length > 0 && (
+              {searchQuery && suggestionProducts.length > 0 && (
                 <div className="absolute left-0 top-[calc(100%+8px)] w-full overflow-hidden rounded-[20px] bg-white py-2 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-slate-100">
                   <div className="flex max-h-[360px] flex-col overflow-y-auto">
-                    {suggestionDishes.slice(0, 5).map((dish) => (
-                      <div
-                        key={dish.id}
-                        className="flex cursor-pointer items-start gap-4 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 last:border-b-0"
-                        onClick={() => {
-                          handleAddToCart(dish);
-                          setSearchQuery('');
-                        }}
-                      >
-                        <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-200"></div>
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <h4 className="text-[17px] font-semibold text-slate-900">{dish.nameEn}</h4>
-                          <p className="mt-0.5 truncate text-[14px] text-slate-500">
-                            Lorem ipsum dolor sit amet consectetur. Est sagittis nec nunc vel mi arcu.
-                          </p>
-                          <div className="mt-1.5 flex items-center justify-between">
-                            <span className="text-[16px] font-bold text-slate-900">{formatCurrency(dish.price)}</span>
-                            <span className="text-[13px] text-[#ff242d]">
-                              {dish.stock > 0 ? `${dish.stock} left in stock` : "Out of stock"}
-                            </span>
-                          </div>
-                        </div>
+                    {suggestionProducts.slice(0, 5).map((product) => (
+                       <div
+                         key={product.id}
+                         className="flex cursor-pointer items-start gap-4 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 last:border-b-0"
+                         onClick={() => {
+                           handleAddToCart(product);
+                           setSearchQuery('');
+                         }}
+                       >
+                         <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-200"></div>
+                         <div className="flex min-w-0 flex-1 flex-col">
+                            <h4 className="text-[17px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h4>
+                            <p className="mt-0.5 truncate text-[14px] text-slate-500">
+                              {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || t("common.dish"))}
+                            </p>
+                           <div className="mt-1.5 flex items-center justify-between">
+                             <span className="text-[16px] font-bold text-slate-900">{formatCurrency(product.price)}</span>
+                             <span className="text-[13px] text-[#ff242d]">
+                                {product.stock > 0 ? t("pos.leftInStock", { count: product.stock }) : t("pos.outOfStock")}
+                             </span>
+                           </div>
+                         </div>
                       </div>
                     ))}
                   </div>
@@ -334,7 +342,7 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
                       : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"
                   }
                 >
-                  {cat.nameEn}
+                  {translateContent(cat.nameEn)}
                 </button>
               );
             })}
@@ -345,26 +353,26 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>
-                  <span className="font-semibold">{lowStockItems.length}</span> product(s) running low on stock
-                </span>
-              </div>
-              <button type="button" className="font-semibold underline">
-                Add Stock
-              </button>
+                   {t("pos.productsRunningLow", { count: lowStockItems.length })}
+                 </span>
+               </div>
+               <button type="button" className="font-semibold underline">
+                 {t("pos.addStock")}
+               </button>
             </div>
           )}
 
           <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {filteredDishes.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 onAddToCart={handleAddToCart}
               />
             ))}
-            {filteredDishes.length === 0 && (
+            {filteredProducts.length === 0 && (
               <div className="col-span-full py-12 text-center text-slate-500">
-                No dishes found
+                {t("pos.noProductsFound")}
               </div>
             )}
           </div>
@@ -373,8 +381,8 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
         <aside className="sticky top-6 flex h-[calc(100vh-3rem)] flex-col rounded-[26px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <div className="text-[28px] font-black leading-none text-[#ff242d]">Customer Order</div>
-              <div className="mt-2 text-sm text-slate-500">Order no: {currentOrderId || "---"}</div>
+              <div className="text-[28px] font-black leading-none text-[#ff242d]">{t("pos.customerOrder")}</div>
+              <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: currentOrderId || "---" })}</div>
             </div>
             <ChevronDown className="h-5 w-5 text-slate-500" />
           </div>
@@ -382,7 +390,7 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
           <div className="flex-1 space-y-5 overflow-y-auto border-t border-slate-100 pt-4">
             {cart.length === 0 ? (
               <div className="py-8 text-center text-slate-400">
-                No items in cart
+                {t("pos.noItemsInCart")}
               </div>
             ) : (
               cart.map((item) => (
@@ -399,15 +407,15 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
 
           <div className="mt-5 space-y-3 border-t border-slate-200 pt-4 text-sm text-slate-600">
             <div className="flex items-center justify-between">
-              <span>Subtotal</span>
+              <span>{t("pos.subtotal")}</span>
               <span className="font-medium text-slate-800">{formatCurrency(getSubtotal())}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>TAX (5%)</span>
+              <span>{t("pos.tax")}</span>
               <span className="font-medium text-slate-800">{formatCurrency(getTax())}</span>
             </div>
             <div className="flex items-center justify-between pt-2 text-[18px] font-black text-slate-900">
-              <span>Total:</span>
+              <span>{t("pos.total")}</span>
               <span>{formatCurrency(getTotal())}</span>
             </div>
           </div>
@@ -419,7 +427,7 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
               disabled={cart.length === 0 || isProcessing}
               className="rounded-2xl bg-[#ff242d] px-4 py-4 text-sm font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isProcessing ? "Processing..." : "Checkout"}
+              {isProcessing ? t("common.processing") : t("pos.checkout")}
             </button>
             <button
               type="button"
@@ -427,7 +435,7 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
               disabled={cart.length === 0}
               className="rounded-2xl border border-[#ff242d] bg-white px-4 py-4 text-sm font-semibold text-[#ff242d] hover:bg-red-50 disabled:opacity-50"
             >
-              Reset
+               {t("pos.reset")}
             </button>
           </div>
           <button
@@ -435,7 +443,7 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
             disabled={cart.length === 0}
             className="mt-3 w-full rounded-2xl bg-slate-900 px-4 py-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
           >
-            Print Order Slip
+            {t("pos.printOrderSlip")}
           </button>
         </aside>
       </div>

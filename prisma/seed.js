@@ -51,6 +51,7 @@ const dishes = [
 async function main() {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.dishIngredient.deleteMany();
   await prisma.stockItem.deleteMany();
   await prisma.dish.deleteMany();
   await prisma.subCategory.deleteMany();
@@ -75,7 +76,7 @@ async function main() {
     create: {
       code: "DHK-001",
       nameEn: "BPC Dhaka",
-      nameBn: "বিপিসি ঢাকা"
+      nameBn: ""
     }
   });
 
@@ -140,14 +141,14 @@ async function main() {
     const cat = categories[i];
     const category = await prisma.category.upsert({
       where: { storeId_nameEn: { storeId: store.id, nameEn: cat.nameEn } },
-      update: { nameBn: cat.nameBn, color: cat.color, icon: cat.icon, displayOrder: i + 1 },
-      create: {
-        storeId: store.id,
-        nameEn: cat.nameEn,
-        nameBn: cat.nameBn,
-        color: cat.color,
-        icon: cat.icon,
-        displayOrder: i + 1
+        update: { nameBn: "", color: cat.color, icon: cat.icon, displayOrder: i + 1 },
+        create: {
+          storeId: store.id,
+          nameEn: cat.nameEn,
+          nameBn: "",
+          color: cat.color,
+          icon: cat.icon,
+          displayOrder: i + 1
       }
     });
     createdCategories[cat.nameEn] = category;
@@ -162,12 +163,12 @@ async function main() {
       const sub = subCats[i];
       const subCategory = await prisma.subCategory.upsert({
         where: { storeId_categoryId_nameEn: { storeId: store.id, categoryId: category.id, nameEn: sub.nameEn } },
-        update: { nameBn: sub.nameBn, displayOrder: i + 1 },
+        update: { nameBn: "", displayOrder: i + 1 },
         create: {
           storeId: store.id,
           categoryId: category.id,
           nameEn: sub.nameEn,
-          nameBn: sub.nameBn,
+          nameBn: "",
           displayOrder: i + 1
         }
       });
@@ -185,22 +186,22 @@ async function main() {
     const sku = `DISH-${String(i + 1).padStart(3, '0')}`;
     const dish = await prisma.dish.upsert({
       where: { sku },
-      update: {
-        nameEn: dishData.nameEn,
-        nameBn: dishData.nameBn,
-        categoryId: category.id,
-        subCategoryId: subCategory.id,
-        price: dishData.price
+        update: {
+          nameEn: dishData.nameEn,
+          nameBn: "",
+          categoryId: category.id,
+          subCategoryId: subCategory.id,
+          price: dishData.price
       },
-      create: {
-        storeId: store.id,
-        categoryId: category.id,
-        subCategoryId: subCategory.id,
-        nameEn: dishData.nameEn,
-        nameBn: dishData.nameBn,
-        sku,
-        price: dishData.price,
-        isAvailable: true
+        create: {
+          storeId: store.id,
+          categoryId: category.id,
+          subCategoryId: subCategory.id,
+          nameEn: dishData.nameEn,
+          nameBn: "",
+          sku,
+          price: dishData.price,
+          isAvailable: true
       }
     });
 
@@ -218,15 +219,15 @@ async function main() {
   }
 
   const rawInventory = [
-    { name: "Rice", quantity: 14, supplier: "Parking pizza", createdBy: "Jane Cooper" },
-    { name: "Bread", quantity: 10, supplier: "Sushi shop", createdBy: "Jane Cooper" },
-    { name: "Oats", quantity: 16, supplier: "Mayura", createdBy: "Jane Cooper" },
-    { name: "Quinoa", quantity: 7, supplier: "Foc i Oli", createdBy: "Jane Cooper" },
-    { name: "Barley", quantity: 24, supplier: "Sushi shop", createdBy: "Jane Cooper" },
-    { name: "Pasta", quantity: 20, supplier: "Torpedo", createdBy: "Jane Cooper" },
-    { name: "Corn", quantity: 28, supplier: "Como Kitchen", createdBy: "Jane Cooper" },
-    { name: "Millet", quantity: 18, supplier: "Gresca", createdBy: "Jane Cooper" },
-    { name: "Eggs", quantity: 2, supplier: "Parking pizza", createdBy: "Jane Cooper" }
+    { name: "Rice", quantity: 14, supplier: "Parking pizza", createdBy: "Jane Cooper", price: 40 },
+    { name: "Bread", quantity: 10, supplier: "Sushi shop", createdBy: "Jane Cooper", price: 20 },
+    { name: "Oats", quantity: 16, supplier: "Mayura", createdBy: "Jane Cooper", price: 35 },
+    { name: "Quinoa", quantity: 7, supplier: "Foc i Oli", createdBy: "Jane Cooper", price: 60 },
+    { name: "Barley", quantity: 24, supplier: "Sushi shop", createdBy: "Jane Cooper", price: null },
+    { name: "Pasta", quantity: 20, supplier: "Torpedo", createdBy: "Jane Cooper", price: 55 },
+    { name: "Corn", quantity: 28, supplier: "Como Kitchen", createdBy: "Jane Cooper", price: 30 },
+    { name: "Millet", quantity: 18, supplier: "Gresca", createdBy: "Jane Cooper", price: null },
+    { name: "Eggs", quantity: 2, supplier: "Parking pizza", createdBy: "Jane Cooper", price: 15 }
   ];
 
   for (const item of rawInventory) {
@@ -234,6 +235,7 @@ async function main() {
       data: {
         storeId: store.id,
         name: item.name,
+        price: item.price,
         quantity: item.quantity,
         supplier: item.supplier,
         createdBy: item.createdBy

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { sidebarItems } from "@/modules/navigation/sidebar-config";
 import { canView } from "@/core/policies/permission-policy";
@@ -15,6 +16,7 @@ function isVisible(item, permissions, role) {
 }
 
 export function AdminSidebar({ sessionUser, unreadCount }) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const visibleItems = useMemo(
     () => sidebarItems.filter((item) => isVisible(item, sessionUser.permissions, sessionUser.role)),
@@ -38,9 +40,9 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
       <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
         <div>
           <div className="text-2xl font-black text-crab-red">BPC</div>
-          <p className="text-xs text-slate-500">POS Admin</p>
+          <p className="text-xs text-slate-500">{t("sidebar.brandSubtitle")}</p>
         </div>
-        <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{sessionUser.role === "SUPER_ADMIN" ? "Super Admin" : "Manager"}</div>
+        <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{sessionUser.role === "SUPER_ADMIN" ? t("sidebar.superAdmin") : t("sidebar.manager")}</div>
       </div>
 
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-5">
@@ -66,7 +68,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
                 >
                   <span className="flex items-center gap-3">
                     <Icon className={cn("h-4 w-4", active ? "text-white" : isOpen ? "text-slate-700" : "text-slate-400")} />
-                    {item.label}
+                    {item.labelKey ? t(item.labelKey) : item.label}
                   </span>
                   <ChevronRight className={cn("h-4 w-4 transition-transform", isOpen ? "rotate-90" : "", active ? "text-white" : isOpen ? "text-slate-700" : "text-slate-400")} />
                 </button>
@@ -80,7 +82,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
                 >
                   <span className="flex items-center gap-3">
                     <Icon className={cn("h-4 w-4", active ? "text-white" : "text-slate-400")} />
-                    {item.label}
+                    {item.labelKey ? t(item.labelKey) : item.label}
                   </span>
                   {item.label === "Notifications" && unreadCount > 0 ? (
                     <span className={cn("rounded-full px-2 py-0.5 text-xs", active ? "bg-white/20" : "bg-slate-100 text-slate-700")}>{unreadCount}</span>
@@ -101,7 +103,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
                           childActive ? "bg-red-50 text-crab-red" : "text-slate-500 hover:bg-slate-50"
                         )}
                       >
-                        {child.label}
+                        {child.labelKey ? t(child.labelKey) : child.label}
                       </Link>
                     );
                   })}

@@ -30,9 +30,11 @@ export const usePosStore = create((set, get) => ({
       orderNote: ''
     }),
 
-    addToCart: (dish, note = '') => {
+    addToCart: (product, note = '') => {
       const { cart } = get();
-      const existingIndex = cart.findIndex(item => item.dishId === dish.id && item.note === note);
+      const existingIndex = cart.findIndex(
+        (item) => item.productId === product.productId && item.productType === product.productType && item.note === note
+      );
       
       if (existingIndex >= 0) {
         const newCart = [...cart];
@@ -41,10 +43,11 @@ export const usePosStore = create((set, get) => ({
       } else {
         set({
           cart: [...cart, {
-            id: `${dish.id}-${Date.now()}`,
-            dishId: dish.id,
-            name: dish.nameEn,
-            price: Number(dish.price),
+            id: `${product.productType}-${product.productId}-${Date.now()}`,
+            productId: product.productId,
+            productType: product.productType,
+            name: product.nameEn,
+            price: Number(product.price),
             quantity: 1,
             note
           }]
