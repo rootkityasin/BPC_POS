@@ -107,7 +107,18 @@ export const resources = {
         autoSuggested: "Auto-suggested from items",
         suggestedHelp: "The suggested price uses the sum of selected inventory item prices. You can keep it or override it before saving.",
         createDish: "Create Dish",
-        noInventoryItemsLinked: "No inventory items linked"
+        editDish: "Edit Dish",
+        noInventoryItemsLinked: "No inventory items linked",
+        searchDishes: "Search dishes by name, category, or creator...",
+        noSearchResults: "No dishes match your search.",
+        noDishesYet: "No dishes created yet.",
+        dishImage: "Image",
+        showOnList: "Show on List",
+        showOnListHelp: "When enabled, this dish will appear in the POS section.",
+        dragDropImage: "Drag & drop an image or",
+        browse: "browse",
+        imageHint: "PNG, JPG, WEBP up to 5MB",
+        createdByPlaceholder: "e.g. Admin"
       },
       pos: {
         title: "BPC POS",
@@ -333,7 +344,18 @@ export const resources = {
         autoSuggested: "আইটেম থেকে স্বয়ংক্রিয়ভাবে প্রস্তাবিত",
         suggestedHelp: "প্রস্তাবিত দাম নির্বাচিত ইনভেন্টরি আইটেমের দামের যোগফল থেকে আসে। চাইলে এটি পরিবর্তন করতে পারেন।",
         createDish: "ডিশ তৈরি করুন",
-        noInventoryItemsLinked: "কোনো ইনভেন্টরি আইটেম যুক্ত নেই"
+        editDish: "ডিশ সম্পাদনা করুন",
+        noInventoryItemsLinked: "কোনো ইনভেন্টরি আইটেম যুক্ত নেই",
+        searchDishes: "নাম, ক্যাটাগরি বা তৈরিকারক দিয়ে ডিশ খুঁজুন...",
+        noSearchResults: "কোনো ডিশ আপনার অনুসন্ধানের সাথে মেলেনি।",
+        noDishesYet: "এখনও কোনো ডিশ তৈরি হয়নি।",
+        dishImage: "ছবি",
+        showOnList: "তালিকায় দেখান",
+        showOnListHelp: "সক্রিয় করলে এই ডিশ পস বিভাগে দেখানো হবে।",
+        dragDropImage: "ছবি টেনে আনুন অথবা",
+        browse: "ব্রাউজ করুন",
+        imageHint: "PNG, JPG, WEBP সর্বোচ্চ ৫MB",
+        createdByPlaceholder: "যেমন: অ্যাডমিন"
       },
       pos: {
         title: "বিপিসি পস",

@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
+
+const ITEMS_PER_PAGE = 10;
 
 function formatCurrency(value) {
   if (value === null || value === undefined || value === "") return "Optional";
@@ -16,6 +19,7 @@ export function StockClient({ stockItems }) {
   const { translateContent } = useTranslatedContent();
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -41,6 +45,19 @@ export function StockClient({ stockItems }) {
   const filteredItems = stockItems.filter((item) =>
     (item.name || item.dish?.nameEn || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const startIndex = filteredItems.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0;
+  const endIndex = Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   function toggleMenu(id) {
     setActiveMenuId(activeMenuId === id ? null : id);
@@ -113,48 +130,88 @@ export function StockClient({ stockItems }) {
         </button>
       </div>
 
-      <div className="relative z-10 overflow-visible rounded-3xl border border-slate-100 bg-white pb-20 shadow-[0_18px_45px_rgba(15,23,42,0.03)]">
-        <table className="w-full text-[15px]">
-          <thead>
-            <tr className="border-b border-slate-100/80">
-              <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("stock.name")}</th>
-              <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.quantity")}</th>
-              <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.price")}</th>
-              <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.createdBy")}</th>
-              <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.supplier")}</th>
-              <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.action")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredItems.map((item) => (
-              <tr key={item.id} className="select-none border-b border-slate-50/50 transition-colors hover:bg-slate-50/50">
-                <td className="px-8 py-5 font-semibold text-[#ff242d]">{translateContent(item.name || item.dish?.nameEn)}</td>
-                <td className="px-8 py-5 font-medium text-slate-800">{item.quantity}</td>
-                <td className="px-8 py-5 font-medium text-slate-800">{formatCurrency(item.price)}</td>
-                <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
-                <td className="px-8 py-5 font-medium text-slate-800">{translateContent(item.supplier)}</td>
-                <td className="px-8 py-5">
-                  <div className="action-menu-container relative w-max">
-                    <button type="button" onClick={() => toggleMenu(item.id)} className="flex w-5 items-start gap-1 text-[#ff242d] hover:opacity-75 focus:outline-none">
-                      <div className="h-[2px] w-full rounded-full bg-[#ff242d]" />
-                      <div className="h-[2px] w-full rounded-full bg-[#ff242d]" />
-                      <div className="h-[2px] w-[60%] rounded-full bg-[#ff242d]" />
-                    </button>
-
-                    {activeMenuId === item.id && (
-                      <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
-                        <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#fff5f5] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-[#ffebeb]">{t("common.edit")}</button>
-                        <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("stock.addMoreItems")}</button>
-                        <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
-                        <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.print")}</button>
-                      </div>
-                    )}
-                  </div>
-                </td>
+      <div className="relative z-10 flex min-h-[600px] flex-col overflow-visible rounded-3xl border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.03)]">
+        <div className="flex-1">
+          <table className="w-full text-[15px]">
+            <thead>
+              <tr className="border-b border-slate-100/80">
+                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("stock.name")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.quantity")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.price")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.createdBy")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.supplier")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.action")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginatedItems.map((item) => (
+                <tr key={item.id} className="select-none border-b border-slate-50/50 transition-colors hover:bg-slate-50/50">
+                  <td className="px-8 py-5 font-semibold text-[#ff242d]">{translateContent(item.name || item.dish?.nameEn)}</td>
+                  <td className="px-8 py-5 font-medium text-slate-800">{item.quantity}</td>
+                  <td className="px-8 py-5 font-medium text-slate-800">{formatCurrency(item.price)}</td>
+                  <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
+                  <td className="px-8 py-5 font-medium text-slate-800">{translateContent(item.supplier)}</td>
+                  <td className="px-8 py-5">
+                    <div className="action-menu-container relative w-max">
+                      <button type="button" onClick={() => toggleMenu(item.id)} className="flex items-center justify-center text-[#ff242d] hover:opacity-75 focus:outline-none">
+                        <Menu className="h-5 w-5" />
+                      </button>
+
+                      {activeMenuId === item.id && (
+                        <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
+                          <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#fff5f5] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-[#ffebeb]">{t("common.edit")}</button>
+                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("stock.addMoreItems")}</button>
+                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
+                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.print")}</button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-auto border-t border-slate-100 px-8 py-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              Showing {startIndex}-{endIndex} of {filteredItems.length} items
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-colors ${
+                    page === currentPage
+                      ? "bg-[#ff242d] text-white"
+                      : "border border-slate-200 text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {isAddModalOpen && (

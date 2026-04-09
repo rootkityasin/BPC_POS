@@ -43,6 +43,7 @@ export default async function DishesPage() {
       categories={categories}
       stockItems={stockItems}
       canManage={hasManageAccess(user, FEATURE_KEYS.DISHES)}
+      userEmail={user.email}
     />
   );
 }

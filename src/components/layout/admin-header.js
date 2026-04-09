@@ -33,9 +33,6 @@ export function AdminHeader({ sessionUser }) {
         <AdminLanguageSwitch />
         <div className="text-right">
           <div className="text-sm font-semibold text-slate-800">{sessionUser.email}</div>
-          <div className="text-xs text-slate-500">
-            {t("header.store")}: {sessionUser.storeId || t("header.allStores")}
-          </div>
         </div>
         <Button variant="outline" type="button" onClick={handleLogout} disabled={isLoggingOut}>
           {isLoggingOut ? t("header.logout") : t("header.logout")}

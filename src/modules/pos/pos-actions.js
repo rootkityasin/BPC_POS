@@ -13,7 +13,7 @@ export async function getPosCategories(storeId) {
 }
 
 export async function getPosProducts(storeId, categoryId = null, searchQuery = null) {
-  const dishWhere = { storeId, isAvailable: true };
+  const dishWhere = { storeId, isAvailable: true, showOnList: true };
 
   if (categoryId && categoryId !== "__inventory__") {
     dishWhere.categoryId = categoryId;
