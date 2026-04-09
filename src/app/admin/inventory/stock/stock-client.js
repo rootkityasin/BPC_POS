@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
+import { ModalShell } from "@/components/ui/modal-shell";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -214,74 +215,72 @@ export function StockClient({ stockItems }) {
         </div>
       </div>
 
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[32px] bg-white p-8 shadow-2xl">
-            <h3 className="mb-6 text-2xl font-bold text-[#ff242d]">{t("stock.addNewItem")}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.itemName")}</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
-                  placeholder={t("stock.itemNamePlaceholder")}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.quantity")}</label>
-                <input
-                  type="number"
-                  value={formData.quantity}
-                  onChange={(event) => setFormData((current) => ({ ...current, quantity: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
-                  placeholder={t("stock.quantityPlaceholder")}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.priceOptional")}</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
-                  placeholder={t("stock.pricePlaceholder")}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.supplier")}</label>
-                <input
-                  type="text"
-                  value={formData.supplier}
-                  onChange={(event) => setFormData((current) => ({ ...current, supplier: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
-                  placeholder={t("stock.supplierPlaceholder")}
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.createdBy")}</label>
-                <input
-                  type="text"
-                  value={formData.createdBy}
-                  onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
-                  placeholder={t("stock.createdByPlaceholder")}
-                />
-              </div>
-
-              {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>}
-
-              <div className="mt-8 flex gap-3">
-                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
-                <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#ff242d] py-3 font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50">{isSaving ? t("common.saving") : t("stock.saveItem")}</button>
-              </div>
-            </div>
+      <ModalShell
+        isOpen={isAddModalOpen}
+        maxWidthClass="max-w-md"
+        onBackdropClick={() => setIsAddModalOpen(false)}
+      >
+        <h3 className="mb-6 text-2xl font-bold text-[#ff242d]">{t("stock.addNewItem")}</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.itemName")}</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              placeholder={t("stock.itemNamePlaceholder")}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.quantity")}</label>
+            <input
+              type="number"
+              value={formData.quantity}
+              onChange={(event) => setFormData((current) => ({ ...current, quantity: event.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              placeholder={t("stock.quantityPlaceholder")}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.priceOptional")}</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              placeholder={t("stock.pricePlaceholder")}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.supplier")}</label>
+            <input
+              type="text"
+              value={formData.supplier}
+              onChange={(event) => setFormData((current) => ({ ...current, supplier: event.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              placeholder={t("stock.supplierPlaceholder")}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.createdBy")}</label>
+            <input
+              type="text"
+              value={formData.createdBy}
+              onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              placeholder={t("stock.createdByPlaceholder")}
+            />
+          </div>
+          {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div> : null}
+          <div className="mt-8 flex gap-3">
+            <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
+            <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#ff242d] py-3 font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50">{isSaving ? t("common.saving") : t("stock.saveItem")}</button>
           </div>
         </div>
-      )}
+      </ModalShell>
     </div>
   );
 }

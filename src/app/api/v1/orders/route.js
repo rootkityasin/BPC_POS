@@ -1,18 +1,55 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { FEATURE_KEYS, canManage, canView } from "@/core/policies/permission-policy";
+import { getSessionUser } from "@/modules/auth/session-service";
+
+const VALID_ORDER_STATUSES = new Set(["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"]);
+const VALID_PRINT_STATUSES = new Set(["Not Printed", "Printed"]);
+
+function buildOrderScope(user) {
+  if (user.role === "SUPER_ADMIN" || !user.storeId) {
+    return {};
+  }
+
+  return { storeId: user.storeId };
+}
+
+function includeOrderRelations() {
+  return {
+    items: {
+      include: {
+        dish: true,
+        stockItem: true
+      }
+    }
+  };
+}
 
 export async function GET(request) {
   try {
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (user.role !== "SUPER_ADMIN" && !canView(user.permissions, FEATURE_KEYS.ORDERS)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get("storeId");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
-    const where = storeId ? { storeId } : {};
+    const scopedStoreId = user.role === "SUPER_ADMIN" && storeId ? storeId : user.storeId || storeId;
+    const where = {
+      ...buildOrderScope(user),
+      ...(scopedStoreId ? { storeId: scopedStoreId } : {})
+    };
+
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        include: { items: { include: { dish: true, stockItem: true } } },
+        include: includeOrderRelations(),
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
@@ -28,31 +65,81 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (user.role !== "SUPER_ADMIN" && !canManage(user.permissions, FEATURE_KEYS.ORDERS)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await request.json();
-    const { orderId, status, itemPrintStatuses } = body;
+    const { orderId, status, customerName, customerPhone, itemPrintStatuses } = body;
+
     if (!orderId) {
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
+
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        ...buildOrderScope(user)
+      },
+      include: includeOrderRelations()
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
     const updateData = {};
-    if (status) updateData.status = status;
+
+    if (status !== undefined) {
+      const normalizedStatus = String(status).trim();
+      if (!VALID_ORDER_STATUSES.has(normalizedStatus)) {
+        return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
+      }
+      updateData.status = normalizedStatus;
+    }
+    if (customerName !== undefined) {
+      updateData.customerName = String(customerName || "").trim() || null;
+    }
+    if (customerPhone !== undefined) {
+      updateData.customerPhone = String(customerPhone || "").trim() || null;
+    }
+
     if (itemPrintStatuses && Array.isArray(itemPrintStatuses)) {
+      const validItemIds = new Set(existingOrder.items.map((item) => item.id));
+
       for (const { itemId, printStatus } of itemPrintStatuses) {
+        if (!validItemIds.has(itemId)) {
+          return NextResponse.json({ error: "Invalid order item" }, { status: 400 });
+        }
+
+        const normalizedPrintStatus = String(printStatus || "Not Printed");
+        if (!VALID_PRINT_STATUSES.has(normalizedPrintStatus)) {
+          return NextResponse.json({ error: "Invalid print status" }, { status: 400 });
+        }
+
         await prisma.orderItem.update({
           where: { id: itemId },
-          data: { printStatus },
+          data: { printStatus: normalizedPrintStatus },
         });
       }
     }
+
     if (Object.keys(updateData).length > 0) {
       await prisma.order.update({
         where: { id: orderId },
         data: updateData,
       });
     }
+
     const updatedOrder = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { dish: true, stockItem: true } } },
+      include: includeOrderRelations(),
     });
+
     return NextResponse.json({ order: updatedOrder });
   } catch (error) {
     console.error("[ORDERS_PATCH]", error);

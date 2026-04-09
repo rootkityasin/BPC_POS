@@ -148,12 +148,36 @@ export const resources = {
         subtitle: "Omnichannel-style operational table with manager mutability controlled by permission overrides.",
         invoice: "Invoice",
         customer: "Customer",
+        customerPhone: "Phone",
+        customerPhonePlaceholder: "e.g. 017XXXXXXXX",
         status: "Status",
+        printStatus: "Print Status",
+        printReceipt: "Print Receipt",
+        receiptTitle: "Order Receipt",
         total: "Total",
         items: "Items",
         noOrdersYet: "No orders yet.",
         walkIn: "Walk-in",
-        canUpdate: "Can update"
+        noCustomerPhone: "No phone number",
+        canUpdate: "Can update",
+        editOrder: "Edit Order",
+        saveChanges: "Save Changes",
+        orderItems: "Order Items",
+        createdAt: "Created At",
+        itemMeta: "Qty: {{quantity}} • Price: {{price}}",
+        updateFailed: "Failed to update order.",
+        popupBlocked: "Popup blocked. Please allow popups to print the receipt.",
+        statusValues: {
+          pending: "Pending",
+          processing: "Processing",
+          completed: "Completed",
+          cancelled: "Cancelled"
+        },
+        printStatusValues: {
+          notPrinted: "Not Printed",
+          partial: "Partial",
+          printed: "Printed"
+        }
       },
       notificationsPage: {
         title: "Notifications",
@@ -385,12 +409,36 @@ export const resources = {
         subtitle: "ম্যানেজার অনুমতি নিয়ন্ত্রিত অপারেশনাল অর্ডার টেবিল।",
         invoice: "ইনভয়েস",
         customer: "কাস্টমার",
+        customerPhone: "ফোন",
+        customerPhonePlaceholder: "যেমন 017XXXXXXXX",
         status: "স্ট্যাটাস",
+        printStatus: "প্রিন্ট স্ট্যাটাস",
+        printReceipt: "রসিদ প্রিন্ট",
+        receiptTitle: "অর্ডার রসিদ",
         total: "মোট",
         items: "আইটেম",
         noOrdersYet: "এখনও কোনো অর্ডার নেই।",
         walkIn: "ওয়াক-ইন",
-        canUpdate: "আপডেট করতে পারবে"
+        noCustomerPhone: "কোনো ফোন নম্বর নেই",
+        canUpdate: "আপডেট করতে পারবে",
+        editOrder: "অর্ডার সম্পাদনা করুন",
+        saveChanges: "পরিবর্তন সংরক্ষণ করুন",
+        orderItems: "অর্ডারের আইটেমসমূহ",
+        createdAt: "তৈরির সময়",
+        itemMeta: "পরিমাণ: {{quantity}} • দাম: {{price}}",
+        updateFailed: "অর্ডার আপডেট করা যায়নি।",
+        popupBlocked: "পপআপ ব্লক করা হয়েছে। রসিদ প্রিন্ট করতে পপআপ অনুমতি দিন।",
+        statusValues: {
+          pending: "পেন্ডিং",
+          processing: "প্রসেসিং",
+          completed: "সম্পন্ন",
+          cancelled: "বাতিল"
+        },
+        printStatusValues: {
+          notPrinted: "প্রিন্ট হয়নি",
+          partial: "আংশিক",
+          printed: "প্রিন্ট হয়েছে"
+        }
       },
       notificationsPage: {
         title: "নোটিফিকেশন",

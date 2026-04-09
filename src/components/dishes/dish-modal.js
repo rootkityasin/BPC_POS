@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { X, ImagePlus } from "lucide-react";
+import { ModalShell } from "@/components/ui/modal-shell";
 
 const INITIAL_FORM = {
   nameEn: "",
@@ -132,17 +133,13 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">{isEditing ? t("dishes.editDish") : t("dishes.createDish")}</h2>
-          <button type="button" onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form className="space-y-6" onSubmit={handleSubmit}>
+    <ModalShell
+      isOpen={isOpen}
+      maxWidthClass="max-w-2xl"
+      onBackdropClick={onClose}
+    >
+      <h3 className="mb-6 text-2xl font-bold text-[#ff242d]">{isEditing ? t("dishes.editDish") : t("dishes.createDish")}</h3>
+      <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameEnglish")}</label>
@@ -238,12 +235,11 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
 
           {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>}
 
-          <div className="flex gap-3 justify-end">
+          <div className="mt-8 flex justify-end gap-3">
             <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
             <button type="submit" disabled={isSaving} className="rounded-2xl bg-[#ff242d] px-5 py-3 font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50">{isSaving ? t("common.saving") : isEditing ? t("common.save") : t("dishes.createDish")}</button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }
