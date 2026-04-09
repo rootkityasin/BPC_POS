@@ -169,6 +169,7 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
   const getTotal = store?.getTotal || (() => 0);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [submittedSearch, setSubmittedSearch] = useState("");
 
   const initOrder = useCallback(() => {
     if (!currentOrderId && initializeOrder) {
@@ -180,18 +181,28 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
     initOrder();
   }, [initOrder]);
 
-  const filteredDishes = useMemo(() => {
+  const suggestionDishes = useMemo(() => {
     if (isSearching && searchQuery) {
       return dishes.filter(d => 
         d.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.nameBn.includes(searchQuery)
       );
     }
+    return [];
+  }, [dishes, searchQuery, isSearching]);
+
+  const filteredDishes = useMemo(() => {
+    if (submittedSearch) {
+      return dishes.filter(d => 
+        d.nameEn.toLowerCase().includes(submittedSearch.toLowerCase()) ||
+        d.nameBn.includes(submittedSearch)
+      );
+    }
     if (selectedCategory) {
       return dishes.filter(d => d.categoryId === selectedCategory);
     }
     return dishes;
-  }, [dishes, selectedCategory, searchQuery, isSearching]);
+  }, [dishes, selectedCategory, submittedSearch]);
 
   const lowStockItems = useMemo(() => dishes.filter(d => d.isLowStock), [dishes]);
 
@@ -253,17 +264,59 @@ export function PosClient({ categories, dishes, storeId, userEmail }) {
               <div className="text-[26px] font-bold text-slate-900">BPC POS</div>
               <div className="mt-1 text-sm text-slate-500">{userEmail}</div>
             </div>
-            <div className="flex w-full max-w-[540px] items-center gap-3">
-              <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-4 shadow-sm">
-                <Search className="mr-3 h-4 w-4 text-slate-400" />
+            <div className="relative z-50 flex w-full max-w-[540px] items-center gap-3">
+              <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
                 <input
                   type="text"
                   placeholder="Search for menus or orders"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setSubmittedSearch(searchQuery);
+                    }
+                  }}
+                  className="w-full border-0 bg-transparent text-[15px] text-slate-700 outline-none placeholder:text-slate-400"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => setSubmittedSearch(searchQuery)}
+                className="rounded-2xl bg-[#ff242d] px-8 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#ea1d26]"
+              >
+                Search
+              </button>
+
+              {searchQuery && suggestionDishes.length > 0 && (
+                <div className="absolute left-0 top-[calc(100%+8px)] w-full overflow-hidden rounded-[20px] bg-white py-2 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-slate-100">
+                  <div className="flex max-h-[360px] flex-col overflow-y-auto">
+                    {suggestionDishes.slice(0, 5).map((dish) => (
+                      <div
+                        key={dish.id}
+                        className="flex cursor-pointer items-start gap-4 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 last:border-b-0"
+                        onClick={() => {
+                          handleAddToCart(dish);
+                          setSearchQuery('');
+                        }}
+                      >
+                        <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-200"></div>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <h4 className="text-[17px] font-semibold text-slate-900">{dish.nameEn}</h4>
+                          <p className="mt-0.5 truncate text-[14px] text-slate-500">
+                            Lorem ipsum dolor sit amet consectetur. Est sagittis nec nunc vel mi arcu.
+                          </p>
+                          <div className="mt-1.5 flex items-center justify-between">
+                            <span className="text-[16px] font-bold text-slate-900">{formatCurrency(dish.price)}</span>
+                            <span className="text-[13px] text-[#ff242d]">
+                              {dish.stock > 0 ? `${dish.stock} left in stock` : "Out of stock"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

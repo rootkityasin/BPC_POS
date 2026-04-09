@@ -20,69 +20,42 @@ const managerDefaults = [
 ];
 
 const categories = [
-  { nameEn: "Rice", nameBn: "ভাত", color: "#FF6B35", icon: "Rice" },
-  { nameEn: "Biryani", nameBn: "বিরিয়ানি", color: "#F7C548", icon: "Bowl" },
-  { nameEn: "Drinks", nameBn: "পানীয়", color: "#4ECDC4", icon: "Cup" },
-  { nameEn: "Appetizers", nameBn: "স্টার্টার", color: "#95E1D3", icon: "Spoon" },
-  { nameEn: "Desserts", nameBn: "মিষ্টি", color: "#DDA0DD", icon: "Cake" },
-  { nameEn: "BBQ", nameBn: "বিবিকিউ", color: "#FF4757", icon: "Flame" }
+  { nameEn: "Break Fast", nameBn: "Breakfast", color: "#cc0000", icon: "Coffee" },
+  { nameEn: "Lunch", nameBn: "Lunch", color: "#0055ff", icon: "Bowl" },
+  { nameEn: "Meal", nameBn: "Meal", color: "#cc0000", icon: "Package" },
+  { nameEn: "Dinner", nameBn: "Dinner", color: "#8b4513", icon: "Utensils" }
 ];
 
 const subCategories = {
-  "Rice": [
-    { nameEn: "Fried Rice", nameBn: "ফ্রাইড রাইস" },
-    { nameEn: "Plain Rice", nameBn: "প্লেইন রাইস" },
-    { nameEn: "Pulao", nameBn: "পোলাও" }
+  "Break Fast": [
+    { nameEn: "Breakfast - 1", nameBn: "Porota, Vegetable, Egg" }
   ],
-  "Biryani": [
-    { nameEn: "Chicken Biryani", nameBn: "চিকেন বিরিয়ানি" },
-    { nameEn: "Beef Biryani", nameBn: "গরু বিরিয়ানি" },
-    { nameEn: "Mutton Biryani", nameBn: "খাসি বিরিয়ানি" }
+  "Lunch": [
+    { nameEn: "Lunch Menu 1", nameBn: "Rice, Chicken, Salad" }
   ],
-  "Drinks": [
-    { nameEn: "Soft Drinks", nameBn: "সফট ড্রিংকস" },
-    { nameEn: "Lassi", nameBn: "লাসি" },
-    { nameEn: "Water", nameBn: "পানি" }
+  "Dinner": [
+    { nameEn: "Dinner Menu 2", nameBn: "Fried rice, Vegetable" }
   ],
-  "Appetizers": [
-    { nameEn: "Spring Rolls", nameBn: "স্প্রিং রোল" },
-    { nameEn: "Chicken Wings", nameBn: "চিকেন উইংস" },
-    { nameEn: "Fried Fries", nameBn: "ফ্রাইড ফ্রাইস" }
-  ],
-  "Desserts": [
-    { nameEn: "Kulfi", nameBn: "কুলফি" },
-    { nameEn: "Rasgulla", nameBn: "রসগোল্লা" },
-    { nameEn: "Gulab Jamun", nameBn: "গুলাব জামুন" }
-  ],
-  "BBQ": [
-    { nameEn: "Chicken Tikka", nameBn: "চিকেন টিকা" },
-    { nameEn: "Seekh Kebab", nameBn: "সিখ কাবাব" },
-    { nameEn: "Malai Kebab", nameBn: "মালাই কাবাব" }
+  "Meal": [
+    { nameEn: "Set Meal 1", nameBn: "Standard set meal" }
   ]
 };
 
 const dishes = [
-  { nameEn: "Chicken Fried Rice", nameBn: "চিকেন ফ্রাইড রাইস", price: 280, category: "Rice", subCategory: "Fried Rice", serves: 1, bowls: 1 },
-  { nameEn: "Egg Fried Rice", nameBn: "এগ ফ্রাইড রাইস", price: 250, category: "Rice", subCategory: "Fried Rice", serves: 1, bowls: 1 },
-  { nameEn: "Vegetable Fried Rice", nameBn: "ভেগিটেবল ফ্রাইড রাইস", price: 220, category: "Rice", subCategory: "Fried Rice", serves: 1, bowls: 1 },
-  { nameEn: "Chicken Biryani", nameBn: "চিকেন বিরিয়ানি", price: 350, category: "Biryani", subCategory: "Chicken Biryani", serves: 1, bowls: 1 },
-  { nameEn: "Beef Biryani", nameBn: "গরু বিরিয়ানি", price: 400, category: "Biryani", subCategory: "Beef Biryani", serves: 1, bowls: 1 },
-  { nameEn: "Mutton Biryani", nameBn: "খাসি বিরিয়ানি", price: 450, category: "Biryani", subCategory: "Mutton Biryani", serves: 1, bowls: 1 },
-  { nameEn: "Coca Cola", nameBn: "কোকা কোলা", price: 30, category: "Drinks", subCategory: "Soft Drinks", serves: 1, bowls: 1 },
-  { nameEn: "Pepsi", nameBn: "পেপসি", price: 30, category: "Drinks", subCategory: "Soft Drinks", serves: 1, bowls: 1 },
-  { nameEn: "Mango Lassi", nameBn: "আম লাসি", price: 80, category: "Drinks", subCategory: "Lassi", serves: 1, bowls: 1 },
-  { nameEn: "Spring Rolls (4pcs)", nameBn: "স্প্রিং রোল (৪ পিস)", price: 150, category: "Appetizers", subCategory: "Spring Rolls", serves: 1, bowls: 1 },
-  { nameEn: "Chicken Wings (4pcs)", nameBn: "চিকেন উইংস (৪ পিস)", price: 200, category: "Appetizers", subCategory: "Chicken Wings", serves: 1, bowls: 1 },
-  { nameEn: "French Fries", nameBn: "ফ্রেঞ্চ ফ্রাইস", price: 120, category: "Appetizers", subCategory: "Fried Fries", serves: 1, bowls: 1 },
-  { nameEn: "Kulfi (2pcs)", nameBn: "কুলফি (২ পিস)", price: 100, category: "Desserts", subCategory: "Kulfi", serves: 1, bowls: 1 },
-  { nameEn: "Rasgulla (4pcs)", nameBn: "রসগোল্লা (৪ পিস)", price: 80, category: "Desserts", subCategory: "Rasgulla", serves: 1, bowls: 1 },
-  { nameEn: "Gulab Jamun (4pcs)", nameBn: "গুলাব জামুন (৪ পিস)", price: 90, category: "Desserts", subCategory: "Gulab Jamun", serves: 1, bowls: 1 },
-  { nameEn: "Chicken Tikka", nameBn: "চিকেন টিকা", price: 280, category: "BBQ", subCategory: "Chicken Tikka", serves: 2, bowls: 1 },
-  { nameEn: "Seekh Kebab", nameBn: "সিখ কাবাব", price: 320, category: "BBQ", subCategory: "Seekh Kebab", serves: 2, bowls: 1 },
-  { nameEn: "Malai Kebab", nameBn: "মালাই কাবাব", price: 350, category: "BBQ", subCategory: "Malai Kebab", serves: 2, bowls: 1 }
+  { nameEn: "Standard Breakfast", nameBn: "স্ট্যান্ডার্ড ব্রেকফাস্ট", price: 150, category: "Break Fast", subCategory: "Breakfast - 1", serves: 1, bowls: 1 },
+  { nameEn: "Lunch Platter", nameBn: "লাঞ্চ প্লাটার", price: 350, category: "Lunch", subCategory: "Lunch Menu 1", serves: 1, bowls: 1 },
+  { nameEn: "Dinner Platter", nameBn: "ডিনার প্লাটার", price: 400, category: "Dinner", subCategory: "Dinner Menu 2", serves: 1, bowls: 1 },
+  { nameEn: "Standard Meal", nameBn: "স্ট্যান্ডার্ড মিল", price: 250, category: "Meal", subCategory: "Set Meal 1", serves: 1, bowls: 1 }
 ];
 
 async function main() {
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.stockItem.deleteMany();
+  await prisma.dish.deleteMany();
+  await prisma.subCategory.deleteMany();
+  await prisma.category.deleteMany();
+  
   const [superAdminRole, managerRole] = await Promise.all([
     prisma.role.upsert({
       where: { code: RoleCode.SUPER_ADMIN },
@@ -243,6 +216,31 @@ async function main() {
       }
     });
   }
+
+  const rawInventory = [
+    { name: "Rice", quantity: 14, supplier: "Parking pizza", createdBy: "Jane Cooper" },
+    { name: "Bread", quantity: 10, supplier: "Sushi shop", createdBy: "Jane Cooper" },
+    { name: "Oats", quantity: 16, supplier: "Mayura", createdBy: "Jane Cooper" },
+    { name: "Quinoa", quantity: 7, supplier: "Foc i Oli", createdBy: "Jane Cooper" },
+    { name: "Barley", quantity: 24, supplier: "Sushi shop", createdBy: "Jane Cooper" },
+    { name: "Pasta", quantity: 20, supplier: "Torpedo", createdBy: "Jane Cooper" },
+    { name: "Corn", quantity: 28, supplier: "Como Kitchen", createdBy: "Jane Cooper" },
+    { name: "Millet", quantity: 18, supplier: "Gresca", createdBy: "Jane Cooper" },
+    { name: "Eggs", quantity: 2, supplier: "Parking pizza", createdBy: "Jane Cooper" }
+  ];
+
+  for (const item of rawInventory) {
+    await prisma.stockItem.create({
+      data: {
+        storeId: store.id,
+        name: item.name,
+        quantity: item.quantity,
+        supplier: item.supplier,
+        createdBy: item.createdBy
+      }
+    });
+  }
+
 
   await prisma.notification.create({
     data: {

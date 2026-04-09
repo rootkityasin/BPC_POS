@@ -186,12 +186,16 @@ model Dish {
 model StockItem {
   id             String @id @default(cuid())
   storeId        String
-  dishId         String
+  dishId         String?
+  name           String?
   quantity       Int @default(0)
   lowStockLevel  Int @default(5)
+  supplier       String @default("Local Vendor")
+  createdBy      String @default("Jane Cooper")
+  createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   store          Store @relation(fields: [storeId], references: [id])
-  dish           Dish @relation(fields: [dishId], references: [id])
+  dish           Dish? @relation(fields: [dishId], references: [id])
 
   @@unique([storeId, dishId])
 }
