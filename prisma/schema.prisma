@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleCode {
+  SUPER_ADMIN
+  MANAGER
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_UPDATED
+  PAYMENT_FAILED
+  STOCK_LOW
+  STOCK_OUT
+  DEVICE_ALERT
+  SYNC_ALERT
+  SECURITY_ALERT
+}
+
+enum NotificationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model Role {
+  id          String @id @default(cuid())
+  code        RoleCode @unique
+  name        String
+  description String?
+  users       User[]
+}
+
+model Store {
+  id                 String @id @default(cuid())
+  nameEn             String
+  nameBn             String
+  code               String @unique
+  logoUrl            String?
+  timezone           String @default("Asia/Dhaka")
+  receiptTheme       String @default("modern")
+  receiptFontSize    Int @default(14)
+  receiptShowLogo    Boolean @default(true)
+  receiptShowSeller  Boolean @default(true)
+  receiptShowBuyer   Boolean @default(true)
+  receiptShowQr      Boolean @default(true)
+  receiptShowSign    Boolean @default(false)
+  receiptWatermark   Float @default(0.1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  users              User[]
+  terminals          Terminal[]
+  categories         Category[]
+  subCategories      SubCategory[]
+  dishes             Dish[]
+  stockItems         StockItem[]
+  orders             Order[]
+  notifications      Notification[]
+}
+
+model User {
+  id                  String @id @default(cuid())
+  roleId              String
+  storeId             String?
+  name                String
+  email               String @unique
+  passwordHash        String
+  isActive            Boolean @default(true)
+  failedLoginAttempts Int @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  role                Role @relation(fields: [roleId], references: [id])
+  store               Store? @relation(fields: [storeId], references: [id])
+  sessions            Session[]
+  permissionOverrides UserPermissionOverride[]
+  terminalSettings    Terminal[] @relation("TerminalAssignedUser")
+}
+
+model Session {
+  id                String @id @default(cuid())
+  userId            String
+  refreshTokenHash  String
+  deviceName        String?
+  ipAddress         String?
+  userAgent         String?
+  status            SessionStatus @default(ACTIVE)
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User @relation(fields: [userId], references: [id])
+}
+
+model Terminal {
+  id                 String @id @default(cuid())
+  storeId            String
+  assignedUserId     String?
+  name               String
+  code               String @unique
+  printerTarget      String?
+  printerConnection  String?
+  timezone           String @default("Asia/Dhaka")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  store              Store @relation(fields: [storeId], references: [id])
+  assignedUser       User? @relation("TerminalAssignedUser", fields: [assignedUserId], references: [id])
+}
+
+model UserPermissionOverride {
+  id        String @id @default(cuid())
+  userId    String
+  key       String
+  canView   Boolean @default(false)
+  canManage Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, key])
+}
+
+model Category {
+  id           String @id @default(cuid())
+  storeId      String
+  nameEn       String
+  nameBn       String
+  color        String @default("#F40000")
+  icon         String @default("Package")
+  displayOrder Int @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  store        Store @relation(fields: [storeId], references: [id])
+  subCategories SubCategory[]
+  dishes       Dish[]
+
+  @@unique([storeId, nameEn])
+}
+
+model SubCategory {
+  id           String @id @default(cuid())
+  storeId      String
+  categoryId   String
+  nameEn       String
+  nameBn       String
+  displayOrder Int @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  store        Store @relation(fields: [storeId], references: [id])
+  category     Category @relation(fields: [categoryId], references: [id])
+  dishes       Dish[]
+
+  @@unique([storeId, categoryId, nameEn])
+}
+
+model Dish {
+  id             String @id @default(cuid())
+  storeId        String
+  categoryId     String
+  subCategoryId  String?
+  nameEn         String
+  nameBn         String
+  sku            String @unique
+  price          Float
+  isAvailable    Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  store          Store @relation(fields: [storeId], references: [id])
+  category       Category @relation(fields: [categoryId], references: [id])
+  subCategory    SubCategory? @relation(fields: [subCategoryId], references: [id])
+  stockItems     StockItem[]
+  orderItems     OrderItem[]
+}
+
+model StockItem {
+  id             String @id @default(cuid())
+  storeId        String
+  dishId         String
+  quantity       Int @default(0)
+  lowStockLevel  Int @default(5)
+  updatedAt      DateTime @updatedAt
+  store          Store @relation(fields: [storeId], references: [id])
+  dish           Dish @relation(fields: [dishId], references: [id])
+
+  @@unique([storeId, dishId])
+}
+
+model Order {
+  id            String @id @default(cuid())
+  storeId       String
+  invoiceNumber String @unique
+  customerName  String?
+  customerPhone String?
+  status        String
+  totalAmount   Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  store         Store @relation(fields: [storeId], references: [id])
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  dishId     String
+  quantity   Int
+  unitPrice  Float
+  order      Order @relation(fields: [orderId], references: [id])
+  dish       Dish @relation(fields: [dishId], references: [id])
+}
+
+model Notification {
+  id         String @id @default(cuid())
+  storeId    String?
+  userId     String?
+  title      String
+  message    String
+  type       NotificationType
+  severity   NotificationSeverity
+  audience   String
+  read       Boolean @default(false)
+  createdAt  DateTime @default(now())
+  store      Store? @relation(fields: [storeId], references: [id])
+}
