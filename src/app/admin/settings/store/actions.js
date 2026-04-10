@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/adapters/auth/password-service";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
+import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 import { hasManageAccess, requireFeatureView } from "@/modules/rbac/access";
 
 const DEFAULT_MANAGER_PASSWORD = "password123";
@@ -173,6 +174,13 @@ export async function saveStoreSetup(_, formData) {
     revalidatePath("/admin/pos");
     revalidatePath("/admin/orders");
     revalidatePath("/admin/user/roles");
+
+    await emitNotificationEvent("store.updated", {
+      storeId: store.id,
+      storeName: store.nameEn,
+      created: !existingStore,
+      actorName: user.email
+    });
 
     return successState(existingStore ? "Store updated successfully." : "Store created successfully.", { storeId: store.id });
   } catch (error) {

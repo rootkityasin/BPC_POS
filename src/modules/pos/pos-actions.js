@@ -1,6 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { formatCurrency } from "@/lib/utils";
+import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 
 export async function getPosCategories(storeId) {
   return prisma.category.findMany({
@@ -160,6 +162,13 @@ export async function createOrder(storeId, orderData) {
       });
     }
   }
+
+  await emitNotificationEvent("order.created", {
+    storeId,
+    invoiceNumber: order.invoiceNumber,
+    customerName: order.customerName,
+    totalAmount: formatCurrency(order.totalAmount)
+  });
 
   return order;
 }

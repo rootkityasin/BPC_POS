@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/adapters/auth/password-service";
+import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 import { createSessionForUser } from "@/modules/auth/session-service";
 
 const LOCKOUT_LIMIT = 5;
@@ -36,6 +37,12 @@ export async function loginWithPassword(email, password) {
         lockedUntil: failedCount >= LOCKOUT_LIMIT ? new Date(Date.now() + LOCKOUT_MS) : null
       }
     });
+
+    if (failedCount >= LOCKOUT_LIMIT) {
+      await emitNotificationEvent("auth.lockout", {
+        email: user.email
+      });
+    }
 
     return { success: false, error: failedCount >= LOCKOUT_LIMIT ? "Account locked after too many attempts" : "Invalid credentials" };
   }

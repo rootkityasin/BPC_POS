@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
+import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 import { requireFeatureView, hasManageAccess } from "@/modules/rbac/access";
 import { updateDeviceSettings } from "@/modules/settings/settings-service";
 
@@ -16,7 +17,7 @@ export async function saveDeviceSettings(_, formData) {
 
     const printers = JSON.parse(String(formData.get("printers") || "[]"));
 
-    await updateDeviceSettings(user.storeId, {
+    const store = await updateDeviceSettings(user.storeId, {
       timezone: formData.get("timezone"),
       defaultPrinterKey: formData.get("defaultPrinterKey"),
       printers,
@@ -34,6 +35,12 @@ export async function saveDeviceSettings(_, formData) {
       receiptShowQr: formData.get("receiptShowQr") === "on",
       receiptShowSign: formData.get("receiptShowSign") === "on",
       receiptWatermark: formData.get("receiptWatermark")
+    });
+
+    await emitNotificationEvent("device.settings.updated", {
+      storeId: store.id,
+      storeName: store.nameEn,
+      actorName: user.email
     });
 
     revalidatePath("/admin/settings/device");

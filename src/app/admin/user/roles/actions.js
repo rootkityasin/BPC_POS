@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/adapters/auth/password-service";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
+import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 import { requireFeatureView, hasManageAccess } from "@/modules/rbac/access";
 
 const toggleMapping = {
@@ -65,8 +66,8 @@ async function getManagerOrThrow(userId) {
 
 export async function saveManagerOverrides(userId, _, formData) {
   try {
-    await requireUsersManageAccess();
-    await getManagerOrThrow(userId);
+    const actor = await requireUsersManageAccess();
+    const manager = await getManagerOrThrow(userId);
 
     const updates = Object.entries(toggleMapping).reduce((acc, [field, key]) => {
       if (!acc[key]) acc[key] = { key, canView: false, canManage: false };
@@ -86,6 +87,11 @@ export async function saveManagerOverrides(userId, _, formData) {
       )
     );
 
+    await emitNotificationEvent("manager.permissions.updated", {
+      managerName: manager.name,
+      actorName: actor.email
+    });
+
     return successState("Permissions saved successfully.");
   } catch (error) {
     return errorState(error instanceof Error ? error.message : "Failed to save permissions");
@@ -94,7 +100,7 @@ export async function saveManagerOverrides(userId, _, formData) {
 
 export async function toggleManagerActive(userId, _, formData) {
   try {
-    await requireUsersManageAccess();
+    const actor = await requireUsersManageAccess();
     const manager = await getManagerOrThrow(userId);
     const nextState = formData.get("nextState") === "active";
 
@@ -105,6 +111,12 @@ export async function toggleManagerActive(userId, _, formData) {
         failedLoginAttempts: nextState ? 0 : manager.failedLoginAttempts,
         lockedUntil: nextState ? null : manager.lockedUntil
       }
+    });
+
+    await emitNotificationEvent("manager.status.updated", {
+      managerName: manager.name,
+      isActive: nextState,
+      actorName: actor.email
     });
 
     return successState(nextState ? "Manager activated successfully." : "Manager deactivated successfully.", {
@@ -118,8 +130,8 @@ export async function toggleManagerActive(userId, _, formData) {
 
 export async function resetManagerPassword(userId, _, formData) {
   try {
-    await requireUsersManageAccess();
-    await getManagerOrThrow(userId);
+    const actor = await requireUsersManageAccess();
+    const manager = await getManagerOrThrow(userId);
 
     const password = String(formData.get("password") || "").trim() || "password123";
     if (password.length < 6) {
@@ -134,6 +146,11 @@ export async function resetManagerPassword(userId, _, formData) {
         lockedUntil: null,
         isActive: true
       }
+    });
+
+    await emitNotificationEvent("manager.password.reset", {
+      managerName: manager.name,
+      actorName: actor.email
     });
 
     return successState("Manager password reset successfully.", {

@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AdminLanguageSwitch } from "@/components/layout/admin-language-switch";
+import { NotificationCenter } from "@/components/layout/notification-center";
 import { useTranslation } from "react-i18next";
 
-export function AdminHeader({ sessionUser }) {
+export function AdminHeader({ sessionUser, initialNotifications, unreadCount }) {
   const router = useRouter();
   const { t } = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -30,6 +31,7 @@ export function AdminHeader({ sessionUser }) {
         <p className="text-sm text-slate-500">{t("header.subtitle")}</p>
       </div>
       <div className="flex items-center gap-4">
+        <NotificationCenter initialItems={initialNotifications} initialUnreadCount={unreadCount} />
         <AdminLanguageSwitch />
         <div className="text-right">
           <div className="text-sm font-semibold text-slate-800">{sessionUser.email}</div>

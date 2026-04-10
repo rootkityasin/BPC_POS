@@ -5,6 +5,8 @@ import { getCustomerDashboard } from "@/modules/customers/customer-service";
 import { requireFeatureView } from "@/modules/rbac/access";
 import { formatCurrency } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-BD", {
     month: "short",
