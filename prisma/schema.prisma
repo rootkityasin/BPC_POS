@@ -78,6 +78,7 @@ model Store {
   dishes             Dish[]
   stockItems         StockItem[]
   orders             Order[]
+  expenses           Expense[]
   notifications      Notification[]
 }
 
@@ -262,6 +263,20 @@ model OrderItem {
   order       Order @relation(fields: [orderId], references: [id])
   dish       Dish? @relation(fields: [dishId], references: [id])
   stockItem  StockItem? @relation(fields: [stockItemId], references: [id])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  storeId     String
+  type        String
+  title       String
+  amount      Float
+  note        String?
+  incurredOn  DateTime
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  store       Store    @relation(fields: [storeId], references: [id])
 }
 
 model Notification {
