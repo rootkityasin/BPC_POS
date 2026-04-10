@@ -12,8 +12,6 @@ import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
 
 const ORDER_STATUS_OPTIONS = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"];
-const ITEM_PRINT_STATUS_OPTIONS = ["Not Printed", "Printed"];
-
 function getAggregatePrintStatus(items) {
   if (items.length === 0 || items.every((item) => item.printStatus === "Printed")) {
     return "Printed";
@@ -118,7 +116,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
             </div>
             <div className="space-y-3">
               {order.items.map((item) => (
-                <div key={item.id} className="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_150px] md:items-center">
+                <div key={item.id} className="rounded-2xl border border-slate-200 p-4">
                   <div>
                     <div className="font-semibold text-slate-900">{getItemLabel(item, translateContent)}</div>
                     <div className="mt-1 text-sm text-slate-500">
@@ -127,22 +125,8 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
                         price: formatCurrency(item.unitPrice)
                       })}
                     </div>
+                    <div className="mt-1 text-xs text-slate-400">{getPrintStatusLabel(t, item.printStatus || "Not Printed")}</div>
                   </div>
-                  <select
-                    value={form.itemPrintStatuses[item.id] || "Not Printed"}
-                    onChange={(event) => setForm((current) => ({
-                      ...current,
-                      itemPrintStatuses: {
-                        ...current.itemPrintStatuses,
-                        [item.id]: event.target.value
-                      }
-                    }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#ff242d]"
-                  >
-                    {ITEM_PRINT_STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>{getPrintStatusLabel(t, status)}</option>
-                    ))}
-                  </select>
                 </div>
               ))}
             </div>
@@ -169,7 +153,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
   const { translateContent } = useTranslatedContent();
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [form, setForm] = useState({ customerName: "", customerPhone: "", status: "PENDING", itemPrintStatuses: {} });
+  const [form, setForm] = useState({ customerName: "", customerPhone: "", status: "PENDING" });
   const [modalError, setModalError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [printingOrderId, setPrintingOrderId] = useState(null);
@@ -189,8 +173,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
     setForm({
       customerName: order.customerName || "",
       customerPhone: order.customerPhone || "",
-      status: order.status || "PENDING",
-      itemPrintStatuses: Object.fromEntries(order.items.map((item) => [item.id, item.printStatus || "Not Printed"]))
+      status: order.status || "PENDING"
     });
     setModalError("");
   }
@@ -215,8 +198,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
           orderId: selectedOrder.id,
           customerName: form.customerName,
           customerPhone: form.customerPhone,
-          status: form.status,
-          itemPrintStatuses: Object.entries(form.itemPrintStatuses).map(([itemId, printStatus]) => ({ itemId, printStatus }))
+          status: form.status
         })
       });
 

@@ -164,9 +164,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
                       {activeMenuId === item.id && (
                         <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
                           <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#fff5f5] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-[#ffebeb]">{t("common.edit")}</button>
-                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("stock.addMoreItems")}</button>
                           <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
-                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.print")}</button>
                         </div>
                       )}
                     </div>
