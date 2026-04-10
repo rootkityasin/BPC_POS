@@ -13,6 +13,7 @@ export const usePosStore = create((set, get) => ({
     customerName: '',
     customerPhone: '',
     orderNote: '',
+    vatPercentage: 0,
     selectedCategory: null,
     searchQuery: '',
     isSearching: false,
@@ -21,6 +22,7 @@ export const usePosStore = create((set, get) => ({
     setSelectedCategory: (categoryId) => set({ selectedCategory: categoryId, searchQuery: '', isSearching: false }),
     setCustomerInfo: (name, phone) => set({ customerName: name, customerPhone: phone }),
     setOrderNote: (note) => set({ orderNote: note }),
+    setVatPercentage: (vatPercentage) => set({ vatPercentage: Number(vatPercentage) || 0 }),
     
     initializeOrder: () => set({ 
       currentOrderId: generateOrderId(),
@@ -92,7 +94,8 @@ export const usePosStore = create((set, get) => ({
     },
 
     getTax: () => {
-      return get().getSubtotal() * 0.05;
+      const { vatPercentage } = get();
+      return get().getSubtotal() * ((Number(vatPercentage) || 0) / 100);
     },
 
     getTotal: () => {

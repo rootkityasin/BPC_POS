@@ -6,6 +6,7 @@ import { Pencil, Printer } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
+import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
 
@@ -60,58 +61,6 @@ function getPrintStatusLabel(t, status) {
 
 function getItemLabel(item, translateContent) {
   return translateContent(item.dish?.nameEn || item.stockItem?.name || item.itemName || "Item");
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function buildReceiptHtml(order, t, translateContent) {
-  const rows = order.items
-    .map(
-      (item) => `
-        <tr>
-          <td style="padding:8px 0;">${escapeHtml(getItemLabel(item, translateContent))}</td>
-          <td style="padding:8px 0; text-align:center;">${item.quantity}</td>
-          <td style="padding:8px 0; text-align:right;">${escapeHtml(formatCurrency(item.unitPrice))}</td>
-        </tr>`
-    )
-    .join("");
-
-  return `<!DOCTYPE html>
-    <html>
-      <head>
-        <title>${escapeHtml(order.invoiceNumber)}</title>
-        <meta charset="utf-8" />
-      </head>
-      <body style="font-family: Arial, sans-serif; margin: 24px; color: #0f172a;">
-        <div style="max-width: 360px; margin: 0 auto;">
-          <h1 style="font-size: 22px; margin: 0 0 8px;">${escapeHtml(t("orders.receiptTitle"))}</h1>
-          <p style="margin: 0 0 6px; font-size: 13px;"><strong>${escapeHtml(t("orders.invoice"))}:</strong> ${escapeHtml(order.invoiceNumber)}</p>
-          <p style="margin: 0 0 6px; font-size: 13px;"><strong>${escapeHtml(t("orders.customer"))}:</strong> ${escapeHtml(order.customerName || t("orders.walkIn"))}</p>
-          <p style="margin: 0 0 6px; font-size: 13px;"><strong>${escapeHtml(t("orders.customerPhone"))}:</strong> ${escapeHtml(order.customerPhone || t("orders.noCustomerPhone"))}</p>
-          <p style="margin: 0 0 16px; font-size: 13px;"><strong>${escapeHtml(t("orders.createdAt"))}:</strong> ${escapeHtml(new Date(order.createdAt).toLocaleString())}</p>
-          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-            <thead>
-              <tr>
-                <th style="border-bottom: 1px solid #cbd5e1; padding: 8px 0; text-align: left;">${escapeHtml(t("common.name"))}</th>
-                <th style="border-bottom: 1px solid #cbd5e1; padding: 8px 0; text-align: center;">${escapeHtml(t("common.quantity"))}</th>
-                <th style="border-bottom: 1px solid #cbd5e1; padding: 8px 0; text-align: right;">${escapeHtml(t("common.price"))}</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-          <div style="margin-top: 16px; border-top: 1px solid #cbd5e1; padding-top: 12px; text-align: right; font-weight: bold;">
-            ${escapeHtml(t("orders.total"))}: ${escapeHtml(formatCurrency(order.totalAmount))}
-          </div>
-        </div>
-      </body>
-    </html>`;
 }
 
 function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, t, translateContent }) {
@@ -292,7 +241,7 @@ export function OrdersClient({ orders: initialOrders, canManage }) {
       return;
     }
 
-    receiptWindow.document.write(buildReceiptHtml(order, t, translateContent));
+    receiptWindow.document.write(buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent)));
     receiptWindow.document.close();
     receiptWindow.focus();
     receiptWindow.print();

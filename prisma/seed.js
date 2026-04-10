@@ -72,11 +72,18 @@ async function main() {
 
   const store = await prisma.store.upsert({
     where: { code: "DHK-001" },
-    update: {},
+    update: {
+      location: "Dhaka, Bangladesh",
+      vatNumber: "VAT-DHK-001",
+      vatPercentage: 5
+    },
     create: {
       code: "DHK-001",
       nameEn: "BPC Dhaka",
-      nameBn: ""
+      nameBn: "",
+      location: "Dhaka, Bangladesh",
+      vatNumber: "VAT-DHK-001",
+      vatPercentage: 5
     }
   });
 

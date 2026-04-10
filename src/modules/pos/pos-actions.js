@@ -106,6 +106,18 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
 
 export async function createOrder(storeId, orderData) {
   const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36).toUpperCase()}`;
+  const store = await prisma.store.findUnique({
+    where: { id: storeId },
+    select: { vatNumber: true, vatPercentage: true }
+  });
+  if (!store) {
+    throw new Error("Store not found");
+  }
+
+  const subtotalAmount = orderData.items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+  const vatPercentage = Number(store?.vatPercentage || 0);
+  const vatAmount = subtotalAmount * (vatPercentage / 100);
+  const totalAmount = subtotalAmount + vatAmount;
 
   const order = await prisma.order.create({
     data: {
@@ -114,7 +126,11 @@ export async function createOrder(storeId, orderData) {
       customerName: orderData.customerName || null,
       customerPhone: orderData.customerPhone || null,
       status: "PENDING",
-      totalAmount: orderData.total,
+      subtotalAmount,
+      vatAmount,
+      vatPercentage,
+      vatNumber: store?.vatNumber || null,
+      totalAmount,
       items: {
         create: orderData.items.map((item) => ({
           dishId: item.productType === "dish" ? item.productId : null,

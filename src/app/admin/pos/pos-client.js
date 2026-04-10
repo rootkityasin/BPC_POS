@@ -148,7 +148,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
   );
 }
 
-export function PosClient({ categories, products, storeId, userEmail }) {
+export function PosClient({ categories, products, storeId, userEmail, store: storeDetails }) {
   const store = usePosStore();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -169,9 +169,11 @@ export function PosClient({ categories, products, storeId, userEmail }) {
   const removeFromCart = store?.removeFromCart || NOOP;
   const updateItemNote = store?.updateItemNote || NOOP;
   const clearCart = store?.clearCart || NOOP;
+  const setCustomerInfo = store?.setCustomerInfo || NOOP;
   const getSubtotal = store?.getSubtotal || (() => 0);
   const getTax = store?.getTax || (() => 0);
   const getTotal = store?.getTotal || (() => 0);
+  const setVatPercentage = store?.setVatPercentage || NOOP;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [submittedSearch, setSubmittedSearch] = useState("");
@@ -185,6 +187,10 @@ export function PosClient({ categories, products, storeId, userEmail }) {
   useEffect(() => {
     initOrder();
   }, [initOrder]);
+
+  useEffect(() => {
+    setVatPercentage(storeDetails?.vatPercentage || 0);
+  }, [setVatPercentage, storeDetails?.vatPercentage]);
 
   const suggestionProducts = useMemo(() => {
     if (isSearching && searchQuery) {
@@ -270,7 +276,7 @@ export function PosClient({ categories, products, storeId, userEmail }) {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
-              <div className="mt-1 text-sm text-slate-500">{userEmail}</div>
+              <div className="mt-1 text-sm text-slate-500">{storeDetails?.nameEn || userEmail}</div>
             </div>
             <div className="relative z-50 flex w-full max-w-[540px] items-center gap-3">
               <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
@@ -388,6 +394,31 @@ export function PosClient({ categories, products, storeId, userEmail }) {
           </div>
 
           <div className="flex-1 space-y-5 overflow-y-auto border-t border-slate-100 pt-4">
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div>
+                <label htmlFor="customer-name" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerName")}</label>
+                <input
+                  id="customer-name"
+                  type="text"
+                  value={customerName}
+                  onChange={(event) => setCustomerInfo(event.target.value, customerPhone)}
+                  placeholder={t("pos.customerNamePlaceholder")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]"
+                />
+              </div>
+              <div>
+                <label htmlFor="customer-phone" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerPhone")}</label>
+                <input
+                  id="customer-phone"
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerInfo(customerName, event.target.value)}
+                  placeholder={t("pos.customerPhonePlaceholder")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]"
+                />
+              </div>
+            </div>
+
             {cart.length === 0 ? (
               <div className="py-8 text-center text-slate-400">
                 {t("pos.noItemsInCart")}
@@ -411,7 +442,7 @@ export function PosClient({ categories, products, storeId, userEmail }) {
               <span className="font-medium text-slate-800">{formatCurrency(getSubtotal())}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>{t("pos.tax")}</span>
+              <span>{`VAT (${Number(storeDetails?.vatPercentage || 0).toFixed(2)}%)`}</span>
               <span className="font-medium text-slate-800">{formatCurrency(getTax())}</span>
             </div>
             <div className="flex items-center justify-between pt-2 text-[18px] font-black text-slate-900">

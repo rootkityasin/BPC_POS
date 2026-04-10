@@ -18,6 +18,10 @@ export async function loginWithPassword(email, password) {
     return { success: false, error: "Invalid credentials" };
   }
 
+  if (!user.isActive) {
+    return { success: false, error: "Account is inactive" };
+  }
+
   if (user.lockedUntil && user.lockedUntil > new Date()) {
     return { success: false, error: "Account temporarily locked" };
   }

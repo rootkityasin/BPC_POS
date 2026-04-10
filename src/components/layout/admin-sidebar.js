@@ -9,6 +9,10 @@ import { cn } from "@/lib/utils";
 import { sidebarItems } from "@/modules/navigation/sidebar-config";
 import { canView } from "@/core/policies/permission-policy";
 
+function isRouteActive(pathname, href) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function isVisible(item, permissions, role) {
   if (role === "SUPER_ADMIN") return true;
   if (!item.featureKey) return true;
@@ -49,10 +53,13 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const visibleChildren = item.children?.filter((child) => isVisible(child, sessionUser.permissions, sessionUser.role)) || [];
-          const hasActiveChild = visibleChildren.some((child) => pathname === child.href || pathname.startsWith(`${child.href}/`));
+          const activeChild = visibleChildren
+            .filter((child) => isRouteActive(pathname, child.href))
+            .sort((left, right) => right.href.length - left.href.length)[0] || null;
+          const hasActiveChild = Boolean(activeChild);
           const active = visibleChildren.length > 0
             ? hasActiveChild
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            : isRouteActive(pathname, item.href);
           const isOpen = visibleChildren.length > 0 ? (openMenus[item.href] ?? hasActiveChild) : false;
 
           return (
@@ -93,7 +100,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
               {visibleChildren.length > 0 && isOpen && (
                 <div className="space-y-1 pl-6">
                   {visibleChildren.map((child) => {
-                    const childActive = pathname === child.href || pathname.startsWith(`${child.href}/`);
+                    const childActive = activeChild?.href === child.href;
                     return (
                       <Link
                         key={child.href}

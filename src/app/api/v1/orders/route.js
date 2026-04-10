@@ -16,6 +16,7 @@ function buildOrderScope(user) {
 
 function includeOrderRelations() {
   return {
+    store: true,
     items: {
       include: {
         dish: true,

@@ -49,19 +49,30 @@ model Store {
   nameBn             String
   code               String @unique
   logoUrl            String?
+  location           String?
+  vatNumber          String?
+  vatPercentage      Float @default(0)
   timezone           String @default("Asia/Dhaka")
   receiptTheme       String @default("modern")
   receiptFontSize    Int @default(14)
+  receiptAccentColor String @default("#ff242d")
+  receiptPaperWidth  String @default("80mm")
+  receiptHeaderText  String?
+  receiptFooterText  String?
   receiptShowLogo    Boolean @default(true)
   receiptShowSeller  Boolean @default(true)
   receiptShowBuyer   Boolean @default(true)
+  receiptShowOrderStatus Boolean @default(true)
+  receiptShowItemNotes Boolean @default(true)
   receiptShowQr      Boolean @default(true)
   receiptShowSign    Boolean @default(false)
   receiptWatermark   Float @default(0.1)
+  defaultPrinterId   String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   users              User[]
   terminals          Terminal[]
+  defaultPrinter     Terminal? @relation("StoreDefaultPrinter", fields: [defaultPrinterId], references: [id])
   categories         Category[]
   subCategories      SubCategory[]
   dishes             Dish[]
@@ -109,12 +120,15 @@ model Terminal {
   assignedUserId     String?
   name               String
   code               String @unique
+  printerModel       String?
+  printerStatus      String @default("DISCONNECTED")
   printerTarget      String?
   printerConnection  String?
   timezone           String @default("Asia/Dhaka")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   store              Store @relation(fields: [storeId], references: [id])
+  defaultForStores   Store[] @relation("StoreDefaultPrinter")
   assignedUser       User? @relation("TerminalAssignedUser", fields: [assignedUserId], references: [id])
 }
 
@@ -225,6 +239,10 @@ model Order {
   customerName  String?
   customerPhone String?
   status        String
+  subtotalAmount Float @default(0)
+  vatAmount     Float @default(0)
+  vatPercentage Float @default(0)
+  vatNumber     String?
   totalAmount   Float
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

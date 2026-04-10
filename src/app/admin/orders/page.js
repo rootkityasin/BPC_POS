@@ -7,7 +7,7 @@ export default async function OrdersPage() {
   const user = await requireFeatureView(FEATURE_KEYS.ORDERS);
   const orders = await prisma.order.findMany({
     where: { storeId: user.storeId || undefined },
-    include: { items: { include: { dish: true, stockItem: true } } },
+    include: { store: true, items: { include: { dish: true, stockItem: true } } },
     orderBy: { createdAt: "desc" },
     take: 20
   });
