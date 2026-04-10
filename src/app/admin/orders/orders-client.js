@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
+import { openPrintPreview } from "@/modules/receipts/print-preview";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
 
@@ -162,7 +163,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
   );
 }
 
-export function OrdersClient({ orders: initialOrders, canManage }) {
+export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn = false }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -235,39 +236,45 @@ export function OrdersClient({ orders: initialOrders, canManage }) {
   }
 
   async function handlePrint(order) {
-    const receiptWindow = window.open("", `_blank`, "width=420,height=720");
-    if (!receiptWindow) {
+    const popup = openPrintPreview({
+      title: `Receipt ${order.invoiceNumber}`,
+      defaultPaperWidth: order.store?.receiptPaperWidth || "80mm",
+      printers: order.store?.terminals || [],
+      previews: {
+        "58mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), { paperWidthOverride: "58mm" }),
+        "80mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), { paperWidthOverride: "80mm" })
+      }
+    }, {
+      onPrint: async () => {
+        if (!canManage || order.items.every((item) => item.printStatus === "Printed")) {
+          return;
+        }
+
+        setPrintingOrderId(order.id);
+
+        try {
+          const response = await fetch("/api/v1/orders", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: order.id,
+              itemPrintStatuses: order.items.map((item) => ({ itemId: item.id, printStatus: "Printed" }))
+            })
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (response.ok && data.order) {
+            syncOrder(data.order);
+          }
+        } finally {
+          setPrintingOrderId(null);
+        }
+      }
+    });
+
+    if (!popup) {
       window.alert(t("orders.popupBlocked"));
       return;
-    }
-
-    receiptWindow.document.write(buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent)));
-    receiptWindow.document.close();
-    receiptWindow.focus();
-    receiptWindow.print();
-
-    if (!canManage || order.items.every((item) => item.printStatus === "Printed")) {
-      return;
-    }
-
-    setPrintingOrderId(order.id);
-
-    try {
-      const response = await fetch("/api/v1/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.id,
-          itemPrintStatuses: order.items.map((item) => ({ itemId: item.id, printStatus: "Printed" }))
-        })
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (response.ok && data.order) {
-        syncOrder(data.order);
-      }
-    } finally {
-      setPrintingOrderId(null);
     }
   }
 
@@ -287,6 +294,7 @@ export function OrdersClient({ orders: initialOrders, canManage }) {
                 <th className="px-5 py-3">{t("orders.customer")}</th>
                 <th className="px-5 py-3">{t("orders.status")}</th>
                 <th className="px-5 py-3">{t("orders.printStatus")}</th>
+                {showStoreColumn ? <th className="px-5 py-3">Store</th> : null}
                 <th className="px-5 py-3">{t("orders.total")}</th>
                 <th className="px-5 py-3">{t("orders.items")}</th>
                 <th className="px-5 py-3">{t("orders.printReceipt")}</th>
@@ -296,7 +304,7 @@ export function OrdersClient({ orders: initialOrders, canManage }) {
             <tbody className="divide-y divide-slate-100 bg-white">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-5 py-10 text-center text-slate-500">{t("orders.noOrdersYet")}</td>
+                  <td colSpan={showStoreColumn ? 9 : 8} className="px-5 py-10 text-center text-slate-500">{t("orders.noOrdersYet")}</td>
                 </tr>
               ) : (
                 orders.map((order) => {
@@ -322,6 +330,7 @@ export function OrdersClient({ orders: initialOrders, canManage }) {
                           {getPrintStatusLabel(t, printStatus)}
                         </span>
                       </td>
+                      {showStoreColumn ? <td className="px-5 py-4 text-slate-600">{order.store?.nameEn || "Unknown store"}</td> : null}
                       <td className="px-5 py-4">{formatCurrency(order.totalAmount)}</td>
                       <td className="px-5 py-4">
                         <div className="font-medium text-slate-800">{order.items.length}</div>

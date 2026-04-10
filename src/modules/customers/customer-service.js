@@ -1,11 +1,62 @@
 import { prisma } from "@/lib/prisma";
 
-function buildCustomerScope(user) {
-  if (user.role === "SUPER_ADMIN" || !user.storeId) {
-    return {};
+function buildCustomerScope(user, storeId) {
+  if (user.role !== "SUPER_ADMIN") {
+    return user.storeId ? { storeId: user.storeId } : { storeId: "__NO_STORE__" };
   }
 
-  return { storeId: user.storeId };
+  if (storeId) {
+    return { storeId };
+  }
+
+  return {};
+}
+
+function sanitizeText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeDateStart(value) {
+  const text = sanitizeText(value);
+  if (!text) return null;
+
+  const date = new Date(`${text}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizeDateEnd(value) {
+  const text = sanitizeText(value);
+  if (!text) return null;
+
+  const date = new Date(`${text}T23:59:59.999Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function buildCustomerFilters(filters = {}) {
+  const invoiceSuffix = sanitizeText(filters.invoiceSuffix);
+  const customerName = sanitizeText(filters.customerName);
+  const fromDate = normalizeDateStart(filters.fromDate);
+  const toDate = normalizeDateEnd(filters.toDate);
+  const andClauses = [];
+
+  if (invoiceSuffix) {
+    andClauses.push({ invoiceNumber: { endsWith: invoiceSuffix } });
+  }
+
+  if (customerName) {
+    andClauses.push({ customerName: { contains: customerName, mode: "insensitive" } });
+  }
+
+  if (fromDate || toDate) {
+    andClauses.push({
+      createdAt: {
+        ...(fromDate ? { gte: fromDate } : {}),
+        ...(toDate ? { lte: toDate } : {})
+      }
+    });
+  }
+
+  return andClauses;
 }
 
 function buildCustomerKey(order) {
@@ -15,10 +66,11 @@ function buildCustomerKey(order) {
   return identity ? `${order.storeId}:${identity}` : "";
 }
 
-export async function getCustomerDashboard(user) {
+export async function getCustomerDashboard(user, storeId, filters = {}) {
   const orders = await prisma.order.findMany({
     where: {
-      ...buildCustomerScope(user),
+      ...buildCustomerScope(user, storeId),
+      AND: buildCustomerFilters(filters),
       OR: [
         { customerName: { not: null } },
         { customerPhone: { not: null } }

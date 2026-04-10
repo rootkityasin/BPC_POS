@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 import { translateTexts } from "@/modules/i18n/libretranslate-service";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -11,7 +12,8 @@ function buildSku() {
 
 export async function POST(request) {
   const user = await getSessionUser();
-  if (!user?.storeId) {
+  const storeId = await getActiveStoreId(user);
+  if (!storeId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -73,7 +75,7 @@ export async function POST(request) {
 
   const dish = await prisma.dish.create({
     data: {
-      storeId: user.storeId,
+      storeId,
       nameEn,
       nameBn: "",
       categoryId,
@@ -103,7 +105,8 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   const user = await getSessionUser();
-  if (!user?.storeId) {
+  const storeId = await getActiveStoreId(user);
+  if (!storeId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -115,7 +118,7 @@ export async function PATCH(request) {
   }
 
   const existingDish = await prisma.dish.findFirst({
-    where: { id, storeId: user.storeId }
+    where: { id, storeId }
   });
 
   if (!existingDish) {

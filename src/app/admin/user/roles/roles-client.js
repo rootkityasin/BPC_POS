@@ -2,11 +2,12 @@
 
 import { Fragment, useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, CircleAlert, KeyRound, Search, ShieldCheck, ShieldOff } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, KeyRound, Search, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { I18nText } from "@/components/i18n/i18n-text";
-import { resetManagerPassword, saveManagerOverrides, toggleManagerActive } from "./actions";
+import { deleteManager, resetManagerPassword, saveManagerOverrides, toggleManagerActive } from "./actions";
 
 const INITIAL_ACTION_STATE = { status: "idle", message: "" };
 
@@ -36,14 +37,16 @@ function getInitials(name) {
     .join("");
 }
 
-function ManagerStatusForm({ manager, onToast }) {
+function ManagerStatusForm({ manager, onToast, onSuccess }) {
   const [state, formAction, pending] = useActionState(toggleManagerActive.bind(null, manager.id), INITIAL_ACTION_STATE);
 
   useEffect(() => {
-    if (state.status !== "idle") {
-      onToast(state);
+    if (state.status === "idle") return;
+    onToast(state);
+    if (state.status === "success") {
+      onSuccess();
     }
-  }, [onToast, state]);
+  }, [onSuccess, onToast, state]);
 
   return (
     <form action={formAction}>
@@ -56,14 +59,44 @@ function ManagerStatusForm({ manager, onToast }) {
   );
 }
 
-function ManagerPasswordForm({ managerId, onToast }) {
+function ManagerDeleteForm({ managerId, onToast, onSuccess }) {
+  const [state, formAction, pending] = useActionState(deleteManager.bind(null, managerId), INITIAL_ACTION_STATE);
+
+  useEffect(() => {
+    if (state.status === "idle") return;
+    onToast(state);
+    if (state.status === "success") {
+      onSuccess();
+    }
+  }, [onSuccess, onToast, state]);
+
+  return (
+    <form
+      action={formAction}
+      onSubmit={(event) => {
+        if (!window.confirm("Delete this manager account? This cannot be undone.")) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <Button type="submit" variant="outline" className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50" disabled={pending}>
+        <Trash2 className="mr-2 h-4 w-4" />
+        {pending ? "Deleting..." : "Delete"}
+      </Button>
+    </form>
+  );
+}
+
+function ManagerPasswordForm({ managerId, onToast, onSuccess }) {
   const [state, formAction, pending] = useActionState(resetManagerPassword.bind(null, managerId), INITIAL_ACTION_STATE);
 
   useEffect(() => {
-    if (state.status !== "idle") {
-      onToast(state);
+    if (state.status === "idle") return;
+    onToast(state);
+    if (state.status === "success") {
+      onSuccess();
     }
-  }, [onToast, state]);
+  }, [onSuccess, onToast, state]);
 
   return (
     <form action={formAction} className="flex flex-col gap-3 sm:flex-row">
@@ -76,14 +109,16 @@ function ManagerPasswordForm({ managerId, onToast }) {
   );
 }
 
-function ManagerPermissionsForm({ manager, permissionSections, onToast }) {
+function ManagerPermissionsForm({ manager, permissionSections, onToast, onSuccess }) {
   const [state, formAction, pending] = useActionState(saveManagerOverrides.bind(null, manager.id), INITIAL_ACTION_STATE);
 
   useEffect(() => {
-    if (state.status !== "idle") {
-      onToast(state);
+    if (state.status === "idle") return;
+    onToast(state);
+    if (state.status === "success") {
+      onSuccess();
     }
-  }, [onToast, state]);
+  }, [onSuccess, onToast, state]);
 
   return (
     <form action={formAction} className="space-y-6 px-6 py-6">
@@ -123,11 +158,61 @@ function ManagerPermissionsForm({ manager, permissionSections, onToast }) {
   );
 }
 
+function ManagerAccordion({ manager, isOpen, onToggle, permissionSections, onToast, onSuccess }) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="px-6 py-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <button type="button" onClick={onToggle} className="flex min-w-0 flex-1 items-start gap-4 text-left">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">
+              {getInitials(manager.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold text-slate-900">{manager.name}</h3>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${manager.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                  {manager.isActive ? "Active" : "Inactive"}
+                </span>
+              </div>
+              <div className="mt-1 text-sm text-slate-500">{manager.email}</div>
+              <div className="mt-3 flex flex-wrap gap-5 text-xs font-medium uppercase tracking-wide text-slate-400">
+                <span>Store {manager.store?.nameEn || "Unassigned"}</span>
+                <span>{manager.enabledCount} enabled feature groups</span>
+                <span>Created {new Date(manager.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+            <ChevronDown className={`mt-1 h-5 w-5 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          <div className="flex flex-wrap gap-2 xl:justify-end">
+            <ManagerStatusForm manager={manager} onToast={onToast} onSuccess={onSuccess} />
+            <ManagerDeleteForm managerId={manager.id} onToast={onToast} onSuccess={onSuccess} />
+          </div>
+        </div>
+      </div>
+
+      {isOpen ? (
+        <>
+          <div className="border-t border-slate-100 px-6 py-5">
+            <div className="mb-3 text-sm font-semibold text-slate-900">Reset Password</div>
+            <ManagerPasswordForm managerId={manager.id} onToast={onToast} onSuccess={onSuccess} />
+          </div>
+          <div className="border-t border-slate-100">
+            <ManagerPermissionsForm manager={manager} permissionSections={permissionSections} onToast={onToast} onSuccess={onSuccess} />
+          </div>
+        </>
+      ) : null}
+    </Card>
+  );
+}
+
 export function RolesClient({ managers, permissionSections, stats }) {
+  const router = useRouter();
   const [toast, setToast] = useState(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState("all");
+  const [openManagerId, setOpenManagerId] = useState(null);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -151,6 +236,16 @@ export function RolesClient({ managers, permissionSections, stats }) {
       return matchesQuery && matchesStatus && matchesAssignment;
     });
   }, [assignmentFilter, managers, query, statusFilter]);
+
+  useEffect(() => {
+    if (openManagerId && !filteredManagers.some((manager) => manager.id === openManagerId)) {
+      setOpenManagerId(null);
+    }
+  }, [filteredManagers, openManagerId]);
+
+  function handleRefresh() {
+    router.refresh();
+  }
 
   return (
     <>
@@ -215,63 +310,21 @@ export function RolesClient({ managers, permissionSections, stats }) {
           <div className="mt-3 text-sm text-slate-500">Showing {filteredManagers.length} of {managers.length} managers.</div>
         </Card>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {filteredManagers.length === 0 ? (
             <Card className="p-10 text-center text-slate-500">No managers match the current filters.</Card>
           ) : null}
 
           {filteredManagers.map((manager) => (
-            <Card key={manager.id} className="overflow-hidden">
-              <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-5">
-                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">
-                      {getInitials(manager.name)}
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xl font-bold text-slate-900">{manager.name}</h3>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${manager.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                          {manager.isActive ? "Active" : "Inactive"}
-                        </span>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                          {manager.store?.nameEn || "Unassigned store"}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-sm text-slate-500">{manager.email}</div>
-                      <div className="mt-3 flex flex-wrap gap-5 text-xs font-medium uppercase tracking-wide text-slate-400">
-                        <span>{manager.enabledCount} enabled feature groups</span>
-                        <span>Created {new Date(manager.createdAt).toLocaleDateString()}</span>
-                        <span>Role {manager.role.name}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 xl:w-[420px]">
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Store Assignment</div>
-                      <div className="mt-2 text-sm font-semibold text-slate-900">{manager.store?.nameEn || "No store assigned"}</div>
-                      <div className="mt-1 text-sm text-slate-500">Manage assignment in the store management section.</div>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Account Control</div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <ManagerStatusForm manager={manager} onToast={setToast} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6 px-6 pt-6">
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <div className="mb-3 text-sm font-semibold text-slate-900">Reset Password</div>
-                  <ManagerPasswordForm managerId={manager.id} onToast={setToast} />
-                </div>
-              </div>
-
-              <ManagerPermissionsForm manager={manager} permissionSections={permissionSections} onToast={setToast} />
-            </Card>
+            <ManagerAccordion
+              key={manager.id}
+              manager={manager}
+              isOpen={openManagerId === manager.id}
+              onToggle={() => setOpenManagerId((current) => current === manager.id ? null : manager.id)}
+              permissionSections={permissionSections}
+              onToast={setToast}
+              onSuccess={handleRefresh}
+            />
           ))}
         </div>
       </div>

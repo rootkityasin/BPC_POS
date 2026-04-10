@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 import { translateTexts } from "@/modules/i18n/libretranslate-service";
 
 export async function GET() {
@@ -9,9 +10,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const storeId = await getActiveStoreId(user);
+  const where = user.role === "SUPER_ADMIN" && !storeId ? {} : { storeId };
   const stockItems = await prisma.stockItem.findMany({
-    where: { storeId: user.storeId || undefined },
-    include: { dish: true },
+    where,
+    include: { dish: true, store: true },
     orderBy: { createdAt: "desc" }
   });
 
@@ -20,7 +23,8 @@ export async function GET() {
 
 export async function POST(request) {
   const user = await getSessionUser();
-  if (!user?.storeId) {
+  const storeId = await getActiveStoreId(user);
+  if (!storeId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,7 +37,7 @@ export async function POST(request) {
 
   const stockItem = await prisma.stockItem.create({
     data: {
-      storeId: user.storeId,
+      storeId,
       name,
       quantity: Number(body.quantity || 0),
       price: body.price === null || body.price === undefined || body.price === "" ? null : Number(body.price),

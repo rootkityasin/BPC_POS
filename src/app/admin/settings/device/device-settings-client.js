@@ -1,5 +1,6 @@
 "use client";
 
+import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, CircleAlert, Plus, Printer, Receipt, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,9 +69,8 @@ function ReceiptPreview({ storeName, settings }) {
     { name: "Chicken Fried Rice", quantity: 2, price: 280, note: "Extra spicy" },
     { name: "Soft Drink", quantity: 1, price: 80, note: "" }
   ];
-  const subtotal = sampleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const vatAmount = subtotal * 0.05;
-  const total = subtotal + vatAmount;
+  const grossAmount = sampleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const { subtotalAmount, vatAmount, totalAmount } = calculateVatInclusiveTotals(grossAmount, 5);
   const paperClass = settings.receiptPaperWidth === "58mm" ? "max-w-[290px]" : "max-w-[360px]";
   const themeClass = settings.receiptTheme === "classic"
     ? "border-[#e2d7c0] bg-[#fffdf7]"
@@ -122,9 +122,11 @@ function ReceiptPreview({ storeName, settings }) {
           </div>
 
           <div className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-sm text-slate-700">
-            <div className="flex justify-between"><span>Subtotal</span><span>{subtotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>Items Total</span><span>{grossAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>Less Included VAT</span><span>-{vatAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>Subtotal</span><span>{subtotalAmount.toFixed(2)}</span></div>
             <div className="flex justify-between"><span>VAT (5.00%)</span><span>{vatAmount.toFixed(2)}</span></div>
-            <div className="flex justify-between text-base font-black text-slate-900"><span>Total</span><span>{total.toFixed(2)}</span></div>
+            <div className="flex justify-between text-base font-black text-slate-900"><span>Total</span><span>{totalAmount.toFixed(2)}</span></div>
           </div>
 
           {settings.receiptShowQr ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-center text-xs text-slate-500">QR: INV-20260411-0001</div> : null}

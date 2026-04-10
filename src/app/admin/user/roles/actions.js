@@ -161,3 +161,31 @@ export async function resetManagerPassword(userId, _, formData) {
     return errorState(error instanceof Error ? error.message : "Failed to reset password");
   }
 }
+
+export async function deleteManager(userId) {
+  try {
+    const actor = await requireUsersManageAccess();
+    const manager = await getManagerOrThrow(userId);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.terminal.updateMany({
+        where: { assignedUserId: manager.id },
+        data: { assignedUserId: null }
+      });
+
+      await tx.session.deleteMany({ where: { userId: manager.id } });
+      await tx.userPermissionOverride.deleteMany({ where: { userId: manager.id } });
+      await tx.user.delete({ where: { id: manager.id } });
+    });
+
+    await emitNotificationEvent("manager.status.updated", {
+      managerName: manager.name,
+      isActive: false,
+      actorName: actor.email
+    });
+
+    return successState("Manager deleted successfully.", { managerId: manager.id });
+  } catch (error) {
+    return errorState(error instanceof Error ? error.message : "Failed to delete manager");
+  }
+}

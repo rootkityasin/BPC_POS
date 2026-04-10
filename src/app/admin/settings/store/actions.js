@@ -188,6 +188,181 @@ export async function saveStoreSetup(_, formData) {
   }
 }
 
+export async function saveStoreDetails(_, formData) {
+  try {
+    const user = await requireManageUser();
+    const requestedStoreId = sanitizeText(formData.get("storeId"));
+    const allowUserStoreFallback = sanitizeText(formData.get("allowUserStoreFallback")) === "true";
+    const storeName = sanitizeText(formData.get("storeName"));
+    const location = sanitizeText(formData.get("storeLocation"));
+    const vatNumber = sanitizeText(formData.get("vatNumber"));
+    const vatPercentageRaw = sanitizeText(formData.get("vatPercentage"));
+
+    if (!storeName) {
+      throw new Error("Store name is required");
+    }
+
+    const vatPercentage = Number(vatPercentageRaw || 0);
+    if (!Number.isFinite(vatPercentage) || vatPercentage < 0) {
+      throw new Error("VAT percentage must be a valid non-negative number");
+    }
+
+    const existingStore = requestedStoreId
+      ? await prisma.store.findUnique({ where: { id: requestedStoreId } })
+      : allowUserStoreFallback && user.storeId
+        ? await prisma.store.findUnique({ where: { id: user.storeId } })
+        : null;
+    const logoFile = formData.get("storeLogo");
+    const uploadedLogoUrl = logoFile instanceof File ? await uploadStoreLogo(logoFile) : null;
+
+    const store = existingStore
+      ? await prisma.store.update({
+          where: { id: existingStore.id },
+          data: {
+            nameEn: storeName,
+            location: location || null,
+            vatNumber: vatNumber || null,
+            vatPercentage,
+            logoUrl: uploadedLogoUrl || existingStore.logoUrl
+          }
+        })
+      : await prisma.store.create({
+          data: {
+            code: buildStoreCode(storeName),
+            nameEn: storeName,
+            nameBn: "",
+            location: location || null,
+            vatNumber: vatNumber || null,
+            vatPercentage,
+            logoUrl: uploadedLogoUrl
+          }
+        });
+
+    if (!user.storeId) {
+      await prisma.user.update({
+        where: { id: user.sub },
+        data: { storeId: store.id }
+      });
+    }
+
+    revalidatePath("/admin/settings/store");
+    revalidatePath("/admin/settings/store/manage");
+    revalidatePath("/admin/pos");
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/user/roles");
+
+    await emitNotificationEvent("store.updated", {
+      storeId: store.id,
+      storeName: store.nameEn,
+      created: !existingStore,
+      actorName: user.email
+    });
+
+    return successState(existingStore ? "Store updated successfully." : "Store created successfully.", { storeId: store.id });
+  } catch (error) {
+    return errorState(error instanceof Error ? error.message : "Failed to save store details");
+  }
+}
+
+export async function assignStoreManager(_, formData) {
+  try {
+    await requireManageUser();
+    const managerId = sanitizeText(formData.get("managerId"));
+    const storeId = sanitizeText(formData.get("storeId"));
+
+    if (!managerId || !storeId) {
+      throw new Error("Manager and store are required");
+    }
+
+    const [manager, store] = await Promise.all([
+      prisma.user.findFirst({
+        where: {
+          id: managerId,
+          role: { code: "MANAGER" }
+        },
+        include: { store: true }
+      }),
+      prisma.store.findUnique({ where: { id: storeId } })
+    ]);
+
+    if (!manager) {
+      throw new Error("Selected manager was not found");
+    }
+
+    if (!store) {
+      throw new Error("Selected store was not found");
+    }
+
+    await prisma.user.update({
+      where: { id: manager.id },
+      data: { storeId: store.id }
+    });
+
+    revalidatePath("/admin/settings/store");
+    revalidatePath("/admin/settings/store/manage");
+    revalidatePath("/admin/user/roles");
+
+    return successState(manager.storeId ? "Manager reassigned successfully." : "Manager assigned successfully.");
+  } catch (error) {
+    return errorState(error instanceof Error ? error.message : "Failed to assign manager");
+  }
+}
+
+export async function createStoreManager(_, formData) {
+  try {
+    await requireManageUser();
+    const storeId = sanitizeText(formData.get("storeId"));
+    const managerName = sanitizeText(formData.get("managerName"));
+    const managerEmail = sanitizeText(formData.get("managerEmail")).toLowerCase();
+    const managerPassword = sanitizeText(formData.get("managerPassword")) || DEFAULT_MANAGER_PASSWORD;
+
+    if (!storeId) {
+      throw new Error("Store is required");
+    }
+
+    if (!managerName || !managerEmail) {
+      throw new Error("Manager name and email are required");
+    }
+
+    const [managerRole, existingUser, store] = await Promise.all([
+      prisma.role.findUnique({ where: { code: "MANAGER" } }),
+      prisma.user.findUnique({ where: { email: managerEmail } }),
+      prisma.store.findUnique({ where: { id: storeId } })
+    ]);
+
+    if (!managerRole) {
+      throw new Error("Manager role is missing");
+    }
+
+    if (!store) {
+      throw new Error("Selected store was not found");
+    }
+
+    if (existingUser) {
+      throw new Error("Manager email already exists");
+    }
+
+    const passwordHash = await hashPassword(managerPassword);
+    await prisma.user.create({
+      data: {
+        name: managerName,
+        email: managerEmail,
+        passwordHash,
+        roleId: managerRole.id,
+        storeId: store.id
+      }
+    });
+
+    revalidatePath("/admin/settings/store");
+    revalidatePath("/admin/settings/store/manage");
+    revalidatePath("/admin/user/roles");
+
+    return successState("Manager created successfully.");
+  } catch (error) {
+    return errorState(error instanceof Error ? error.message : "Failed to create manager");
+  }
+}
+
 export async function unassignStoreManager(_, formData) {
   try {
     await requireManageUser();

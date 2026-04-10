@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 
 const CATEGORY_FORM = { nameEn: "", color: "#ff242d" };
 
-export function CategoryClient({ categories, subCategories }) {
+export function CategoryClient({ categories, subCategories, canCreate = true, showStoreColumn = false }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -103,9 +103,10 @@ export function CategoryClient({ categories, subCategories }) {
         <button
           type="button"
           onClick={openAddModal}
+          disabled={!canCreate}
           className="text-[17px] font-bold text-[#ff242d] transition-colors hover:text-[#ea1d26]"
         >
-          {addButtonLabel}
+          {canCreate ? addButtonLabel : "Select a store to add items"}
         </button>
       </div>
 
@@ -156,16 +157,18 @@ export function CategoryClient({ categories, subCategories }) {
           {activeTab === "categories" ? (
             <>
               <div className="col-span-3">{t("categoryPage.categoryName")}</div>
-              <div className="col-span-3">{t("categoryPage.description")}</div>
-              <div className="col-span-3 text-center">{t("common.totalDishes")}</div>
+              <div className={showStoreColumn ? "col-span-2" : "col-span-3"}>{t("categoryPage.description")}</div>
+              {showStoreColumn ? <div className="col-span-2">Store</div> : null}
+              <div className={`${showStoreColumn ? "col-span-2" : "col-span-3"} text-center`}>{t("common.totalDishes")}</div>
               <div className="col-span-2 text-center">{t("common.lastUpdated")}</div>
               <div className="col-span-1 text-center">{t("common.actions")}</div>
             </>
           ) : (
             <>
-              <div className="col-span-3">{t("categoryPage.subCategoryName")}</div>
+              <div className={showStoreColumn ? "col-span-2" : "col-span-3"}>{t("categoryPage.subCategoryName")}</div>
               <div className="col-span-2">{t("categoryPage.categoryName")}</div>
               <div className="col-span-2">{t("categoryPage.description")}</div>
+              {showStoreColumn ? <div className="col-span-2">Store</div> : null}
               <div className="col-span-2 text-center">{t("common.totalDishes")}</div>
               <div className="col-span-2 text-center">{t("common.lastUpdated")}</div>
               <div className="col-span-1 text-center">{t("common.actions")}</div>
@@ -182,12 +185,13 @@ export function CategoryClient({ categories, subCategories }) {
                     <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color || "#cc0000" }} />
                     <span className="text-[14px] font-bold text-[#ff242d]">{translateContent(item.nameEn)}</span>
                   </div>
-                  <div className="col-span-3 text-[14px] font-medium text-[#ff242d]/70">{translateContent(item.nameEn)}</div>
-                  <div className="col-span-3 text-center text-[14px] font-bold text-[#ff242d]">
-                    {item._count?.dishes || 0} {t((item._count?.dishes || 0) === 1 ? "common.dish" : "dishes.title")}
-                  </div>
-                  <div className="col-span-2 text-center text-[14px] font-medium text-[#ff242d]/70">{formatDate(item.updatedAt)}</div>
-                  <div className="col-span-1 flex items-center justify-center gap-3">
+                   <div className={`${showStoreColumn ? "col-span-2" : "col-span-3"} text-[14px] font-medium text-[#ff242d]/70`}>{translateContent(item.nameEn)}</div>
+                   {showStoreColumn ? <div className="col-span-2 text-[14px] font-medium text-[#ff242d]/70">{item.store?.nameEn || "Unknown store"}</div> : null}
+                   <div className={`${showStoreColumn ? "col-span-2" : "col-span-3"} text-center text-[14px] font-bold text-[#ff242d]`}>
+                     {item._count?.dishes || 0} {t((item._count?.dishes || 0) === 1 ? "common.dish" : "dishes.title")}
+                   </div>
+                   <div className="col-span-2 text-center text-[14px] font-medium text-[#ff242d]/70">{formatDate(item.updatedAt)}</div>
+                   <div className="col-span-1 flex items-center justify-center gap-3">
                     <button type="button" className="text-[#ff242d] transition-colors hover:text-[#ea1d26]">
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -198,20 +202,21 @@ export function CategoryClient({ categories, subCategories }) {
                 </>
               ) : (
                 <>
-                  <div className="col-span-3 flex items-center gap-4">
-                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.category?.color || "#ff242d" }} />
-                    <span className="text-[14px] font-bold text-[#ff242d]">{translateContent(item.nameEn)}</span>
-                  </div>
+                   <div className={`${showStoreColumn ? "col-span-2" : "col-span-3"} flex items-center gap-4`}>
+                     <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.category?.color || "#ff242d" }} />
+                     <span className="text-[14px] font-bold text-[#ff242d]">{translateContent(item.nameEn)}</span>
+                   </div>
                   <div className="col-span-2 flex items-center gap-4">
                     <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.category?.color || "#ff242d" }} />
                     <span className="text-[14px] font-bold text-[#ff242d]">{translateContent(item.category?.nameEn)}</span>
                   </div>
-                  <div className="col-span-2 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium text-[#ff242d]/70">{translateContent(item.nameEn)}</div>
-                  <div className="col-span-2 text-center text-[14px] font-bold text-[#ff242d]">
-                    {item._count?.dishes || 0} {t((item._count?.dishes || 0) === 1 ? "common.dish" : "dishes.title")}
-                  </div>
-                  <div className="col-span-2 text-center text-[14px] font-medium text-[#ff242d]/70">{formatDate(item.updatedAt)}</div>
-                  <div className="col-span-1 flex items-center justify-center gap-3">
+                   <div className="col-span-2 overflow-hidden text-ellipsis whitespace-nowrap text-[14px] font-medium text-[#ff242d]/70">{translateContent(item.nameEn)}</div>
+                   {showStoreColumn ? <div className="col-span-2 text-[14px] font-medium text-[#ff242d]/70">{item.store?.nameEn || "Unknown store"}</div> : null}
+                   <div className="col-span-2 text-center text-[14px] font-bold text-[#ff242d]">
+                     {item._count?.dishes || 0} {t((item._count?.dishes || 0) === 1 ? "common.dish" : "dishes.title")}
+                   </div>
+                   <div className="col-span-2 text-center text-[14px] font-medium text-[#ff242d]/70">{formatDate(item.updatedAt)}</div>
+                   <div className="col-span-1 flex items-center justify-center gap-3">
                     <button type="button" className="text-[#ff242d] transition-colors hover:text-[#ea1d26]">
                       <Pencil className="h-4 w-4" />
                     </button>

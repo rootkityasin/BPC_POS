@@ -1,26 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  AlertCircle,
-  ChevronDown,
-  Clock3,
-  Heart,
-  PencilLine,
-  Trash2,
-} from "lucide-react";
+import { AlertCircle, ChevronDown, Clock3, Heart, PencilLine, Store, Trash2, Wallet } from "lucide-react";
+import { ModalShell } from "@/components/ui/modal-shell";
 import { usePosStore } from "@/modules/pos/pos-store";
 import { createOrder } from "@/modules/pos/pos-actions";
+import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
+import { openPrintPreview } from "@/modules/receipts/print-preview";
+import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 
 const NOOP = () => {};
+const PAYMENT_METHODS = [
+  { id: "cash", label: "Cash" },
+  { id: "ssl", label: "SSL" },
+  { id: "mobile", label: "Mobile Banking" }
+];
 
 function formatCurrency(value) {
   return `৳${Number(value || 0).toFixed(2)}`;
 }
 
-function ProductCard({ product, onAddToCart }) {
+function ProductCard({ product, onAddToCart, showStoreName }) {
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
 
@@ -30,23 +32,21 @@ function ProductCard({ product, onAddToCart }) {
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
         </div>
-        <button
-          type="button"
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#ff242d] shadow-sm transition-transform hover:scale-110"
-        >
+        <button type="button" className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#ff242d] shadow-sm transition-transform hover:scale-110">
           <Heart className="h-3.5 w-3.5" />
         </button>
-        {product.isLowStock && (
+        {product.isLowStock ? (
           <div className="absolute left-2 top-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
             {t("pos.lowStock")}
           </div>
-        )}
+        ) : null}
       </div>
       <div className="pt-3">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-[15px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h3>
         </div>
-        <p className="mt-2 min-h-[21px] text-xs leading-[14px] text-slate-500">
+        {showStoreName ? <div className="mt-2 text-xs font-medium text-slate-400">{product.storeName}</div> : null}
+        <p className="mt-1 min-h-[21px] text-xs leading-[14px] text-slate-500">
           {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || "")}
         </p>
         <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
@@ -55,14 +55,8 @@ function ProductCard({ product, onAddToCart }) {
           </span>
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="text-[31px] font-black leading-none text-[#ff242d]">
-            {formatCurrency(product.price)}
-          </span>
-          <button
-            type="button"
-            onClick={() => onAddToCart(product)}
-            className="rounded-2xl bg-[#ff242d] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#ea1d26] active:scale-95"
-          >
+          <span className="text-[31px] font-black leading-none text-[#ff242d]">{formatCurrency(product.price)}</span>
+          <button type="button" onClick={() => onAddToCart(product)} className="rounded-2xl bg-[#ff242d] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#ea1d26] active:scale-95">
             {t("pos.addToCart")}
           </button>
         </div>
@@ -71,7 +65,7 @@ function ProductCard({ product, onAddToCart }) {
   );
 }
 
-function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
+function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName }) {
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState(item.note || "");
   const { t } = useTranslation();
@@ -80,66 +74,35 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
   return (
     <div className="border-b border-slate-200 pb-5 last:border-b-0 last:pb-0">
       <div className="flex items-start gap-3">
-        <div className="h-14 w-14 shrink-0 rounded-md bg-slate-100 flex items-center justify-center text-2xl">
-          {item.name?.charAt(0) || "?"}
-        </div>
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-slate-100 text-2xl">{item.name?.charAt(0) || "?"}</div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-                <h4 className="text-sm font-medium text-slate-800">{translateContent(item.name)}</h4>
-              {item.note && (
-                <p className="mt-1 text-xs leading-5 text-slate-500">{t("pos.note", { note: item.note })}</p>
-              )}
+              <h4 className="text-sm font-medium text-slate-800">{translateContent(item.name)}</h4>
+              {showStoreName ? <div className="mt-1 text-xs text-slate-400">{item.storeName}</div> : null}
+              {item.note ? <p className="mt-1 text-xs leading-5 text-slate-500">{t("pos.note", { note: item.note })}</p> : null}
             </div>
             <div className="flex items-center gap-2 text-[#ff242d]">
-              <button type="button" onClick={() => setShowNote(!showNote)} className="hover:opacity-70">
-                <PencilLine className="h-3.5 w-3.5" />
-              </button>
-              <button type="button" onClick={() => onRemove(item.id)} className="hover:opacity-70">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <button type="button" onClick={() => setShowNote(!showNote)} className="hover:opacity-70"><PencilLine className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => onRemove(item.id)} className="hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           </div>
-          
-          {showNote && (
+
+          {showNote ? (
             <div className="mt-2 flex gap-2">
-              <input
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t("pos.addNote")}
-                className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs"
-              />
-              <button
-                type="button"
-                onClick={() => { onEditNote(item.id, note); setShowNote(false); }}
-                className="rounded-lg bg-slate-900 px-2 py-1 text-xs text-white"
-              >
+              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("pos.addNote")} className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs" />
+              <button type="button" onClick={() => { onEditNote(item.id, note); setShowNote(false); }} className="rounded-lg bg-slate-900 px-2 py-1 text-xs text-white">
                 {t("pos.saveNote")}
               </button>
             </div>
-          )}
-          
+          ) : null}
+
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-[29px] font-black leading-none text-[#ff242d]">
-              {formatCurrency(item.price * item.quantity)}
-            </span>
+            <span className="text-[29px] font-black leading-none text-[#ff242d]">{formatCurrency(item.price * item.quantity)}</span>
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <button
-                type="button"
-                onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-500 hover:bg-slate-300"
-              >
-                -
-              </button>
+              <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-500 hover:bg-slate-300">-</button>
               <span className="w-6 text-center font-semibold">{item.quantity}</span>
-              <button
-                type="button"
-                onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white hover:bg-slate-700"
-              >
-                +
-              </button>
+              <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white hover:bg-slate-700">+</button>
             </div>
           </div>
         </div>
@@ -148,12 +111,124 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote }) {
   );
 }
 
-export function PosClient({ categories, products, storeId, userEmail, store: storeDetails }) {
+function PaymentDetailsModal({
+  isOpen,
+  onClose,
+  customerName,
+  customerPhone,
+  onCustomerNameChange,
+  onCustomerPhoneChange,
+  paymentMethod,
+  onPaymentMethodChange,
+  splitCount,
+  onSplitCountChange,
+  amountPaid,
+  onAmountPaidChange,
+  totals,
+  itemCount,
+  isProcessing,
+  onConfirm
+}) {
+  const amountPerHead = totals.totalAmount / splitCount;
+  const paid = Number(amountPaid || 0);
+  const due = Math.max(totals.totalAmount - paid, 0);
+  const changeDue = Math.max(paid - totals.totalAmount, 0);
+
+  return (
+    <ModalShell isOpen={isOpen} maxWidthClass="max-w-4xl" onBackdropClick={onClose}>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_320px]">
+        <div>
+          <h3 className="text-3xl font-bold text-[#2f6fc6]">Payment Details</h3>
+
+          <div className="mt-8 space-y-5">
+            <div className="grid gap-3 md:grid-cols-[130px_minmax(0,1fr)] md:items-center">
+              <label className="text-xl font-medium text-slate-700">Customer Name</label>
+              <input type="text" value={customerName} onChange={(event) => onCustomerNameChange(event.target.value)} placeholder="Enter customer name" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base outline-none focus:border-[#2f6fc6]" />
+            </div>
+            <div className="grid gap-3 md:grid-cols-[130px_minmax(0,1fr)] md:items-center">
+              <label className="text-xl font-medium text-slate-700">Contact Number</label>
+              <input type="tel" value={customerPhone} onChange={(event) => onCustomerPhoneChange(event.target.value)} placeholder="Enter contact number" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base outline-none focus:border-[#2f6fc6]" />
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-3">
+            {PAYMENT_METHODS.map((method) => {
+              const active = paymentMethod === method.id;
+
+              return (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => onPaymentMethodChange(method.id)}
+                  className={`flex w-full max-w-[220px] items-center gap-3 rounded-2xl px-5 py-4 text-left text-lg font-medium transition-colors ${active ? "bg-[#2f6fc6] text-white" : "text-slate-500 hover:bg-slate-50"}`}
+                >
+                  <Wallet className="h-5 w-5" />
+                  {method.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_140px] sm:items-end">
+            <label className="block text-sm font-semibold text-slate-700">
+              <span className="mb-2 block">Split by:</span>
+              <select value={splitCount} onChange={(event) => onSplitCountChange(Number(event.target.value))} className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2f6fc6]">
+                {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
+                  <option key={count} value={count}>{count} person</option>
+                ))}
+              </select>
+            </label>
+            <div className="text-sm font-semibold text-slate-700">
+              <div className="mb-2">Amount per head:</div>
+              <div className="rounded-xl border border-slate-200 px-4 py-3 text-right text-lg font-bold text-slate-900">{formatCurrency(amountPerHead)}</div>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-[#9bc1ff] bg-white">
+            <div className="space-y-3 px-5 py-4 text-sm text-slate-600">
+              <div className="flex items-center justify-between"><span>Total Items</span><span className="font-semibold text-slate-900">{itemCount}</span></div>
+              <div className="flex items-center justify-between"><span>Subtotal</span><span className="font-semibold text-slate-900">{formatCurrency(totals.subtotalAmount)}</span></div>
+              <div className="flex items-center justify-between"><span>Included VAT</span><span className="font-semibold text-slate-900">{formatCurrency(totals.vatAmount)}</span></div>
+              <div className="flex items-center justify-between"><span>Items Total</span><span className="font-semibold text-slate-900">{formatCurrency(totals.grossAmount)}</span></div>
+            </div>
+            <div className="border-t border-[#9bc1ff] px-5 py-4">
+              <div className="flex items-center justify-between text-3xl font-bold text-slate-900">
+                <span>Total:</span>
+                <span>{formatCurrency(totals.totalAmount)}</span>
+              </div>
+            </div>
+            <div className="space-y-4 px-5 py-4">
+              <div className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3">
+                <div className="font-medium text-emerald-600">{paymentMethod === "cash" ? "Cash Received" : paymentMethod === "ssl" ? "SSL Payment" : "Mobile Payment"}</div>
+                <input type="number" min="0" step="0.01" value={amountPaid} onChange={(event) => onAmountPaidChange(event.target.value)} className="w-full rounded-none border border-[#f7c8a8] px-3 py-2 text-right outline-none focus:border-[#2f6fc6]" />
+              </div>
+              <div className="flex items-center justify-between text-sm"><span className="text-red-500">Due</span><span className="font-semibold text-slate-900">{formatCurrency(due)}</span></div>
+              <div className="flex items-center justify-between text-3xl font-bold text-slate-900"><span>Change Due</span><span>{formatCurrency(changeDue)}</span></div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-4">
+            <button type="button" onClick={onConfirm} disabled={isProcessing} className="flex-1 rounded-2xl bg-[#2f6fc6] px-5 py-4 text-lg font-semibold text-white transition-colors hover:bg-[#255ca8] disabled:opacity-50">
+              {isProcessing ? "Processing..." : "Confirm"}
+            </button>
+            <button type="button" onClick={() => onAmountPaidChange(String(totals.totalAmount.toFixed(2)))} className="flex-1 rounded-2xl bg-[#e8f1ff] px-5 py-4 text-lg font-semibold text-[#2f6fc6] transition-colors hover:bg-[#d9e8ff]">
+              Full Payment
+            </button>
+          </div>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+export function PosClient({ categories, products, storeId, userEmail, store: storeDetails, stores = [], activeStoreId = null }) {
   const store = usePosStore();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
-  
-  const cart = store?.cart || [];
+
+  const cart = useMemo(() => store?.cart || [], [store?.cart]);
   const currentOrderId = store?.currentOrderId || null;
   const customerName = store?.customerName || "";
   const customerPhone = store?.customerPhone || "";
@@ -177,6 +252,12 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const [selectedStoreFilter, setSelectedStoreFilter] = useState(activeStoreId || "all");
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [splitCount, setSplitCount] = useState(1);
+  const [amountPaid, setAmountPaid] = useState("0");
+  const [cartNotice, setCartNotice] = useState("");
 
   const initOrder = useCallback(() => {
     if (!currentOrderId && initializeOrder) {
@@ -189,45 +270,93 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   }, [initOrder]);
 
   useEffect(() => {
-    setVatPercentage(storeDetails?.vatPercentage || 0);
-  }, [setVatPercentage, storeDetails?.vatPercentage]);
+    if (activeStoreId) {
+      setSelectedStoreFilter(activeStoreId);
+    }
+  }, [activeStoreId]);
+
+  const cartStoreId = cart[0]?.storeId || storeId || null;
+  const cartStoreName = cart[0]?.storeName || storeDetails?.nameEn || "";
+  const cartVatPercentage = cart[0]?.storeVatPercentage ?? storeDetails?.vatPercentage ?? 0;
+  const showStoreNames = !activeStoreId;
+
+  useEffect(() => {
+    setVatPercentage(cartVatPercentage || 0);
+  }, [cartVatPercentage, setVatPercentage]);
+
+  const filteredByStoreProducts = useMemo(() => {
+    if (selectedStoreFilter === "all") return products;
+    return products.filter((product) => product.storeId === selectedStoreFilter);
+  }, [products, selectedStoreFilter]);
+
+  const visibleCategories = useMemo(() => {
+    return categories.filter((category) => selectedStoreFilter === "all" || category.storeId === selectedStoreFilter);
+  }, [categories, selectedStoreFilter]);
 
   const suggestionProducts = useMemo(() => {
     if (isSearching && searchQuery) {
-      return products.filter((product) => 
-        product.nameEn.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      return filteredByStoreProducts.filter((product) => product.nameEn.toLowerCase().includes(searchQuery.toLowerCase()));
     }
+
     return [];
-  }, [products, searchQuery, isSearching]);
+  }, [filteredByStoreProducts, isSearching, searchQuery]);
 
   const filteredProducts = useMemo(() => {
+    let nextProducts = filteredByStoreProducts;
+
     if (submittedSearch) {
-      return products.filter((product) => 
-        product.nameEn.toLowerCase().includes(submittedSearch.toLowerCase())
-      );
+      nextProducts = nextProducts.filter((product) => product.nameEn.toLowerCase().includes(submittedSearch.toLowerCase()));
     }
+
     if (selectedCategory) {
-      return products.filter((product) => product.categoryId === selectedCategory);
+      nextProducts = nextProducts.filter((product) => product.categoryId === selectedCategory);
     }
-    return products;
-  }, [products, selectedCategory, submittedSearch]);
 
-  const lowStockItems = useMemo(() => products.filter((product) => product.isLowStock), [products]);
+    return nextProducts;
+  }, [filteredByStoreProducts, selectedCategory, submittedSearch]);
 
-  const handleAddToCart = (product) => {
+  const lowStockItems = useMemo(() => filteredByStoreProducts.filter((product) => product.isLowStock), [filteredByStoreProducts]);
+  const grossCartAmount = useMemo(() => cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0), [cart]);
+  const vatBreakdown = useMemo(() => calculateVatInclusiveTotals(grossCartAmount, cartVatPercentage || 0), [cartVatPercentage, grossCartAmount]);
+  const cartItemCount = useMemo(() => cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0), [cart]);
+
+  useEffect(() => {
+    if (isCheckoutOpen) {
+      setAmountPaid(String(vatBreakdown.totalAmount.toFixed(2)));
+    }
+  }, [isCheckoutOpen, vatBreakdown.totalAmount]);
+
+  const allCategories = useMemo(() => [{ id: null, nameEn: "All" }, ...visibleCategories, { id: "__inventory__", nameEn: "Inventory" }], [visibleCategories]);
+
+  function handleAddToCart(product) {
+    if (cart.length > 0 && cartStoreId && cartStoreId !== product.storeId) {
+      setCartNotice(`Cart is locked to ${cartStoreName}. Reset the cart to add items from ${product.storeName}.`);
+      return;
+    }
+
+    setCartNotice("");
+    setVatPercentage(product.storeVatPercentage || 0);
     addToCart(product);
-  };
+  }
 
-  const handleCheckout = async () => {
+  async function handleCheckoutConfirm() {
     if (cart.length === 0) return;
-    
+
+    const checkoutStoreId = cartStoreId || selectedStoreFilter;
+    if (!checkoutStoreId || checkoutStoreId === "all") {
+      setCartNotice("Select a store or add items from a single store before checkout.");
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const orderData = {
+      const result = await createOrder(checkoutStoreId, {
         customerName,
         customerPhone,
-        items: cart.map(item => ({
+        paymentMethod,
+        splitCount,
+        amountPaid: Number(amountPaid || 0),
+        items: cart.map((item) => ({
           productId: item.productId,
           productType: item.productType,
           name: item.name,
@@ -238,246 +367,241 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
         subtotal: getSubtotal(),
         tax: getTax(),
         total: getTotal()
-      };
+      });
 
-      const result = await createOrder(storeId, orderData);
-      
       alert(`Order placed successfully!\nInvoice: ${result.invoiceNumber}`);
+      setIsCheckoutOpen(false);
       clearCart();
       initializeOrder();
+      setCartNotice("");
     } catch (error) {
       console.error("Checkout error:", error);
       alert("Failed to place order. Please try again.");
     } finally {
       setIsProcessing(false);
     }
-  };
+  }
 
-  const handleReset = () => {
+  function handleReset() {
     if (confirm("Are you sure you want to reset the cart?")) {
       clearCart();
       initializeOrder();
+      setCartNotice("");
     }
-  };
+  }
 
-  const allCategories = useMemo(
-    () => [
-      { id: null, nameEn: "All" },
-      ...categories,
-      { id: "__inventory__", nameEn: "Inventory" }
-    ],
-    [categories]
-  );
+  function handlePrintSlip() {
+    if (cart.length === 0) return;
+
+    const previewStore = {
+      ...(storeDetails || {}),
+      nameEn: cartStoreName || storeDetails?.nameEn || "Store",
+      vatPercentage: cartVatPercentage || 0,
+      terminals: storeDetails?.terminals || []
+    };
+    const draftOrder = {
+      invoiceNumber: currentOrderId || `DRAFT-${Date.now().toString(36).toUpperCase()}`,
+      customerName: customerName || null,
+      customerPhone: customerPhone || null,
+      status: "DRAFT",
+      createdAt: new Date().toISOString(),
+      subtotalAmount: vatBreakdown.subtotalAmount,
+      vatAmount: vatBreakdown.vatAmount,
+      vatPercentage: cartVatPercentage || 0,
+      vatNumber: previewStore.vatNumber || null,
+      totalAmount: vatBreakdown.totalAmount,
+      store: previewStore,
+      items: cart.map((item) => ({
+        id: item.id,
+        itemName: item.name,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        note: item.note || ""
+      }))
+    };
+
+    const popup = openPrintPreview({
+      title: `Order Slip ${draftOrder.invoiceNumber}`,
+      defaultPaperWidth: previewStore.receiptPaperWidth || "80mm",
+      printers: previewStore.terminals || [],
+      previews: {
+        "58mm": buildReceiptHtml(draftOrder, t, (item) => item.itemName || "Item", { paperWidthOverride: "58mm" }),
+        "80mm": buildReceiptHtml(draftOrder, t, (item) => item.itemName || "Item", { paperWidthOverride: "80mm" })
+      }
+    });
+
+    if (!popup) {
+      alert("Popup was blocked. Please allow popups and try again.");
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="space-y-5 rounded-[30px] bg-[#f8f8f8] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
-              <div className="mt-1 text-sm text-slate-500">{storeDetails?.nameEn || userEmail}</div>
-            </div>
-            <div className="relative z-50 flex w-full max-w-[540px] items-center gap-3">
-              <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
-                <input
-                  type="text"
-                  placeholder={t("common.searchMenusOrders")}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setSubmittedSearch(searchQuery);
-                    }
-                  }}
-                  className="w-full border-0 bg-transparent text-[15px] text-slate-700 outline-none placeholder:text-slate-400"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setSubmittedSearch(searchQuery)}
-                className="rounded-2xl bg-[#ff242d] px-8 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#ea1d26]"
-              >
-                Search
-              </button>
+    <>
+      <PaymentDetailsModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        customerName={customerName}
+        customerPhone={customerPhone}
+        onCustomerNameChange={(value) => setCustomerInfo(value, customerPhone)}
+        onCustomerPhoneChange={(value) => setCustomerInfo(customerName, value)}
+        paymentMethod={paymentMethod}
+        onPaymentMethodChange={setPaymentMethod}
+        splitCount={splitCount}
+        onSplitCountChange={setSplitCount}
+        amountPaid={amountPaid}
+        onAmountPaidChange={setAmountPaid}
+        totals={vatBreakdown}
+        itemCount={cartItemCount}
+        isProcessing={isProcessing}
+        onConfirm={handleCheckoutConfirm}
+      />
 
-              {searchQuery && suggestionProducts.length > 0 && (
-                <div className="absolute left-0 top-[calc(100%+8px)] w-full overflow-hidden rounded-[20px] bg-white py-2 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-slate-100">
-                  <div className="flex max-h-[360px] flex-col overflow-y-auto">
-                    {suggestionProducts.slice(0, 5).map((product) => (
-                       <div
-                         key={product.id}
-                         className="flex cursor-pointer items-start gap-4 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 last:border-b-0"
-                         onClick={() => {
-                           handleAddToCart(product);
-                           setSearchQuery('');
-                         }}
-                       >
-                         <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-200"></div>
-                         <div className="flex min-w-0 flex-1 flex-col">
-                            <h4 className="text-[17px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h4>
-                            <p className="mt-0.5 truncate text-[14px] text-slate-500">
-                              {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || t("common.dish"))}
-                            </p>
-                           <div className="mt-1.5 flex items-center justify-between">
-                             <span className="text-[16px] font-bold text-slate-900">{formatCurrency(product.price)}</span>
-                             <span className="text-[13px] text-[#ff242d]">
-                                {product.stock > 0 ? t("pos.leftInStock", { count: product.stock }) : t("pos.outOfStock")}
-                             </span>
-                           </div>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
+      <div className="space-y-6">
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="space-y-5 rounded-[30px] bg-[#f8f8f8] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
+                <div className="mt-1 text-sm text-slate-500">{storeDetails?.nameEn || "All stores"}</div>
+              </div>
+              <div className="relative z-50 flex w-full max-w-[760px] items-center gap-3">
+                <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
+                  <input
+                    type="text"
+                    placeholder={t("common.searchMenusOrders")}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setSubmittedSearch(searchQuery);
+                      }
+                    }}
+                    className="w-full border-0 bg-transparent text-[15px] text-slate-700 outline-none placeholder:text-slate-400"
+                  />
                 </div>
+
+                {showStoreNames ? (
+                  <div className="flex h-14 items-center rounded-2xl bg-white px-4 shadow-sm">
+                    <Store className="mr-2 h-4 w-4 text-slate-400" />
+                    <select value={selectedStoreFilter} onChange={(event) => setSelectedStoreFilter(event.target.value)} className="bg-transparent text-sm text-slate-700 outline-none">
+                      <option value="all">All stores</option>
+                      {stores.map((entry) => (
+                        <option key={entry.id} value={entry.id}>{entry.nameEn}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
+                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="rounded-2xl bg-[#ff242d] px-8 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#ea1d26]">
+                  Search
+                </button>
+
+                {searchQuery && suggestionProducts.length > 0 ? (
+                  <div className="absolute left-0 top-[calc(100%+8px)] w-full overflow-hidden rounded-[20px] border border-slate-100 bg-white py-2 shadow-[0_20px_50px_rgba(15,23,42,0.12)]">
+                    <div className="flex max-h-[360px] flex-col overflow-y-auto">
+                      {suggestionProducts.slice(0, 5).map((product) => (
+                        <div key={product.id} className="flex cursor-pointer items-start gap-4 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 last:border-b-0" onClick={() => { handleAddToCart(product); setSearchQuery(""); }}>
+                          <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-200" />
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <h4 className="text-[17px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h4>
+                            {showStoreNames ? <div className="mt-0.5 text-xs text-slate-400">{product.storeName}</div> : null}
+                            <p className="mt-0.5 truncate text-[14px] text-slate-500">{product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || t("common.dish"))}</p>
+                            <div className="mt-1.5 flex items-center justify-between">
+                              <span className="text-[16px] font-bold text-slate-900">{formatCurrency(product.price)}</span>
+                              <span className="text-[13px] text-[#ff242d]">{product.stock > 0 ? t("pos.leftInStock", { count: product.stock }) : t("pos.outOfStock")}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-2 shadow-sm">
+              {allCategories.map((cat) => {
+                const isActive = selectedCategory === cat.id || (cat.id === null && selectedCategory === null);
+                const categoryStoreName = cat.store?.nameEn || "";
+
+                return (
+                  <button key={cat.id || "all"} type="button" onClick={() => setSelectedCategory(cat.id)} className={isActive ? "rounded-xl bg-[#ff242d] px-4 py-2 text-sm font-semibold text-white" : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"}>
+                    <div>{translateContent(cat.nameEn)}</div>
+                    {showStoreNames && categoryStoreName ? <div className={`text-[10px] ${isActive ? "text-red-100" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            {lowStockItems.length > 0 ? (
+              <div className="flex items-center justify-between rounded-2xl border border-[#ffc8cb] bg-[#ffdfe1] px-4 py-3 text-sm text-[#f13b45]">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{t("pos.productsRunningLow", { count: lowStockItems.length })}</span>
+                </div>
+                <button type="button" className="font-semibold underline">{t("pos.addStock")}</button>
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {filteredProducts.map((product) => <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} showStoreName={showStoreNames} />)}
+              {filteredProducts.length === 0 ? <div className="col-span-full py-12 text-center text-slate-500">{t("pos.noProductsFound")}</div> : null}
+            </div>
+          </section>
+
+          <aside className="sticky top-6 flex h-[calc(100vh-3rem)] flex-col rounded-[26px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <div className="text-[28px] font-black leading-none text-[#ff242d]">{t("pos.customerOrder")}</div>
+                <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: currentOrderId || "---" })}</div>
+                {cartStoreName ? <div className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
+              </div>
+              <ChevronDown className="h-5 w-5 text-slate-500" />
+            </div>
+
+            {cartNotice ? <div className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{cartNotice}</div> : null}
+
+            <div className="flex-1 space-y-5 overflow-y-auto border-t border-slate-100 pt-4">
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div>
+                  <label htmlFor="customer-name" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerName")}</label>
+                  <input id="customer-name" type="text" value={customerName} onChange={(event) => setCustomerInfo(event.target.value, customerPhone)} placeholder={t("pos.customerNamePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]" />
+                </div>
+                <div>
+                  <label htmlFor="customer-phone" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerPhone")}</label>
+                  <input id="customer-phone" type="tel" value={customerPhone} onChange={(event) => setCustomerInfo(customerName, event.target.value)} placeholder={t("pos.customerPhonePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]" />
+                </div>
+              </div>
+
+              {cart.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">{t("pos.noItemsInCart")}</div>
+              ) : (
+                cart.map((item) => <CartItem key={item.id} item={item} onUpdateQuantity={updateQuantity} onRemove={removeFromCart} onEditNote={updateItemNote} showStoreName={showStoreNames} />)
               )}
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-2 shadow-sm">
-            {allCategories.map((cat) => {
-              const isActive = selectedCategory === cat.id || (cat.id === null && selectedCategory === null);
-              return (
-                <button
-                  key={cat.id || "all"}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={
-                    isActive
-                      ? "rounded-xl bg-[#ff242d] px-4 py-2 text-sm font-semibold text-white"
-                      : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"
-                  }
-                >
-                  {translateContent(cat.nameEn)}
-                </button>
-              );
-            })}
-          </div>
-
-          {lowStockItems.length > 0 && (
-            <div className="flex items-center justify-between rounded-2xl border border-[#ffc8cb] bg-[#ffdfe1] px-4 py-3 text-sm text-[#f13b45]">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>
-                   {t("pos.productsRunningLow", { count: lowStockItems.length })}
-                 </span>
-               </div>
-               <button type="button" className="font-semibold underline">
-                 {t("pos.addStock")}
-               </button>
-            </div>
-          )}
-
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-            {filteredProducts.length === 0 && (
-              <div className="col-span-full py-12 text-center text-slate-500">
-                {t("pos.noProductsFound")}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <aside className="sticky top-6 flex h-[calc(100vh-3rem)] flex-col rounded-[26px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <div className="text-[28px] font-black leading-none text-[#ff242d]">{t("pos.customerOrder")}</div>
-              <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: currentOrderId || "---" })}</div>
-            </div>
-            <ChevronDown className="h-5 w-5 text-slate-500" />
-          </div>
-
-          <div className="flex-1 space-y-5 overflow-y-auto border-t border-slate-100 pt-4">
-            <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div>
-                <label htmlFor="customer-name" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerName")}</label>
-                <input
-                  id="customer-name"
-                  type="text"
-                  value={customerName}
-                  onChange={(event) => setCustomerInfo(event.target.value, customerPhone)}
-                  placeholder={t("pos.customerNamePlaceholder")}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]"
-                />
-              </div>
-              <div>
-                <label htmlFor="customer-phone" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerPhone")}</label>
-                <input
-                  id="customer-phone"
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(event) => setCustomerInfo(customerName, event.target.value)}
-                  placeholder={t("pos.customerPhonePlaceholder")}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]"
-                />
-              </div>
+            <div className="mt-5 space-y-3 border-t border-slate-200 pt-4 text-sm text-slate-600">
+              <div className="flex items-center justify-between"><span>Items Total</span><span className="font-medium text-slate-800">{formatCurrency(vatBreakdown.grossAmount)}</span></div>
+              <div className="flex items-center justify-between"><span>Less Included VAT</span><span className="font-medium text-slate-800">-{formatCurrency(vatBreakdown.vatAmount)}</span></div>
+              <div className="flex items-center justify-between"><span>{t("pos.subtotal")}</span><span className="font-medium text-slate-800">{formatCurrency(getSubtotal())}</span></div>
+              <div className="flex items-center justify-between"><span>{`VAT (${Number(cartVatPercentage || 0).toFixed(2)}%)`}</span><span className="font-medium text-slate-800">{formatCurrency(getTax())}</span></div>
+              <div className="flex items-center justify-between pt-2 text-[18px] font-black text-slate-900"><span>{t("pos.total")}</span><span>{formatCurrency(getTotal())}</span></div>
             </div>
 
-            {cart.length === 0 ? (
-              <div className="py-8 text-center text-slate-400">
-                {t("pos.noItemsInCart")}
-              </div>
-            ) : (
-              cart.map((item) => (
-                <CartItem
-                  key={item.id}
-                  item={item}
-                  onUpdateQuantity={updateQuantity}
-                  onRemove={removeFromCart}
-                  onEditNote={updateItemNote}
-                />
-              ))
-            )}
-          </div>
-
-          <div className="mt-5 space-y-3 border-t border-slate-200 pt-4 text-sm text-slate-600">
-            <div className="flex items-center justify-between">
-              <span>{t("pos.subtotal")}</span>
-              <span className="font-medium text-slate-800">{formatCurrency(getSubtotal())}</span>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => setIsCheckoutOpen(true)} disabled={cart.length === 0 || isProcessing} className="rounded-2xl bg-[#ff242d] px-4 py-4 text-sm font-semibold text-white hover:bg-[#ea1d26] disabled:cursor-not-allowed disabled:opacity-50">
+                {isProcessing ? t("common.processing") : t("pos.checkout")}
+              </button>
+              <button type="button" onClick={handleReset} disabled={cart.length === 0} className="rounded-2xl border border-[#ff242d] bg-white px-4 py-4 text-sm font-semibold text-[#ff242d] hover:bg-red-50 disabled:opacity-50">
+                {t("pos.reset")}
+              </button>
             </div>
-            <div className="flex items-center justify-between">
-              <span>{`VAT (${Number(storeDetails?.vatPercentage || 0).toFixed(2)}%)`}</span>
-              <span className="font-medium text-slate-800">{formatCurrency(getTax())}</span>
-            </div>
-            <div className="flex items-center justify-between pt-2 text-[18px] font-black text-slate-900">
-              <span>{t("pos.total")}</span>
-              <span>{formatCurrency(getTotal())}</span>
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleCheckout}
-              disabled={cart.length === 0 || isProcessing}
-              className="rounded-2xl bg-[#ff242d] px-4 py-4 text-sm font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isProcessing ? t("common.processing") : t("pos.checkout")}
+            <button type="button" onClick={handlePrintSlip} disabled={cart.length === 0} className="mt-3 w-full rounded-2xl bg-slate-900 px-4 py-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
+              {t("pos.printOrderSlip")}
             </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={cart.length === 0}
-              className="rounded-2xl border border-[#ff242d] bg-white px-4 py-4 text-sm font-semibold text-[#ff242d] hover:bg-red-50 disabled:opacity-50"
-            >
-               {t("pos.reset")}
-            </button>
-          </div>
-          <button
-            type="button"
-            disabled={cart.length === 0}
-            className="mt-3 w-full rounded-2xl bg-slate-900 px-4 py-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-          >
-            {t("pos.printOrderSlip")}
-          </button>
-        </aside>
+          </aside>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

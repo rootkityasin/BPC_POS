@@ -6,14 +6,15 @@ export const NOTIFICATION_AUDIENCES = {
   USER: "USER"
 };
 
-function buildNotificationWhere(user) {
+function buildNotificationWhere(user, storeId) {
   const clauses = [];
 
   if (user.role === "SUPER_ADMIN") {
     clauses.push({ audience: NOTIFICATION_AUDIENCES.SUPER_ADMIN });
-  }
-
-  if (user.storeId) {
+    if (storeId) {
+      clauses.push({ audience: NOTIFICATION_AUDIENCES.STORE, storeId });
+    }
+  } else if (user.storeId) {
     clauses.push({ audience: NOTIFICATION_AUDIENCES.STORE, storeId: user.storeId });
   }
 
@@ -22,39 +23,39 @@ function buildNotificationWhere(user) {
   return clauses.length === 1 ? clauses[0] : { OR: clauses };
 }
 
-export async function listNotifications(user, limit = 20) {
+export async function listNotifications(user, limit = 20, storeId) {
   return prisma.notification.findMany({
-    where: buildNotificationWhere(user),
+    where: buildNotificationWhere(user, storeId),
     orderBy: { createdAt: "desc" },
     take: limit
   });
 }
 
-export async function unreadNotificationCount(user) {
+export async function unreadNotificationCount(user, storeId) {
   return prisma.notification.count({
     where: {
-      ...buildNotificationWhere(user),
+      ...buildNotificationWhere(user, storeId),
       read: false
     }
   });
 }
 
-export async function markAllNotificationsRead(user) {
+export async function markAllNotificationsRead(user, storeId) {
   return prisma.notification.updateMany({
     where: {
-      ...buildNotificationWhere(user),
+      ...buildNotificationWhere(user, storeId),
       read: false
     },
     data: { read: true }
   });
 }
 
-export async function markNotificationRead(user, notificationId) {
+export async function markNotificationRead(user, notificationId, storeId) {
   return prisma.notification.updateMany({
     where: {
       id: notificationId,
       read: false,
-      ...buildNotificationWhere(user)
+      ...buildNotificationWhere(user, storeId)
     },
     data: { read: true }
   });

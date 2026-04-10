@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AdminLanguageSwitch } from "@/components/layout/admin-language-switch";
 import { NotificationCenter } from "@/components/layout/notification-center";
+import { StoreSelector } from "@/components/layout/store-selector";
 import { useTranslation } from "react-i18next";
 
-export function AdminHeader({ sessionUser, initialNotifications, unreadCount }) {
+export function AdminHeader({ sessionUser, initialNotifications, unreadCount, stores, activeStoreId }) {
   const router = useRouter();
   const { t } = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -31,6 +32,9 @@ export function AdminHeader({ sessionUser, initialNotifications, unreadCount }) 
         <p className="text-sm text-slate-500">{t("header.subtitle")}</p>
       </div>
       <div className="flex items-center gap-4">
+        {sessionUser.role === "SUPER_ADMIN" && stores && stores.length > 0 ? (
+          <StoreSelector stores={stores} activeStoreId={activeStoreId} />
+        ) : null}
         <NotificationCenter initialItems={initialNotifications} initialUnreadCount={unreadCount} />
         <AdminLanguageSwitch />
         <div className="text-right">

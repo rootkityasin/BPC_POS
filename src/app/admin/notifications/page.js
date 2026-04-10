@@ -3,6 +3,7 @@ import { I18nText } from "@/components/i18n/i18n-text";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
 import { requireFeatureView } from "@/modules/rbac/access";
 import { listNotifications, unreadNotificationCount } from "@/modules/notifications/notification-service";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 import { formatDistanceToNow } from "date-fns";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +16,10 @@ function severityClasses(severity) {
 
 export default async function NotificationsPage() {
   const user = await requireFeatureView(FEATURE_KEYS.NOTIFICATIONS);
+  const storeId = await getActiveStoreId(user);
   const [notifications, unreadCount] = await Promise.all([
-    listNotifications(user, 50),
-    unreadNotificationCount(user)
+    listNotifications(user, 50, storeId),
+    unreadNotificationCount(user, storeId)
   ]);
 
   return (

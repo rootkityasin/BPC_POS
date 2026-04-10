@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { DishModal } from "@/components/dishes/dish-modal";
 import { Search, Plus, Image as ImageIcon } from "lucide-react";
 
-export function DishesClient({ dishes, categories, stockItems, canManage, userEmail }) {
+export function DishesClient({ dishes, categories, stockItems, canManage, userEmail, showStoreColumn = false }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -152,6 +152,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{t("common.name")}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{t("common.category")}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{t("common.createdBy")}</th>
+                {showStoreColumn ? <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Store</th> : null}
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{t("common.price")}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{t("dishes.showOnList")}</th>
                 {canManage && (
@@ -162,7 +163,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
             <tbody className="divide-y divide-slate-100">
               {filteredDishes.length === 0 ? (
                 <tr>
-                  <td colSpan={canManage ? 7 : 6} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={(canManage ? 7 : 6) + (showStoreColumn ? 1 : 0)} className="px-4 py-12 text-center text-slate-400">
                     {searchQuery ? t("dishes.noSearchResults") : t("dishes.noDishesYet")}
                   </td>
                 </tr>
@@ -202,6 +203,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{dish.createdBy || "—"}</td>
+                    {showStoreColumn ? <td className="px-4 py-3 text-sm text-slate-600">{dish.store?.nameEn || "Unknown store"}</td> : null}
                     <td className="px-4 py-3 text-sm font-semibold text-slate-800">{formatCurrency(dish.price)}</td>
                     <td className="px-4 py-3">
                       <button

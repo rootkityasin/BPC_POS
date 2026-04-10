@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/utils";
+import { calculateVatExclusiveUnitPrice } from "@/modules/pos/vat";
 
 function escapeHtml(value) {
   return String(value)
@@ -49,11 +50,12 @@ function buildThemeStyles(settings) {
   };
 }
 
-export function buildReceiptHtml(order, t, getItemLabel) {
+export function buildReceiptHtml(order, t, getItemLabel, options = {}) {
   const settings = getReceiptSettingsFromStore(order.store);
   const themeStyles = buildThemeStyles(settings);
   const rows = order.items
     .map((item) => {
+      const netUnitPrice = calculateVatExclusiveUnitPrice(item.unitPrice, order.vatPercentage || 0);
       const noteRow = settings.showItemNotes && item.note
         ? `<div style="margin-top:4px;font-size:11px;color:#64748b;">Note: ${escapeHtml(item.note)}</div>`
         : "";
@@ -62,6 +64,7 @@ export function buildReceiptHtml(order, t, getItemLabel) {
         <tr>
           <td style="padding:8px 0;vertical-align:top;">
             <div>${escapeHtml(getItemLabel(item))}</div>
+            <div style="margin-top:4px;font-size:11px;color:#64748b;">Gross ${escapeHtml(formatCurrency(item.unitPrice))} • Net ${escapeHtml(formatCurrency(netUnitPrice))}</div>
             ${noteRow}
           </td>
           <td style="padding:8px 0; text-align:center;vertical-align:top;">${item.quantity}</td>
@@ -73,7 +76,8 @@ export function buildReceiptHtml(order, t, getItemLabel) {
   const storeLocation = order.store?.location || "";
   const storeLogo = order.store?.logoUrl || "";
   const vatLabel = `VAT (${Number(order.vatPercentage || 0).toFixed(2)}%)`;
-  const paperWidth = settings.paperWidth === "58mm" ? "280px" : "360px";
+  const receiptPaperWidth = options.paperWidthOverride || settings.paperWidth;
+  const paperWidth = receiptPaperWidth === "58mm" ? "280px" : "360px";
 
   return `<!DOCTYPE html>
     <html>
@@ -109,6 +113,8 @@ export function buildReceiptHtml(order, t, getItemLabel) {
               <tbody>${rows}</tbody>
             </table>
             <div style="margin-top: 16px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 13px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Items Total</span><strong>${escapeHtml(formatCurrency((order.subtotalAmount || 0) + (order.vatAmount || 0)))}</strong></div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Less Included VAT</span><strong>-${escapeHtml(formatCurrency(order.vatAmount || 0))}</strong></div>
               <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>${escapeHtml(t("pos.subtotal", { defaultValue: "Subtotal" }))}</span><strong>${escapeHtml(formatCurrency(order.subtotalAmount || 0))}</strong></div>
               <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>${escapeHtml(vatLabel)}</span><strong>${escapeHtml(formatCurrency(order.vatAmount || 0))}</strong></div>
               <div style="display:flex; justify-content:space-between; font-weight: bold; font-size: 15px;"><span>${escapeHtml(t("orders.total"))}</span><span>${escapeHtml(formatCurrency(order.totalAmount))}</span></div>

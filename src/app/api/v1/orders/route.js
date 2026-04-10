@@ -2,21 +2,33 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { FEATURE_KEYS, canManage, canView } from "@/core/policies/permission-policy";
 import { getSessionUser } from "@/modules/auth/session-service";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 
 const VALID_ORDER_STATUSES = new Set(["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"]);
 const VALID_PRINT_STATUSES = new Set(["Not Printed", "Printed"]);
 
-function buildOrderScope(user) {
-  if (user.role === "SUPER_ADMIN" || !user.storeId) {
-    return {};
+function buildOrderScope(user, storeId) {
+  // Store managers are ALWAYS locked to their own store
+  if (user.role !== "SUPER_ADMIN") {
+    return { storeId: user.storeId || storeId };
   }
 
-  return { storeId: user.storeId };
+  // SUPER_ADMIN with a selected store
+  if (storeId) {
+    return { storeId };
+  }
+
+  // SUPER_ADMIN with no store selected - sees all stores
+  return {};
 }
 
 function includeOrderRelations() {
   return {
-    store: true,
+    store: {
+      include: {
+        terminals: true
+      }
+    },
     items: {
       include: {
         dish: true,
@@ -36,15 +48,15 @@ export async function GET(request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const activeStoreId = await getActiveStoreId(user);
     const { searchParams } = new URL(request.url);
-    const storeId = searchParams.get("storeId");
+    const queryStoreId = searchParams.get("storeId");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
-    const scopedStoreId = user.role === "SUPER_ADMIN" && storeId ? storeId : user.storeId || storeId;
+    const scopedStoreId = activeStoreId || queryStoreId;
     const where = {
-      ...buildOrderScope(user),
-      ...(scopedStoreId ? { storeId: scopedStoreId } : {})
+      ...buildOrderScope(user, scopedStoreId),
     };
 
     const [orders, total] = await Promise.all([
@@ -81,10 +93,11 @@ export async function PATCH(request) {
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
     }
 
+    const patchStoreId = await getActiveStoreId(user);
     const existingOrder = await prisma.order.findFirst({
       where: {
         id: orderId,
-        ...buildOrderScope(user)
+        ...buildOrderScope(user, patchStoreId)
       },
       include: includeOrderRelations()
     });

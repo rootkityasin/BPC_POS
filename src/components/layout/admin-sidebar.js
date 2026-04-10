@@ -5,9 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { ModalShell } from "@/components/ui/modal-shell";
 import { cn } from "@/lib/utils";
 import { sidebarItems } from "@/modules/navigation/sidebar-config";
 import { canView } from "@/core/policies/permission-policy";
+
+const STORE_REQUIRED_ROUTES = new Set([
+  "/admin/pos",
+  "/admin/settings/device",
+  "/admin/settings/store"
+]);
 
 function isRouteActive(pathname, href) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -19,7 +26,7 @@ function isVisible(item, permissions, role) {
   return canView(permissions, item.featureKey);
 }
 
-export function AdminSidebar({ sessionUser, unreadCount }) {
+export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const visibleItems = useMemo(
@@ -27,6 +34,17 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
     [sessionUser.permissions, sessionUser.role]
   );
   const [openMenus, setOpenMenus] = useState({});
+  const [storePromptTarget, setStorePromptTarget] = useState(null);
+
+  function needsStoreSelection(href) {
+    return sessionUser.role === "SUPER_ADMIN" && !activeStoreId && STORE_REQUIRED_ROUTES.has(href);
+  }
+
+  function handleProtectedNavigation(event, href) {
+    if (!needsStoreSelection(href)) return;
+    event.preventDefault();
+    setStorePromptTarget(href);
+  }
 
   function toggleMenu(href) {
     setOpenMenus((current) => {
@@ -40,7 +58,20 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-20 flex h-screen w-72 flex-col border-r border-slate-200 bg-white">
+    <>
+      <ModalShell isOpen={Boolean(storePromptTarget)} maxWidthClass="max-w-md" onBackdropClick={() => setStorePromptTarget(null)}>
+        <h3 className="text-2xl font-bold text-slate-900">Select a Store First</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-500">
+          You are currently viewing <strong>All Stores</strong>. Choose a specific store from the top bar before opening this store-specific section.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <button type="button" onClick={() => setStorePromptTarget(null)} className="flex-1 rounded-2xl bg-slate-100 px-4 py-3 font-semibold text-slate-700 hover:bg-slate-200">
+            Close
+          </button>
+        </div>
+      </ModalShell>
+
+      <aside className="fixed left-0 top-0 z-20 flex h-screen w-72 flex-col border-r border-slate-200 bg-white">
       <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
         <div>
           <div className="text-2xl font-black text-crab-red">BPC</div>
@@ -82,6 +113,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
               ) : (
                 <Link
                   href={item.href}
+                  onClick={(event) => handleProtectedNavigation(event, item.href)}
                   className={cn(
                     "flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold transition-colors",
                     active ? "bg-crab-red text-white" : "text-slate-600 hover:bg-slate-50"
@@ -105,6 +137,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
                       <Link
                         key={child.href}
                         href={child.href}
+                        onClick={(event) => handleProtectedNavigation(event, child.href)}
                         className={cn(
                           "block rounded-xl px-4 py-2 text-sm transition-colors",
                           childActive ? "bg-red-50 text-crab-red" : "text-slate-500 hover:bg-slate-50"
@@ -120,6 +153,7 @@ export function AdminSidebar({ sessionUser, unreadCount }) {
           );
         })}
       </nav>
-    </aside>
+      </aside>
+    </>
   );
 }

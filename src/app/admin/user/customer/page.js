@@ -1,11 +1,21 @@
 import { I18nText } from "@/components/i18n/i18n-text";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
 import { getCustomerDashboard } from "@/modules/customers/customer-service";
 import { requireFeatureView } from "@/modules/rbac/access";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+function sanitizeQueryValue(value) {
+  if (Array.isArray(value)) {
+    return String(value[0] || "").trim();
+  }
+
+  return String(value || "").trim();
+}
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-BD", {
@@ -15,15 +25,73 @@ function formatDate(dateString) {
   });
 }
 
-export default async function CustomerPage() {
+export default async function CustomerPage({ searchParams }) {
   const user = await requireFeatureView(FEATURE_KEYS.CUSTOMERS);
-  const { customers, totals } = await getCustomerDashboard(user);
+  const storeId = await getActiveStoreId(user);
+  const filters = {
+    invoiceSuffix: sanitizeQueryValue(searchParams?.invoiceSuffix),
+    customerName: sanitizeQueryValue(searchParams?.customerName),
+    fromDate: sanitizeQueryValue(searchParams?.fromDate),
+    toDate: sanitizeQueryValue(searchParams?.toDate)
+  };
+
+  const { customers, totals } = await getCustomerDashboard(user, storeId, filters);
 
   return (
     <div className="space-y-6">
       <Card className="p-6">
         <h2 className="text-2xl font-black text-slate-900"><I18nText k="pages.customerTitle" fallback="Customer" /></h2>
         <p className="mt-2 text-sm text-slate-500"><I18nText k="pages.customerSubtitle" fallback="Review store customers, repeat orders, and spend history captured from POS orders." /></p>
+      </Card>
+
+      <Card className="p-5">
+        <form className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px_180px_auto]">
+          <label className="block text-sm text-slate-700">
+            <span className="mb-2 block font-medium">Invoice No. Last 4</span>
+            <input
+              name="invoiceSuffix"
+              type="text"
+              maxLength="4"
+              defaultValue={filters.invoiceSuffix}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+              placeholder="e.g. 1024"
+            />
+          </label>
+          <label className="block text-sm text-slate-700">
+            <span className="mb-2 block font-medium">Customer Name</span>
+            <input
+              name="customerName"
+              type="text"
+              defaultValue={filters.customerName}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+              placeholder="Search by customer name"
+            />
+          </label>
+          <label className="block text-sm text-slate-700">
+            <span className="mb-2 block font-medium">From</span>
+            <input
+              name="fromDate"
+              type="date"
+              defaultValue={filters.fromDate}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+            />
+          </label>
+          <label className="block text-sm text-slate-700">
+            <span className="mb-2 block font-medium">To</span>
+            <input
+              name="toDate"
+              type="date"
+              defaultValue={filters.toDate}
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+            />
+          </label>
+          <div className="flex items-end gap-3">
+            <Button type="submit" className="rounded-2xl px-5 py-3">Apply</Button>
+            <a href="/admin/user/customer" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+              Clear
+            </a>
+          </div>
+        </form>
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">

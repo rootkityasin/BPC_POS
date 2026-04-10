@@ -3,19 +3,23 @@
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { emitNotificationEvent } from "@/modules/notifications/notification-service";
+import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
 
 export async function getPosCategories(storeId) {
   return prisma.category.findMany({
-    where: { storeId },
+    where: storeId ? { storeId } : {},
     orderBy: { displayOrder: "asc" },
     include: {
+      store: {
+        select: { id: true, nameEn: true }
+      },
       subCategories: { orderBy: { displayOrder: "asc" } }
     }
   });
 }
 
 export async function getPosProducts(storeId, categoryId = null, searchQuery = null) {
-  const dishWhere = { storeId, isAvailable: true, showOnList: true };
+  const dishWhere = { ...(storeId ? { storeId } : {}), isAvailable: true, showOnList: true };
 
   if (categoryId && categoryId !== "__inventory__") {
     dishWhere.categoryId = categoryId;
@@ -28,7 +32,7 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
   }
 
   const inventoryWhere = {
-    storeId,
+    ...(storeId ? { storeId } : {}),
     dishId: null,
     price: { not: null }
   };
@@ -40,19 +44,27 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
   const [dishes, stockMap, pricedInventoryItems] = await Promise.all([
     prisma.dish.findMany({
       where: dishWhere,
-      include: {
-        category: true,
-        subCategory: true,
-        stockItems: true
+        include: {
+          store: {
+            select: { id: true, nameEn: true, vatPercentage: true }
+          },
+          category: true,
+          subCategory: true,
+          stockItems: true
       },
       orderBy: { nameEn: "asc" }
     }),
     prisma.stockItem.findMany({
-      where: { storeId },
-      select: { id: true, dishId: true, quantity: true, lowStockLevel: true, name: true, price: true, supplier: true }
+      where: storeId ? { storeId } : {},
+      select: { id: true, dishId: true, quantity: true, lowStockLevel: true, name: true, price: true, supplier: true, storeId: true }
     }),
     prisma.stockItem.findMany({
       where: inventoryWhere,
+      include: {
+        store: {
+          select: { id: true, nameEn: true, vatPercentage: true }
+        }
+      },
       orderBy: { name: "asc" }
     })
   ]);
@@ -73,6 +85,9 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
       productType: "dish",
       nameEn: dish.nameEn,
       price: Number(dish.price),
+      storeId: dish.storeId,
+      storeName: dish.store?.nameEn || "Unknown store",
+      storeVatPercentage: Number(dish.store?.vatPercentage || 0),
       stock: stock.quantity,
       lowStockLevel: stock.lowStockLevel,
       isLowStock: stock.quantity <= stock.lowStockLevel,
@@ -86,6 +101,9 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
     productType: "stock",
     nameEn: item.name || "Unnamed item",
     price: Number(item.price || 0),
+    storeId: item.storeId,
+    storeName: item.store?.nameEn || "Unknown store",
+    storeVatPercentage: Number(item.store?.vatPercentage || 0),
     stock: item.quantity,
     lowStockLevel: item.lowStockLevel,
     isLowStock: item.quantity <= item.lowStockLevel,
@@ -116,10 +134,9 @@ export async function createOrder(storeId, orderData) {
     throw new Error("Store not found");
   }
 
-  const subtotalAmount = orderData.items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
   const vatPercentage = Number(store?.vatPercentage || 0);
-  const vatAmount = subtotalAmount * (vatPercentage / 100);
-  const totalAmount = subtotalAmount + vatAmount;
+  const grossAmount = orderData.items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+  const { subtotalAmount, vatAmount, totalAmount } = calculateVatInclusiveTotals(grossAmount, vatPercentage);
 
   const order = await prisma.order.create({
     data: {

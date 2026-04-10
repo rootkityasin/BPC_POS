@@ -34,12 +34,13 @@ function buildTerminalCode(name) {
   return `TERM-${base || "PRINTER"}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
 
-export async function getDeviceSettings(user) {
+export async function getDeviceSettings(storeId) {
+  if (!storeId) return null;
+
   const store = await prisma.store.findUnique({
-    where: { id: user.storeId },
+    where: { id: storeId },
     include: {
       terminals: {
-        where: user.storeId ? undefined : { assignedUserId: user.sub },
         orderBy: { createdAt: "asc" }
       }
     }

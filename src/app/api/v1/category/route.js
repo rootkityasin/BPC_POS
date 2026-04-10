@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 import { translateTexts } from "@/modules/i18n/libretranslate-service";
 
 export async function GET(request) {
@@ -9,9 +10,12 @@ export async function GET(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const storeId = await getActiveStoreId(user);
+  const where = user.role === "SUPER_ADMIN" && !storeId ? {} : { storeId };
   const categories = await prisma.category.findMany({
-    where: { storeId: user.storeId || undefined },
+    where,
     include: {
+      store: true,
       _count: { select: { dishes: true } }
     },
     orderBy: { displayOrder: "asc" }
@@ -22,7 +26,8 @@ export async function GET(request) {
 
 export async function POST(request) {
   const user = await getSessionUser();
-  if (!user) {
+  const storeId = await getActiveStoreId(user);
+  if (!storeId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -35,7 +40,7 @@ export async function POST(request) {
 
   const category = await prisma.category.create({
     data: {
-      storeId: user.storeId,
+      storeId,
       nameEn,
       nameBn: "",
       color: color || "#ff242d"

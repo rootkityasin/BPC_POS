@@ -14,7 +14,7 @@ function formatCurrency(value) {
   return `৳${Number(value).toFixed(2)}`;
 }
 
-export function StockClient({ stockItems }) {
+export function StockClient({ stockItems, canCreate = true, showStoreColumn = false }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -125,9 +125,10 @@ export function StockClient({ stockItems }) {
             resetForm();
             setIsAddModalOpen(true);
           }}
+          disabled={!canCreate}
           className="text-[15px] font-bold text-[#ff242d] transition-colors hover:text-[#ea1d26]"
         >
-          {t("common.addItem")}
+          {canCreate ? t("common.addItem") : "Select a store to add items"}
         </button>
       </div>
 
@@ -141,6 +142,7 @@ export function StockClient({ stockItems }) {
                 <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.price")}</th>
                 <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.createdBy")}</th>
                 <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.supplier")}</th>
+                {showStoreColumn ? <th className="px-8 py-5 text-left font-bold text-[#ff242d]">Store</th> : null}
                 <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.action")}</th>
               </tr>
             </thead>
@@ -152,6 +154,7 @@ export function StockClient({ stockItems }) {
                   <td className="px-8 py-5 font-medium text-slate-800">{formatCurrency(item.price)}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{translateContent(item.supplier)}</td>
+                  {showStoreColumn ? <td className="px-8 py-5 font-medium text-slate-800">{item.store?.nameEn || "Unknown store"}</td> : null}
                   <td className="px-8 py-5">
                     <div className="action-menu-container relative w-max">
                       <button type="button" onClick={() => toggleMenu(item.id)} className="flex items-center justify-center text-[#ff242d] hover:opacity-75 focus:outline-none">

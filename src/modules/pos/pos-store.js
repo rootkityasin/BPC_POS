@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { calculateVatInclusiveTotals } from '@/modules/pos/vat';
 
 function generateOrderId() {
   const date = new Date();
@@ -50,6 +51,9 @@ export const usePosStore = create((set, get) => ({
             productType: product.productType,
             name: product.nameEn,
             price: Number(product.price),
+            storeId: product.storeId || null,
+            storeName: product.storeName || "",
+            storeVatPercentage: Number(product.storeVatPercentage || 0),
             quantity: 1,
             note
           }]
@@ -90,15 +94,19 @@ export const usePosStore = create((set, get) => ({
 
     getSubtotal: () => {
       const { cart } = get();
-      return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const gross = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return calculateVatInclusiveTotals(gross, get().vatPercentage).subtotalAmount;
     },
 
     getTax: () => {
-      const { vatPercentage } = get();
-      return get().getSubtotal() * ((Number(vatPercentage) || 0) / 100);
+      const { cart, vatPercentage } = get();
+      const gross = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return calculateVatInclusiveTotals(gross, vatPercentage).vatAmount;
     },
 
     getTotal: () => {
-      return get().getSubtotal() + get().getTax();
+      const { cart, vatPercentage } = get();
+      const gross = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return calculateVatInclusiveTotals(gross, vatPercentage).totalAmount;
     }
   }));

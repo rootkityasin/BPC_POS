@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
+import { getActiveStoreId } from "@/modules/auth/active-store";
 import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 import { requireFeatureView, hasManageAccess } from "@/modules/rbac/access";
 import { updateDeviceSettings } from "@/modules/settings/settings-service";
@@ -15,9 +16,14 @@ export async function saveDeviceSettings(_, formData) {
       throw new Error("Forbidden");
     }
 
+    const storeId = await getActiveStoreId(user);
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
+
     const printers = JSON.parse(String(formData.get("printers") || "[]"));
 
-    const store = await updateDeviceSettings(user.storeId, {
+    const store = await updateDeviceSettings(storeId, {
       timezone: formData.get("timezone"),
       defaultPrinterKey: formData.get("defaultPrinterKey"),
       printers,
