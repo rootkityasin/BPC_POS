@@ -562,17 +562,6 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             {cartNotice ? <div className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{cartNotice}</div> : null}
 
             <div className="flex-1 space-y-5 overflow-y-auto border-t border-slate-100 pt-4">
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div>
-                  <label htmlFor="customer-name" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerName")}</label>
-                  <input id="customer-name" type="text" value={customerName} onChange={(event) => setCustomerInfo(event.target.value, customerPhone)} placeholder={t("pos.customerNamePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#2771cb]" />
-                </div>
-                <div>
-                  <label htmlFor="customer-phone" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerPhone")}</label>
-                  <input id="customer-phone" type="tel" value={customerPhone} onChange={(event) => setCustomerInfo(customerName, event.target.value)} placeholder={t("pos.customerPhonePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#2771cb]" />
-                </div>
-              </div>
-
               {cart.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">{t("pos.noItemsInCart")}</div>
               ) : (

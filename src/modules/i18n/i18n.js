@@ -2,7 +2,7 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { resources } from "@/modules/i18n/resources";
 
-const DEFAULT_LANGUAGE = "en";
+const DEFAULT_LANGUAGE = "bn";
 const RESOURCE_CACHE_KEY = "bpc-admin-i18n-resources";
 const RESOURCE_CACHE_VERSION = "v2";
 
