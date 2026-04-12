@@ -122,7 +122,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-2 rounded-2xl bg-[#ff242d] px-5 py-3 font-semibold text-white hover:bg-[#ea1d26]"
+            className="flex items-center gap-2 rounded-2xl bg-[#2771cb] px-5 py-3 font-semibold text-white hover:bg-[#13508b]"
           >
             <Plus className="h-4 w-4" />
             {t("dishes.createDish")}
@@ -138,7 +138,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t("dishes.searchDishes")}
-          className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 outline-none focus:border-[#ff242d]"
+          className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 outline-none focus:border-[#2771cb]"
         />
       </div>
 
@@ -184,7 +184,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                       <div className="mt-1 flex flex-wrap gap-1">
                         {dish.ingredients.length > 0 ? (
                           dish.ingredients.slice(0, 3).map((ing) => (
-                            <span key={ing.id} className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-[#ff242d]">
+                            <span key={ing.id} className="rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#2771cb]">
                               {translateContent(ing.stockItem?.name || "Item")}
                             </span>
                           ))
@@ -211,7 +211,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                         disabled={!canManage || togglingId === dish.id}
                         onClick={() => handleToggleShowOnList(dish)}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                          dish.showOnList ? "bg-[#ff242d]" : "bg-slate-300"
+                          dish.showOnList ? "bg-[#2771cb]" : "bg-slate-300"
                         }`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dish.showOnList ? "translate-x-6" : "translate-x-1"}`} />

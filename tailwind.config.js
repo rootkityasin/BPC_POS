@@ -7,6 +7,8 @@ module.exports = {
     extend: {
       colors: {
         "crab-red": "var(--crab-red)",
+        "crab-red-dark": "var(--crab-red-dark)",
+        "crab-red-soft": "var(--crab-red-soft)",
         "ocean-blue": "var(--ocean-blue)",
         border: "hsl(var(--border))",
         background: "hsl(var(--background))",

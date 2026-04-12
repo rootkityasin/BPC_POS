@@ -43,7 +43,7 @@ export async function POST(request) {
       storeId,
       nameEn,
       nameBn: "",
-      color: color || "#ff242d"
+      color: color || "#2771cb"
     }
   });
 

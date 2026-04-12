@@ -38,7 +38,7 @@ export function StoreSelector({ stores, activeStoreId }) {
         value={activeStoreId || ""}
         onChange={(e) => handleStoreChange(e.target.value)}
         disabled={isSwitching}
-        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-[#ff242d] focus:ring-1 focus:ring-[#ff242d] disabled:opacity-50"
+        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-[#2771cb] focus:ring-1 focus:ring-[#2771cb] disabled:opacity-50"
       >
         <option value="">All Stores</option>
         {stores.map((store) => (

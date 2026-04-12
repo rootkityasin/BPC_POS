@@ -17,7 +17,7 @@ function Toast({ toast, onClose }) {
   return (
     <div className="fixed right-6 top-6 z-50 max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
       <div className="flex items-start gap-3">
-        {toast.status === "error" ? <CircleAlert className="mt-0.5 h-5 w-5 text-rose-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
+        {toast.status === "error" ? <CircleAlert className="mt-0.5 h-5 w-5 text-[#13508b]" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-slate-900">{toast.status === "error" ? "Action failed" : "Success"}</div>
           <div className="mt-1 text-sm text-slate-600">{toast.message}</div>
@@ -79,7 +79,7 @@ function ManagerDeleteForm({ managerId, onToast, onSuccess }) {
         }
       }}
     >
-      <Button type="submit" variant="outline" className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50" disabled={pending}>
+      <Button type="submit" variant="outline" className="rounded-xl border-[#e5f1ff] text-[#13508b] hover:bg-[#e5f1ff]" disabled={pending}>
         <Trash2 className="mr-2 h-4 w-4" />
         {pending ? "Deleting..." : "Delete"}
       </Button>
@@ -170,7 +170,7 @@ function ManagerAccordion({ manager, isOpen, onToggle, permissionSections, onToa
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-lg font-bold text-slate-900">{manager.name}</h3>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${manager.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${manager.isActive ? "bg-emerald-50 text-emerald-700" : "bg-[#e5f1ff] text-[#13508b]"}`}>
                   {manager.isActive ? "Active" : "Inactive"}
                 </span>
               </div>

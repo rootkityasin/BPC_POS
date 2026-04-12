@@ -106,17 +106,17 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
   return (
     <div className="flex flex-col bg-[#fdfdfd]">
       <div className="mb-4 mt-8">
-        <h2 className="text-[26px] font-bold text-[#ff242d]">{t("stock.title")}</h2>
+        <h2 className="text-[26px] font-bold text-[#2771cb]">{t("stock.title")}</h2>
       </div>
 
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex h-12 w-80 items-center rounded-xl border border-[#ffeced] bg-white px-4 text-sm text-[#ff242d] shadow-sm">
+        <div className="flex h-12 w-80 items-center rounded-xl border border-[#e5f1ff] bg-white px-4 text-sm text-[#2771cb] shadow-sm">
           <input
             type="text"
             placeholder={t("common.searchInput")}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="w-full bg-transparent outline-none placeholder-[#ff8a90]"
+            className="w-full bg-transparent outline-none placeholder:text-[#2771cb]/50"
           />
         </div>
         <button
@@ -126,7 +126,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
             setIsAddModalOpen(true);
           }}
           disabled={!canCreate}
-          className="text-[15px] font-bold text-[#ff242d] transition-colors hover:text-[#ea1d26]"
+          className="text-[15px] font-bold text-[#2771cb] transition-colors hover:text-[#13508b]"
         >
           {canCreate ? t("common.addItem") : "Select a store to add items"}
         </button>
@@ -137,19 +137,19 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
           <table className="w-full text-[15px]">
             <thead>
               <tr className="border-b border-slate-100/80">
-                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("stock.name")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.quantity")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.price")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.createdBy")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.supplier")}</th>
-                {showStoreColumn ? <th className="px-8 py-5 text-left font-bold text-[#ff242d]">Store</th> : null}
-                <th className="px-8 py-5 text-left font-bold text-[#ff242d]">{t("common.action")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("stock.name")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.quantity")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.price")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.createdBy")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.supplier")}</th>
+                {showStoreColumn ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">Store</th> : null}
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.action")}</th>
               </tr>
             </thead>
             <tbody>
               {paginatedItems.map((item) => (
                 <tr key={item.id} className="select-none border-b border-slate-50/50 transition-colors hover:bg-slate-50/50">
-                  <td className="px-8 py-5 font-semibold text-[#ff242d]">{translateContent(item.name || item.dish?.nameEn)}</td>
+                  <td className="px-8 py-5 font-semibold text-[#2771cb]">{translateContent(item.name || item.dish?.nameEn)}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.quantity}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{formatCurrency(item.price)}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
@@ -157,14 +157,14 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
                   {showStoreColumn ? <td className="px-8 py-5 font-medium text-slate-800">{item.store?.nameEn || "Unknown store"}</td> : null}
                   <td className="px-8 py-5">
                     <div className="action-menu-container relative w-max">
-                      <button type="button" onClick={() => toggleMenu(item.id)} className="flex items-center justify-center text-[#ff242d] hover:opacity-75 focus:outline-none">
+                      <button type="button" onClick={() => toggleMenu(item.id)} className="flex items-center justify-center text-[#2771cb] hover:opacity-75 focus:outline-none">
                         <Menu className="h-5 w-5" />
                       </button>
 
                       {activeMenuId === item.id && (
                         <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
-                          <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#fff5f5] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-[#ffebeb]">{t("common.edit")}</button>
-                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#ff242d] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
+                          <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#e5f1ff] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-[#d6e8ff]">{t("common.edit")}</button>
+                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
                         </div>
                       )}
                     </div>
@@ -196,7 +196,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
                   onClick={() => setCurrentPage(page)}
                   className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-colors ${
                     page === currentPage
-                      ? "bg-[#ff242d] text-white"
+                      ? "bg-[#2771cb] text-white"
                       : "border border-slate-200 text-slate-500 hover:bg-slate-50"
                   }`}
                 >
@@ -221,7 +221,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
         maxWidthClass="max-w-md"
         onBackdropClick={() => setIsAddModalOpen(false)}
       >
-        <h3 className="mb-6 text-2xl font-bold text-[#ff242d]">{t("stock.addNewItem")}</h3>
+        <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{t("stock.addNewItem")}</h3>
         <div className="space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.itemName")}</label>
@@ -229,7 +229,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
               type="text"
               value={formData.name}
               onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               placeholder={t("stock.itemNamePlaceholder")}
             />
           </div>
@@ -239,7 +239,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
               type="number"
               value={formData.quantity}
               onChange={(event) => setFormData((current) => ({ ...current, quantity: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               placeholder={t("stock.quantityPlaceholder")}
             />
           </div>
@@ -251,7 +251,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
               step="0.01"
               value={formData.price}
               onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               placeholder={t("stock.pricePlaceholder")}
             />
           </div>
@@ -261,7 +261,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
               type="text"
               value={formData.supplier}
               onChange={(event) => setFormData((current) => ({ ...current, supplier: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               placeholder={t("stock.supplierPlaceholder")}
             />
           </div>
@@ -271,14 +271,14 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
               type="text"
               value={formData.createdBy}
               onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               placeholder={t("stock.createdByPlaceholder")}
             />
           </div>
-          {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div> : null}
+          {error ? <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div> : null}
           <div className="mt-8 flex gap-3">
             <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
-            <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#ff242d] py-3 font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50">{isSaving ? t("common.saving") : t("stock.saveItem")}</button>
+            <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#2771cb] py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">{isSaving ? t("common.saving") : t("stock.saveItem")}</button>
           </div>
         </div>
       </ModalShell>

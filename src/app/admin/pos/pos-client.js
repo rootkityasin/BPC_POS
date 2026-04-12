@@ -32,11 +32,11 @@ function ProductCard({ product, onAddToCart, showStoreName }) {
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
         </div>
-        <button type="button" className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#ff242d] shadow-sm transition-transform hover:scale-110">
+        <button type="button" className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#2771cb] shadow-sm transition-transform hover:scale-110">
           <Heart className="h-3.5 w-3.5" />
         </button>
         {product.isLowStock ? (
-          <div className="absolute left-2 top-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+          <div className="absolute left-2 top-2 rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#13508b]">
             {t("pos.lowStock")}
           </div>
         ) : null}
@@ -55,8 +55,8 @@ function ProductCard({ product, onAddToCart, showStoreName }) {
           </span>
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="text-[31px] font-black leading-none text-[#ff242d]">{formatCurrency(product.price)}</span>
-          <button type="button" onClick={() => onAddToCart(product)} className="rounded-2xl bg-[#ff242d] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#ea1d26] active:scale-95">
+          <span className="text-[31px] font-black leading-none text-[#2771cb]">{formatCurrency(product.price)}</span>
+          <button type="button" onClick={() => onAddToCart(product)} className="rounded-2xl bg-[#2771cb] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#13508b] active:scale-95">
             {t("pos.addToCart")}
           </button>
         </div>
@@ -82,7 +82,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName 
               {showStoreName ? <div className="mt-1 text-xs text-slate-400">{item.storeName}</div> : null}
               {item.note ? <p className="mt-1 text-xs leading-5 text-slate-500">{t("pos.note", { note: item.note })}</p> : null}
             </div>
-            <div className="flex items-center gap-2 text-[#ff242d]">
+            <div className="flex items-center gap-2 text-[#2771cb]">
               <button type="button" onClick={() => setShowNote(!showNote)} className="hover:opacity-70"><PencilLine className="h-3.5 w-3.5" /></button>
               <button type="button" onClick={() => onRemove(item.id)} className="hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
@@ -98,7 +98,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName 
           ) : null}
 
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-[29px] font-black leading-none text-[#ff242d]">{formatCurrency(item.price * item.quantity)}</span>
+            <span className="text-[29px] font-black leading-none text-[#2771cb]">{formatCurrency(item.price * item.quantity)}</span>
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-500 hover:bg-slate-300">-</button>
               <span className="w-6 text-center font-semibold">{item.quantity}</span>
@@ -204,7 +204,7 @@ function PaymentDetailsModal({
                 <div className="font-medium text-emerald-600">{paymentMethod === "cash" ? "Cash Received" : paymentMethod === "ssl" ? "SSL Payment" : "Mobile Payment"}</div>
                 <input type="number" min="0" step="0.01" value={amountPaid} onChange={(event) => onAmountPaidChange(event.target.value)} className="w-full rounded-none border border-[#f7c8a8] px-3 py-2 text-right outline-none focus:border-[#2f6fc6]" />
               </div>
-              <div className="flex items-center justify-between text-sm"><span className="text-red-500">Due</span><span className="font-semibold text-slate-900">{formatCurrency(due)}</span></div>
+              <div className="flex items-center justify-between text-sm"><span className="text-[#13508b]">Due</span><span className="font-semibold text-slate-900">{formatCurrency(due)}</span></div>
               <div className="flex items-center justify-between text-3xl font-bold text-slate-900"><span>Change Due</span><span>{formatCurrency(changeDue)}</span></div>
             </div>
           </div>
@@ -492,7 +492,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                   </div>
                 ) : null}
 
-                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="rounded-2xl bg-[#ff242d] px-8 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#ea1d26]">
+                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="rounded-2xl bg-[#2771cb] px-8 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b]">
                   Search
                 </button>
 
@@ -508,7 +508,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                             <p className="mt-0.5 truncate text-[14px] text-slate-500">{product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || t("common.dish"))}</p>
                             <div className="mt-1.5 flex items-center justify-between">
                               <span className="text-[16px] font-bold text-slate-900">{formatCurrency(product.price)}</span>
-                              <span className="text-[13px] text-[#ff242d]">{product.stock > 0 ? t("pos.leftInStock", { count: product.stock }) : t("pos.outOfStock")}</span>
+                              <span className="text-[13px] text-[#2771cb]">{product.stock > 0 ? t("pos.leftInStock", { count: product.stock }) : t("pos.outOfStock")}</span>
                             </div>
                           </div>
                         </div>
@@ -525,16 +525,16 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                 const categoryStoreName = cat.store?.nameEn || "";
 
                 return (
-                  <button key={cat.id || "all"} type="button" onClick={() => setSelectedCategory(cat.id)} className={isActive ? "rounded-xl bg-[#ff242d] px-4 py-2 text-sm font-semibold text-white" : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"}>
+                  <button key={cat.id || "all"} type="button" onClick={() => setSelectedCategory(cat.id)} className={isActive ? "rounded-xl bg-[#2771cb] px-4 py-2 text-sm font-semibold text-white" : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"}>
                     <div>{translateContent(cat.nameEn)}</div>
-                    {showStoreNames && categoryStoreName ? <div className={`text-[10px] ${isActive ? "text-red-100" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
+                    {showStoreNames && categoryStoreName ? <div className={`text-[10px] ${isActive ? "text-[#e5f1ff]" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
                   </button>
                 );
               })}
             </div>
 
             {lowStockItems.length > 0 ? (
-              <div className="flex items-center justify-between rounded-2xl border border-[#ffc8cb] bg-[#ffdfe1] px-4 py-3 text-sm text-[#f13b45]">
+              <div className="flex items-center justify-between rounded-2xl border border-[#e5f1ff] bg-[#e5f1ff] px-4 py-3 text-sm text-[#13508b]">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{t("pos.productsRunningLow", { count: lowStockItems.length })}</span>
@@ -552,7 +552,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
           <aside className="sticky top-6 flex h-[calc(100vh-3rem)] flex-col rounded-[26px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[28px] font-black leading-none text-[#ff242d]">{t("pos.customerOrder")}</div>
+                <div className="text-[28px] font-black leading-none text-[#2771cb]">{t("pos.customerOrder")}</div>
                 <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: currentOrderId || "---" })}</div>
                 {cartStoreName ? <div className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
               </div>
@@ -565,11 +565,11 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
               <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div>
                   <label htmlFor="customer-name" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerName")}</label>
-                  <input id="customer-name" type="text" value={customerName} onChange={(event) => setCustomerInfo(event.target.value, customerPhone)} placeholder={t("pos.customerNamePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]" />
+                  <input id="customer-name" type="text" value={customerName} onChange={(event) => setCustomerInfo(event.target.value, customerPhone)} placeholder={t("pos.customerNamePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#2771cb]" />
                 </div>
                 <div>
                   <label htmlFor="customer-phone" className="mb-2 block text-sm font-medium text-slate-700">{t("pos.customerPhone")}</label>
-                  <input id="customer-phone" type="tel" value={customerPhone} onChange={(event) => setCustomerInfo(customerName, event.target.value)} placeholder={t("pos.customerPhonePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#ff242d]" />
+                  <input id="customer-phone" type="tel" value={customerPhone} onChange={(event) => setCustomerInfo(customerName, event.target.value)} placeholder={t("pos.customerPhonePlaceholder")} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#2771cb]" />
                 </div>
               </div>
 
@@ -589,10 +589,10 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setIsCheckoutOpen(true)} disabled={cart.length === 0 || isProcessing} className="rounded-2xl bg-[#ff242d] px-4 py-4 text-sm font-semibold text-white hover:bg-[#ea1d26] disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" onClick={() => setIsCheckoutOpen(true)} disabled={cart.length === 0 || isProcessing} className="rounded-2xl bg-[#2771cb] px-4 py-4 text-sm font-semibold text-white hover:bg-[#13508b] disabled:cursor-not-allowed disabled:opacity-50">
                 {isProcessing ? t("common.processing") : t("pos.checkout")}
               </button>
-              <button type="button" onClick={handleReset} disabled={cart.length === 0} className="rounded-2xl border border-[#ff242d] bg-white px-4 py-4 text-sm font-semibold text-[#ff242d] hover:bg-red-50 disabled:opacity-50">
+              <button type="button" onClick={handleReset} disabled={cart.length === 0} className="rounded-2xl border border-[#2771cb] bg-white px-4 py-4 text-sm font-semibold text-[#2771cb] hover:bg-[#e5f1ff] disabled:opacity-50">
                 {t("pos.reset")}
               </button>
             </div>

@@ -20,7 +20,7 @@ export function AdminLanguageSwitch() {
     <button
       type="button"
       onClick={toggleLanguage}
-      className="rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-[#ff242d] transition-colors hover:bg-red-100"
+      className="rounded-full border border-[#e5f1ff] bg-[#e5f1ff] px-3 py-1.5 text-xs font-semibold text-[#13508b] transition-colors hover:bg-[#d6e8ff]"
     >
       {t("header.switchToBangla")}
     </button>

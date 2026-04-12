@@ -14,7 +14,7 @@ export function getReceiptSettingsFromStore(store) {
   return {
     theme: store?.receiptTheme || "modern",
     fontSize: Number(store?.receiptFontSize || 14),
-    accentColor: store?.receiptAccentColor || "#ff242d",
+    accentColor: store?.receiptAccentColor || "#2771cb",
     paperWidth: store?.receiptPaperWidth || "80mm",
     headerText: store?.receiptHeaderText || "",
     footerText: store?.receiptFooterText || "",
@@ -45,7 +45,7 @@ function buildThemeStyles(settings) {
   }
 
   return {
-    container: "background:linear-gradient(180deg,#ffffff 0%,#fff7f7 100%);border:1px solid #fecdd3;border-radius:18px;",
+    container: "background:linear-gradient(180deg,#ffffff 0%,#e5f1ff 100%);border:1px solid #e5f1ff;border-radius:18px;",
     title: `color:${settings.accentColor};letter-spacing:0.04em;`
   };
 }

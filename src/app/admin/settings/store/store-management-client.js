@@ -21,7 +21,7 @@ function Toast({ toast, onClose }) {
   return (
     <div className="fixed right-6 top-6 z-50 max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.12)]">
       <div className="flex items-start gap-3">
-        {isError ? <CircleAlert className="mt-0.5 h-5 w-5 text-rose-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
+        {isError ? <CircleAlert className="mt-0.5 h-5 w-5 text-[#13508b]" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-slate-900">{isError ? "Action failed" : "Success"}</div>
           <div className="mt-1 text-sm text-slate-600">{toast.message}</div>
@@ -101,7 +101,7 @@ function StoreLogoInput({ selectedStore }) {
             syncDroppedFile(file);
           }
         }}
-        className={`rounded-2xl border border-dashed px-4 py-5 transition-colors ${isDragging ? "border-[#ff242d] bg-red-50" : "border-slate-300 bg-slate-50 hover:border-slate-400"}`}
+        className={`rounded-2xl border border-dashed px-4 py-5 transition-colors ${isDragging ? "border-[#2771cb] bg-[#e5f1ff]" : "border-slate-300 bg-slate-50 hover:border-slate-400"}`}
       >
         <input
           ref={inputRef}
@@ -496,10 +496,10 @@ export function StoreManagementClient({
                 const isActive = store.id === selectedStoreId;
 
                 return (
-                  <div key={store.id} className={`grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_140px_130px] items-center gap-4 px-6 py-5 ${isActive ? "bg-red-50/60" : "bg-white"}`}>
+                  <div key={store.id} className={`grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_140px_130px] items-center gap-4 px-6 py-5 ${isActive ? "bg-[#e5f1ff]/70" : "bg-white"}`}>
                     <Link href={buildStoreHref(store.id)} className="min-w-0">
                       <div className="flex items-center gap-4">
-                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${isActive ? "bg-[#ff242d] text-white" : "bg-slate-100 text-slate-700"}`}>
+                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${isActive ? "bg-[#2771cb] text-white" : "bg-slate-100 text-slate-700"}`}>
                           {store.logoUrl ? <Image src={store.logoUrl} alt={store.nameEn} width={48} height={48} className="h-12 w-12 rounded-2xl object-cover" /> : getInitials(store.nameEn)}
                         </div>
                         <div className="min-w-0">

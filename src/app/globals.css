@@ -3,8 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --crab-red: #f40000;
-  --ocean-blue: #0f172a;
+  --crab-red: #2771cb;
+  --crab-red-dark: #13508b;
+  --crab-red-soft: #e5f1ff;
+  --ocean-blue: #13508b;
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
   --border: 214 32% 91%;

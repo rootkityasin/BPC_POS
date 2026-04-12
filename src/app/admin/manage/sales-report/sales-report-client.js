@@ -34,7 +34,7 @@ function StatCard({ title, value, delta, toneClass }) {
     <div className={`min-w-0 overflow-hidden rounded-[24px] p-5 ${toneClass}`}>
       <div className="truncate text-sm font-semibold text-slate-700">{title}</div>
       <div className={`mt-4 overflow-hidden text-ellipsis whitespace-nowrap font-black leading-tight tracking-[-0.02em] text-slate-900 ${valueSizeClass}`}>{value}</div>
-      <div className={`mt-3 break-words text-xs font-medium leading-5 ${delta.value >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{delta.label}</div>
+      <div className={`mt-3 break-words text-xs font-medium leading-5 ${delta.value >= 0 ? "text-emerald-600" : "text-[#13508b]"}`}>{delta.label}</div>
     </div>
   );
 }
@@ -76,7 +76,7 @@ function SingleLineChart({ labels, values }) {
     <div className="min-w-0 overflow-hidden">
       <div className="overflow-x-auto">
         <svg viewBox={`0 0 ${width} ${height + 30}`} className="h-[220px] min-w-[420px] w-full">
-        <path d={buildLinePath(values, width, height)} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
+        <path d={buildLinePath(values, width, height)} fill="none" stroke="#2771cb" strokeWidth="3" strokeLinecap="round" />
         {labels.map((label, index) => {
           const x = labels.length === 1 ? 0 : (index * width) / (labels.length - 1);
           return <text key={label} x={x} y={height + 22} textAnchor="middle" className="fill-slate-400 text-[10px]">{label}</text>;
@@ -92,7 +92,7 @@ export function SalesReportClient({ report }) {
   const pathname = usePathname();
 
   const chartSeries = useMemo(
-    () => [{ label: report.filters.breakdown, color: "#2563eb", values: report.salesBreakdown.values }],
+    () => [{ label: report.filters.breakdown, color: "#2771cb", values: report.salesBreakdown.values }],
     [report.filters.breakdown, report.salesBreakdown.values]
   );
 
@@ -169,7 +169,7 @@ export function SalesReportClient({ report }) {
             <TrendingUp className="h-5 w-5 text-slate-300" />
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard title="Total Sales" value={formatCurrency(report.summary.totalSales)} delta={report.summary.deltas.totalSales} toneClass="bg-rose-50" />
+            <StatCard title="Total Sales" value={formatCurrency(report.summary.totalSales)} delta={report.summary.deltas.totalSales} toneClass="bg-[#e5f1ff]" />
             <StatCard title="Total Order" value={String(report.summary.totalOrders)} delta={report.summary.deltas.totalOrders} toneClass="bg-amber-50" />
             <StatCard title="Product Sold" value={String(report.summary.productsSold)} delta={report.summary.deltas.productsSold} toneClass="bg-emerald-50" />
             <StatCard title="New Customers" value={String(report.summary.newCustomers)} delta={report.summary.deltas.newCustomers} toneClass="bg-violet-50" />

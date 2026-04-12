@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 export const dynamic = "force-dynamic";
 
 function severityClasses(severity) {
-  if (severity === "CRITICAL") return "bg-rose-50 text-rose-700";
+  if (severity === "CRITICAL") return "bg-[#e5f1ff] text-[#13508b]";
   if (severity === "WARNING") return "bg-amber-50 text-amber-700";
   return "bg-slate-100 text-slate-700";
 }
@@ -51,7 +51,7 @@ export default async function NotificationsPage() {
               <div>
                 <div className="flex items-center gap-3">
                   <div className="font-bold text-slate-900">{notification.title}</div>
-                  {!notification.read ? <span className="rounded-full bg-[#ff242d] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">New</span> : null}
+                  {!notification.read ? <span className="rounded-full bg-[#2771cb] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">New</span> : null}
                 </div>
                 <p className="mt-2 text-sm text-slate-600">{notification.message}</p>
               </div>

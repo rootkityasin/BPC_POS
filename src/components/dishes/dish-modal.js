@@ -138,41 +138,41 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
       maxWidthClass="max-w-2xl"
       onBackdropClick={onClose}
     >
-      <h3 className="mb-6 text-2xl font-bold text-[#ff242d]">{isEditing ? t("dishes.editDish") : t("dishes.createDish")}</h3>
+      <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{isEditing ? t("dishes.editDish") : t("dishes.createDish")}</h3>
       <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameEnglish")}</label>
-              <input type="text" value={form.nameEn} onChange={(e) => setForm((c) => ({ ...c, nameEn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]" placeholder={t("dishes.dishNamePlaceholder")} />
+              <input type="text" value={form.nameEn} onChange={(e) => setForm((c) => ({ ...c, nameEn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.dishNamePlaceholder")} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.category")}</label>
-              <select value={form.categoryId} onChange={(e) => setForm((c) => ({ ...c, categoryId: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#ff242d]">
+              <select value={form.categoryId} onChange={(e) => setForm((c) => ({ ...c, categoryId: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]">
                 {categories.map((cat) => (<option key={cat.id} value={cat.id}>{translateContent(cat.nameEn)}</option>))}
               </select>
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.subCategory")}</label>
-              <select value={form.subCategoryId} onChange={(e) => setForm((c) => ({ ...c, subCategoryId: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#ff242d]">
+              <select value={form.subCategoryId} onChange={(e) => setForm((c) => ({ ...c, subCategoryId: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]">
                 <option value="">{t("common.noSubCategory")}</option>
                 {availableSubCategories.map((sc) => (<option key={sc.id} value={sc.id}>{translateContent(sc.nameEn)}</option>))}
               </select>
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.createdBy")}</label>
-              <input type="text" value={form.createdBy} onChange={(e) => setForm((c) => ({ ...c, createdBy: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]" placeholder={t("dishes.createdByPlaceholder")} />
+              <input type="text" value={form.createdBy} onChange={(e) => setForm((c) => ({ ...c, createdBy: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.createdByPlaceholder")} />
             </div>
           </div>
 
           {/* Image Upload */}
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishImage")}</label>
-            <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-[#ff242d] bg-red-50" : imagePreview ? "border-slate-200 bg-slate-50" : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100"}`}>
+            <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-[#2771cb] bg-[#e5f1ff]" : imagePreview ? "border-slate-200 bg-slate-50" : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100"}`}>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleImageSelect(e.target.files?.[0])} className="hidden" />
               {imagePreview ? (
                 <div className="relative inline-block">
                   <img src={imagePreview} alt="Preview" className="mx-auto max-h-40 rounded-xl object-cover" />
-                  <button type="button" onClick={(e) => { e.stopPropagation(); removeImage(); }} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm hover:bg-red-600">
+                  <button type="button" onClick={(e) => { e.stopPropagation(); removeImage(); }} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#2771cb] text-white shadow-sm hover:bg-[#13508b]">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -183,7 +183,7 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
                   </div>
                   <div>
                     <span className="text-sm font-medium text-slate-700">{t("dishes.dragDropImage")}</span>
-                    <span className="text-sm text-[#ff242d]"> {t("dishes.browse")}</span>
+                    <span className="text-sm text-[#2771cb]"> {t("dishes.browse")}</span>
                   </div>
                   <p className="text-xs text-slate-400">{t("dishes.imageHint")}</p>
                 </div>
@@ -197,7 +197,7 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
               <div className="text-sm font-medium text-slate-700">{t("dishes.showOnList")}</div>
               <div className="text-xs text-slate-500">{t("dishes.showOnListHelp")}</div>
             </div>
-            <button type="button" onClick={() => setForm((c) => ({ ...c, showOnList: !c.showOnList }))} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.showOnList ? "bg-[#ff242d]" : "bg-slate-300"}`}>
+            <button type="button" onClick={() => setForm((c) => ({ ...c, showOnList: !c.showOnList }))} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.showOnList ? "bg-[#2771cb]" : "bg-slate-300"}`}>
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.showOnList ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
@@ -206,14 +206,14 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
           <div>
             <div className="mb-3 flex items-center justify-between">
               <label className="block text-sm font-medium text-slate-700">{t("dishes.inventoryItems")}</label>
-              <span className="text-sm font-semibold text-[#ff242d]">{t("dishes.suggestedPrice", { price: formatCurrency(suggestedPrice) })}</span>
+              <span className="text-sm font-semibold text-[#2771cb]">{t("dishes.suggestedPrice", { price: formatCurrency(suggestedPrice) })}</span>
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {stockItems.map((item) => {
                 const checked = form.ingredientStockItemIds.includes(item.id);
                 return (
-                  <label key={item.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors ${checked ? "border-[#ff242d] bg-red-50" : "border-slate-200 bg-white hover:border-slate-300"}`}>
-                    <input type="checkbox" checked={checked} onChange={() => toggleIngredient(item.id)} className="mt-1 h-4 w-4 accent-[#ff242d]" />
+                  <label key={item.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors ${checked ? "border-[#2771cb] bg-[#e5f1ff]" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleIngredient(item.id)} className="mt-1 h-4 w-4 accent-[#2771cb]" />
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-slate-900">{translateContent(item.name)}</div>
                       <div className="text-sm text-slate-500">{t("dishes.qtyPrice", { quantity: item.quantity, price: item.price === null ? t("common.optional") : formatCurrency(item.price) })}</div>
@@ -228,16 +228,16 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
           <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-end">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishPrice")}</label>
-              <input type="number" min="0" step="0.01" value={form.price} onChange={(e) => { setPriceTouched(true); setForm((c) => ({ ...c, price: e.target.value })); }} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]" placeholder={t("dishes.autoSuggested")} />
+               <input type="number" min="0" step="0.01" value={form.price} onChange={(e) => { setPriceTouched(true); setForm((c) => ({ ...c, price: e.target.value })); }} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.autoSuggested")} />
             </div>
             <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{t("dishes.suggestedHelp")}</div>
           </div>
 
-          {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>}
+          {error && <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div>}
 
           <div className="mt-8 flex justify-end gap-3">
             <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
-            <button type="submit" disabled={isSaving} className="rounded-2xl bg-[#ff242d] px-5 py-3 font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50">{isSaving ? t("common.saving") : isEditing ? t("common.save") : t("dishes.createDish")}</button>
+            <button type="submit" disabled={isSaving} className="rounded-2xl bg-[#2771cb] px-5 py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">{isSaving ? t("common.saving") : isEditing ? t("common.save") : t("dishes.createDish")}</button>
           </div>
       </form>
     </ModalShell>

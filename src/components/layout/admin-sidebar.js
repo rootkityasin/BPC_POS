@@ -140,7 +140,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                         onClick={(event) => handleProtectedNavigation(event, child.href)}
                         className={cn(
                           "block rounded-xl px-4 py-2 text-sm transition-colors",
-                          childActive ? "bg-red-50 text-crab-red" : "text-slate-500 hover:bg-slate-50"
+                          childActive ? "bg-crab-red-soft text-crab-red" : "text-slate-500 hover:bg-slate-50"
                         )}
                       >
                         {child.labelKey ? t(child.labelKey) : child.label}

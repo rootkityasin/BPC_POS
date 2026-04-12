@@ -29,7 +29,7 @@ function getOrderStatusClasses(status) {
     case "COMPLETED":
       return "bg-emerald-50 text-emerald-700";
     case "CANCELLED":
-      return "bg-rose-50 text-rose-700";
+      return "bg-[#e5f1ff] text-[#13508b]";
     case "PROCESSING":
       return "bg-amber-50 text-amber-700";
     default:
@@ -71,7 +71,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
       maxWidthClass="max-w-3xl"
       onBackdropClick={onClose}
     >
-      <h3 className="mb-6 text-2xl font-bold text-[#ff242d]">{t("orders.editOrder")}</h3>
+      <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{t("orders.editOrder")}</h3>
       <form className="space-y-6" onSubmit={onSave}>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -81,7 +81,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
                 value={form.customerName}
                 onChange={(event) => setForm((current) => ({ ...current, customerName: event.target.value }))}
                 placeholder={t("orders.walkIn")}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               />
             </div>
             <div>
@@ -91,7 +91,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
                 value={form.customerPhone}
                 onChange={(event) => setForm((current) => ({ ...current, customerPhone: event.target.value }))}
                 placeholder={t("orders.customerPhonePlaceholder")}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#ff242d]"
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
               />
             </div>
           </div>
@@ -101,7 +101,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
             <select
               value={form.status}
               onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#ff242d]"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]"
             >
               {ORDER_STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>{getOrderStatusLabel(t, status)}</option>
@@ -132,13 +132,13 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
             </div>
           </div>
 
-          {error ? <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{error}</div> : null}
+          {error ? <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div> : null}
 
           <div className="mt-8 flex justify-end gap-3">
             <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">
               {t("common.cancel")}
             </button>
-            <button type="submit" disabled={saving} className="rounded-2xl bg-[#ff242d] px-5 py-3 font-semibold text-white hover:bg-[#ea1d26] disabled:opacity-50">
+            <button type="submit" disabled={saving} className="rounded-2xl bg-[#2771cb] px-5 py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">
               {saving ? t("common.saving") : t("orders.saveChanges")}
             </button>
           </div>
@@ -334,7 +334,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                           <button
                             type="button"
                             onClick={() => openEditModal(order)}
-                            className="inline-flex items-center gap-2 rounded-2xl bg-[#ff242d] px-4 py-2 font-semibold text-white hover:bg-[#ea1d26]"
+                            className="inline-flex items-center gap-2 rounded-2xl bg-[#2771cb] px-4 py-2 font-semibold text-white hover:bg-[#13508b]"
                           >
                             <Pencil className="h-4 w-4" />
                             {t("common.edit")}

@@ -19,7 +19,7 @@ function sanitizeNullableText(value) {
   return text || null;
 }
 
-function sanitizeHexColor(value, fallback = "#ff242d") {
+function sanitizeHexColor(value, fallback = "#2771cb") {
   const text = sanitizeText(value);
   return /^#[0-9a-fA-F]{6}$/.test(text) ? text : fallback;
 }

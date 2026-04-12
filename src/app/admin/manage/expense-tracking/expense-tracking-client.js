@@ -99,7 +99,7 @@ function AddExpenseModal({ isOpen, onClose, data }) {
           <span className="mb-2 block font-medium">Extra Note</span>
           <textarea name="note" rows="4" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Optional details, such as vendor name or payment reason" />
         </label>
-        {state.status === "error" ? <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">{state.message}</div> : null}
+        {state.status === "error" ? <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{state.message}</div> : null}
         <div className="flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 rounded-2xl bg-slate-100 px-4 py-3 font-semibold text-slate-700 hover:bg-slate-200">Cancel</button>
           <Button type="submit" className="flex-1 rounded-2xl py-3" disabled={pending}>{pending ? "Saving..." : "Save Cost"}</Button>

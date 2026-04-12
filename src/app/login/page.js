@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }) {
           <p className="mt-2 text-sm text-slate-500">Use `admin@bpc.local` or `manager@bpc.local` with `password123` after seeding.</p>
         </div>
         {error ? (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 rounded-xl border border-[#e5f1ff] bg-[#e5f1ff] px-4 py-3 text-sm text-[#13508b]">
             {error}
           </div>
         ) : null}

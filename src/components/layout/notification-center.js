@@ -9,7 +9,7 @@ function formatTime(value) {
 }
 
 function severityClasses(severity) {
-  if (severity === "CRITICAL") return "bg-rose-50 text-rose-700";
+  if (severity === "CRITICAL") return "bg-[#e5f1ff] text-[#13508b]";
   if (severity === "WARNING") return "bg-amber-50 text-amber-700";
   return "bg-slate-100 text-slate-700";
 }
@@ -88,7 +88,7 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#ff242d] px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[#2771cb] px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         ) : null}
@@ -124,7 +124,7 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
                     key={item.id}
                     type="button"
                     onClick={() => markSingleRead(item.id)}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${item.read ? "border-slate-200 bg-white" : "border-red-100 bg-red-50/50"}`}
+                    className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${item.read ? "border-slate-200 bg-white" : "border-[#e5f1ff] bg-[#e5f1ff]/60"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -143,7 +143,7 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
           </div>
 
           <div className="border-t border-slate-100 px-5 py-4">
-            <Link href="/admin/notifications" onClick={() => setIsOpen(false)} className="text-sm font-semibold text-[#ff242d] hover:text-[#ea1d26]">
+            <Link href="/admin/notifications" onClick={() => setIsOpen(false)} className="text-sm font-semibold text-[#2771cb] hover:text-[#13508b]">
               View all notifications
             </Link>
           </div>

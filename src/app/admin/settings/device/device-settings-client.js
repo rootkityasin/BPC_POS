@@ -33,7 +33,7 @@ function buildInitialState(settings) {
     defaultPrinterKey,
     receiptTheme: settings?.receiptTheme || "modern",
     receiptFontSize: settings?.receiptFontSize || 14,
-    receiptAccentColor: settings?.receiptAccentColor || "#ff242d",
+    receiptAccentColor: settings?.receiptAccentColor || "#2771cb",
     receiptPaperWidth: settings?.receiptPaperWidth || "80mm",
     receiptHeaderText: settings?.receiptHeaderText || "",
     receiptFooterText: settings?.receiptFooterText || "",
@@ -55,7 +55,7 @@ function StatusToast({ state }) {
   const isError = state.status === "error";
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 text-sm ${isError ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+    <div className={`rounded-2xl border px-4 py-3 text-sm ${isError ? "border-[#e5f1ff] bg-[#e5f1ff] text-[#13508b]" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
       <div className="flex items-center gap-2 font-medium">
         {isError ? <CircleAlert className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
         <span>{state.message}</span>
@@ -76,7 +76,7 @@ function ReceiptPreview({ storeName, settings }) {
     ? "border-[#e2d7c0] bg-[#fffdf7]"
     : settings.receiptTheme === "minimal"
       ? "border-slate-200 bg-white"
-      : "border-rose-200 bg-gradient-to-b from-white to-rose-50";
+      : "border-[#e5f1ff] bg-gradient-to-b from-white to-[#e5f1ff]";
 
   return (
     <div className={`mx-auto rounded-[30px] border p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${paperClass} ${themeClass}`} style={{ fontSize: `${settings.receiptFontSize}px` }}>
@@ -188,7 +188,7 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
         <div className="space-y-6">
           <Card className="p-6 space-y-5">
             <div className="flex items-center gap-3">
-              <Receipt className="h-5 w-5 text-[#ff242d]" />
+              <Receipt className="h-5 w-5 text-[#2771cb]" />
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Receipt Editor</h3>
                 <p className="text-sm text-slate-500">Update layout, branding, and receipt visibility controls for this store.</p>
@@ -278,7 +278,7 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
           <Card className="p-6 space-y-5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <Printer className="h-5 w-5 text-[#ff242d]" />
+                <Printer className="h-5 w-5 text-[#2771cb]" />
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Printer Connections</h3>
                   <p className="text-sm text-slate-500">Register printer endpoints for this store and choose the default invoice printer.</p>
