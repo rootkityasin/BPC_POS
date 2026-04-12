@@ -6,6 +6,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN corepack enable
 
 COPY package.json pnpm-workspace.yaml ./
