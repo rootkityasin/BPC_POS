@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildRedirectUrl } from "@/lib/request-url";
 import { loginWithPassword } from "@/modules/auth/auth-service";
 import {
   ACCESS_COOKIE,
@@ -14,13 +15,13 @@ export async function POST(request) {
   const result = await loginWithPassword(email, password);
 
   if (!result.success) {
-    const response = NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(result.error)}`, request.url), 303);
+    const response = NextResponse.redirect(buildRedirectUrl(request, `/login?error=${encodeURIComponent(result.error)}`), 303);
     response.cookies.delete(ACCESS_COOKIE);
     response.cookies.delete(REFRESH_COOKIE);
     return response;
   }
 
-  const response = NextResponse.redirect(new URL("/admin/pos", request.url), 303);
+  const response = NextResponse.redirect(buildRedirectUrl(request, "/admin/pos"), 303);
   response.cookies.set(ACCESS_COOKIE, result.tokens.accessToken, getAccessCookieOptions());
   response.cookies.set(REFRESH_COOKIE, result.tokens.refreshToken, getRefreshCookieOptions());
   return response;
