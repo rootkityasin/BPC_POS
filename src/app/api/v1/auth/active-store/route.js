@@ -1,9 +1,22 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
 
 const ACTIVE_STORE_COOKIE = "activeStoreId";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+
+async function resolveValidStoreId(storeId) {
+  const normalizedStoreId = String(storeId || "").trim();
+  if (!normalizedStoreId) return null;
+
+  const store = await prisma.store.findUnique({
+    where: { id: normalizedStoreId },
+    select: { id: true }
+  });
+
+  return store?.id || null;
+}
 
 /**
  * GET /api/v1/auth/active-store
@@ -26,7 +39,12 @@ export async function GET() {
 
   // SUPER_ADMIN: read from cookie
   const cookieStore = await cookies();
-  const activeStoreId = cookieStore.get(ACTIVE_STORE_COOKIE)?.value || null;
+  const cookieValue = cookieStore.get(ACTIVE_STORE_COOKIE)?.value || null;
+  const activeStoreId = await resolveValidStoreId(cookieValue);
+
+  if (cookieValue && !activeStoreId) {
+    cookieStore.delete(ACTIVE_STORE_COOKIE);
+  }
 
   return NextResponse.json({
     activeStoreId,
@@ -54,12 +72,20 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { storeId } = body;
+  const requestedStoreId = String(body.storeId || "").trim();
 
   const cookieStore = await cookies();
 
-  if (storeId) {
-    cookieStore.set(ACTIVE_STORE_COOKIE, String(storeId), {
+  if (requestedStoreId) {
+    const validatedStoreId = await resolveValidStoreId(requestedStoreId);
+    if (!validatedStoreId) {
+      return NextResponse.json({
+        error: "Store not found",
+        activeStoreId: null
+      }, { status: 400 });
+    }
+
+    cookieStore.set(ACTIVE_STORE_COOKIE, validatedStoreId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -73,6 +99,6 @@ export async function POST(request) {
 
   return NextResponse.json({
     success: true,
-    activeStoreId: storeId || null
+    activeStoreId: requestedStoreId || null
   });
 }

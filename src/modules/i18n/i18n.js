@@ -2,9 +2,10 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { resources } from "@/modules/i18n/resources";
 
-const DEFAULT_LANGUAGE = "bn";
+const DEFAULT_LANGUAGE = "en";
 const RESOURCE_CACHE_KEY = "bpc-admin-i18n-resources";
 const RESOURCE_CACHE_VERSION = "v2";
+export const LANGUAGE_STORAGE_KEY = "bpc-admin-language";
 
 function mergeResources(cachedResources) {
   return {
@@ -54,8 +55,8 @@ function cacheResources(resourceMap) {
 
 function getInitialLanguage() {
   if (typeof window === "undefined") return DEFAULT_LANGUAGE;
-  const storedLanguage = window.localStorage.getItem("bpc-admin-language");
-  return storedLanguage === "bn" ? "bn" : DEFAULT_LANGUAGE;
+  const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  return storedLanguage === "bn" || storedLanguage === "en" ? storedLanguage : DEFAULT_LANGUAGE;
 }
 
 if (!i18n.isInitialized) {
@@ -74,7 +75,6 @@ if (!i18n.isInitialized) {
 }
 
 export { i18n };
-export const LANGUAGE_STORAGE_KEY = "bpc-admin-language";
 
 export function getContentTranslationKey(value) {
   return String(value || "")

@@ -173,7 +173,7 @@ async function translateDom(root, language) {
     const parent = node.parentElement;
     const currentText = node.textContent.trim();
     const storedText = parent?.getAttribute(SOURCE_ATTR);
-    const originalText = storedText && !looksTranslatable(currentText) ? storedText : currentText;
+    const originalText = storedText && !shouldTranslateText(currentText) ? storedText : currentText;
 
     if (parent && storedText !== originalText) {
       parent.setAttribute(SOURCE_ATTR, originalText);
@@ -189,7 +189,7 @@ async function translateDom(root, language) {
     const storedValue = target.type === "text"
       ? target.element.getAttribute(SOURCE_ATTR)
       : target.element.getAttribute(target.originalAttr);
-    const originalValue = storedValue && !looksTranslatable(currentValue) ? storedValue : currentValue;
+    const originalValue = storedValue && !shouldTranslateText(currentValue) ? storedValue : currentValue;
 
     if (target.type === "text") {
       if (storedValue !== originalValue) {

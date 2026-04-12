@@ -53,6 +53,7 @@ export const usePosStore = create((set, get) => ({
             price: Number(product.price),
             storeId: product.storeId || null,
             storeName: product.storeName || "",
+            storeNameBn: product.storeNameBn || "",
             storeVatPercentage: Number(product.storeVatPercentage || 0),
             quantity: 1,
             note

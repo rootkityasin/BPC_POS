@@ -11,7 +11,7 @@ export async function getPosCategories(storeId) {
     orderBy: { displayOrder: "asc" },
     include: {
       store: {
-        select: { id: true, nameEn: true }
+        select: { id: true, nameEn: true, nameBn: true }
       },
       subCategories: { orderBy: { displayOrder: "asc" } }
     }
@@ -46,7 +46,7 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
       where: dishWhere,
         include: {
           store: {
-            select: { id: true, nameEn: true, vatPercentage: true }
+            select: { id: true, nameEn: true, nameBn: true, vatPercentage: true }
           },
           category: true,
           subCategory: true,
@@ -60,11 +60,11 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
     }),
     prisma.stockItem.findMany({
       where: inventoryWhere,
-      include: {
-        store: {
-          select: { id: true, nameEn: true, vatPercentage: true }
-        }
-      },
+        include: {
+          store: {
+            select: { id: true, nameEn: true, nameBn: true, vatPercentage: true }
+          }
+        },
       orderBy: { name: "asc" }
     })
   ]);
@@ -87,6 +87,7 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
       price: Number(dish.price),
       storeId: dish.storeId,
       storeName: dish.store?.nameEn || "Unknown store",
+      storeNameBn: dish.store?.nameBn || "",
       storeVatPercentage: Number(dish.store?.vatPercentage || 0),
       stock: stock.quantity,
       lowStockLevel: stock.lowStockLevel,
@@ -103,6 +104,7 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
     price: Number(item.price || 0),
     storeId: item.storeId,
     storeName: item.store?.nameEn || "Unknown store",
+    storeNameBn: item.store?.nameBn || "",
     storeVatPercentage: Number(item.store?.vatPercentage || 0),
     stock: item.quantity,
     lowStockLevel: item.lowStockLevel,

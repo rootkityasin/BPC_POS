@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { AlertCircle, ChevronDown, Clock3, Heart, PencilLine, Store, Trash2, Wallet } from "lucide-react";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { usePosStore } from "@/modules/pos/pos-store";
@@ -22,7 +22,118 @@ function formatCurrency(value) {
   return `৳${Number(value || 0).toFixed(2)}`;
 }
 
-function ProductCard({ product, onAddToCart, showStoreName }) {
+function useCachedStoreLabels(storeEntries) {
+  const { i18n } = useTranslation();
+  const { translateContent } = useTranslatedContent();
+  const [cachedLabels, setCachedLabels] = useState({});
+  const pendingLabelsRef = useRef(new Set());
+
+  useEffect(() => {
+    if (i18n.language !== "bn") return undefined;
+
+    const uniqueEntries = [];
+    const seenNames = new Set();
+    for (const entry of storeEntries) {
+      const nameEn = String(entry?.nameEn || "").trim();
+      if (!nameEn || seenNames.has(nameEn)) continue;
+      seenNames.add(nameEn);
+      uniqueEntries.push({
+        nameEn,
+        nameBn: String(entry?.nameBn || "").trim()
+      });
+    }
+
+    const immediateLabels = {};
+    const missingTexts = [];
+    for (const entry of uniqueEntries) {
+      if (entry.nameBn) {
+        immediateLabels[entry.nameEn] = entry.nameBn;
+        continue;
+      }
+
+      if (cachedLabels[entry.nameEn]) {
+        immediateLabels[entry.nameEn] = cachedLabels[entry.nameEn];
+        continue;
+      }
+
+      const translatedLabel = translateContent(entry.nameEn);
+      if (translatedLabel && translatedLabel !== entry.nameEn) {
+        immediateLabels[entry.nameEn] = translatedLabel;
+        continue;
+      }
+
+      if (!pendingLabelsRef.current.has(entry.nameEn)) {
+        missingTexts.push(entry.nameEn);
+      }
+    }
+
+    if (Object.keys(immediateLabels).length > 0) {
+      setCachedLabels((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        for (const [nameEn, label] of Object.entries(immediateLabels)) {
+          if (next[nameEn] !== label) {
+            next[nameEn] = label;
+            changed = true;
+          }
+        }
+
+        return changed ? next : current;
+      });
+    }
+
+    const uncachedTexts = [...new Set(missingTexts.filter(Boolean))];
+    if (uncachedTexts.length === 0) return undefined;
+
+    uncachedTexts.forEach((text) => pendingLabelsRef.current.add(text));
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await fetch("/api/v1/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            texts: uncachedTexts,
+            sourceLanguage: "en",
+            targetLanguage: "bn"
+          })
+        });
+
+        if (!response.ok || cancelled) return;
+
+        const data = await response.json();
+        const translations = data.translations || {};
+        if (cancelled || Object.keys(translations).length === 0) return;
+
+        setCachedLabels((current) => ({ ...current, ...translations }));
+      } catch {
+        return;
+      } finally {
+        uncachedTexts.forEach((text) => pendingLabelsRef.current.delete(text));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cachedLabels, i18n.language, storeEntries, translateContent]);
+
+  return useCallback((nameEn, nameBn = "") => {
+    const normalizedName = String(nameEn || "").trim();
+    if (!normalizedName) return "";
+
+    if (i18n.language !== "bn") {
+      return normalizedName;
+    }
+
+    return String(nameBn || "").trim() || cachedLabels[normalizedName] || translateContent(normalizedName);
+  }, [cachedLabels, i18n.language, translateContent]);
+}
+
+function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
 
@@ -45,7 +156,7 @@ function ProductCard({ product, onAddToCart, showStoreName }) {
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-[15px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h3>
         </div>
-        {showStoreName ? <div className="mt-2 text-xs font-medium text-slate-400">{product.storeName}</div> : null}
+        {showStoreName ? <div data-no-translate="true" className="mt-2 text-xs font-medium text-slate-400">{storeLabel}</div> : null}
         <p className="mt-1 min-h-[21px] text-xs leading-[14px] text-slate-500">
           {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || "")}
         </p>
@@ -65,7 +176,7 @@ function ProductCard({ product, onAddToCart, showStoreName }) {
   );
 }
 
-function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName }) {
+function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName, storeLabel }) {
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState(item.note || "");
   const { t } = useTranslation();
@@ -79,7 +190,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName 
           <div className="flex items-start justify-between gap-2">
             <div>
               <h4 className="text-sm font-medium text-slate-800">{translateContent(item.name)}</h4>
-              {showStoreName ? <div className="mt-1 text-xs text-slate-400">{item.storeName}</div> : null}
+              {showStoreName ? <div data-no-translate="true" className="mt-1 text-xs text-slate-400">{storeLabel}</div> : null}
               {item.note ? <p className="mt-1 text-xs leading-5 text-slate-500">{t("pos.note", { note: item.note })}</p> : null}
             </div>
             <div className="flex items-center gap-2 text-[#2771cb]">
@@ -259,6 +370,15 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   const [amountPaid, setAmountPaid] = useState("0");
   const [cartNotice, setCartNotice] = useState("");
 
+  const storeLabelEntries = useMemo(() => [
+    ...(storeDetails?.nameEn ? [{ nameEn: storeDetails.nameEn, nameBn: storeDetails.nameBn }] : []),
+    ...stores.map((entry) => ({ nameEn: entry.nameEn, nameBn: entry.nameBn })),
+    ...categories.map((category) => ({ nameEn: category.store?.nameEn, nameBn: category.store?.nameBn })),
+    ...products.map((product) => ({ nameEn: product.storeName, nameBn: product.storeNameBn })),
+    ...cart.map((item) => ({ nameEn: item.storeName, nameBn: item.storeNameBn }))
+  ], [cart, categories, products, storeDetails, stores]);
+  const getStoreLabel = useCachedStoreLabels(storeLabelEntries);
+
   const initOrder = useCallback(() => {
     if (!currentOrderId && initializeOrder) {
       initializeOrder();
@@ -276,9 +396,12 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   }, [activeStoreId]);
 
   const cartStoreId = cart[0]?.storeId || storeId || null;
-  const cartStoreName = cart[0]?.storeName || storeDetails?.nameEn || "";
+  const cartStoreName = getStoreLabel(cart[0]?.storeName || storeDetails?.nameEn || "", cart[0]?.storeNameBn || storeDetails?.nameBn || "");
   const cartVatPercentage = cart[0]?.storeVatPercentage ?? storeDetails?.vatPercentage ?? 0;
   const showStoreNames = !activeStoreId;
+  const pageStoreName = storeDetails?.nameEn
+    ? getStoreLabel(storeDetails.nameEn, storeDetails.nameBn)
+    : t("header.allStores");
 
   useEffect(() => {
     setVatPercentage(cartVatPercentage || 0);
@@ -330,7 +453,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
 
   function handleAddToCart(product) {
     if (cart.length > 0 && cartStoreId && cartStoreId !== product.storeId) {
-      setCartNotice(`Cart is locked to ${cartStoreName}. Reset the cart to add items from ${product.storeName}.`);
+      setCartNotice(`Cart is locked to ${cartStoreName}. Reset the cart to add items from ${getStoreLabel(product.storeName, product.storeNameBn)}.`);
       return;
     }
 
@@ -462,7 +585,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
-                <div className="mt-1 text-sm text-slate-500">{storeDetails?.nameEn || "All stores"}</div>
+                <div data-no-translate="true" className="mt-1 text-sm text-slate-500">{pageStoreName}</div>
               </div>
               <div className="relative z-50 flex w-full max-w-[760px] items-center gap-3">
                 <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
@@ -481,12 +604,12 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                 </div>
 
                 {showStoreNames ? (
-                  <div className="flex h-14 items-center rounded-2xl bg-white px-4 shadow-sm">
+                  <div data-no-translate="true" className="flex h-14 items-center rounded-2xl bg-white px-4 shadow-sm">
                     <Store className="mr-2 h-4 w-4 text-slate-400" />
                     <select value={selectedStoreFilter} onChange={(event) => setSelectedStoreFilter(event.target.value)} className="bg-transparent text-sm text-slate-700 outline-none">
-                      <option value="all">All stores</option>
+                      <option value="all">{t("header.allStores")}</option>
                       {stores.map((entry) => (
-                        <option key={entry.id} value={entry.id}>{entry.nameEn}</option>
+                        <option key={entry.id} value={entry.id}>{getStoreLabel(entry.nameEn, entry.nameBn)}</option>
                       ))}
                     </select>
                   </div>
@@ -504,7 +627,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                           <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-200" />
                           <div className="flex min-w-0 flex-1 flex-col">
                             <h4 className="text-[17px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h4>
-                            {showStoreNames ? <div className="mt-0.5 text-xs text-slate-400">{product.storeName}</div> : null}
+                            {showStoreNames ? <div data-no-translate="true" className="mt-0.5 text-xs text-slate-400">{getStoreLabel(product.storeName, product.storeNameBn)}</div> : null}
                             <p className="mt-0.5 truncate text-[14px] text-slate-500">{product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || t("common.dish"))}</p>
                             <div className="mt-1.5 flex items-center justify-between">
                               <span className="text-[16px] font-bold text-slate-900">{formatCurrency(product.price)}</span>
@@ -522,12 +645,12 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-2 shadow-sm">
               {allCategories.map((cat) => {
                 const isActive = selectedCategory === cat.id || (cat.id === null && selectedCategory === null);
-                const categoryStoreName = cat.store?.nameEn || "";
+                const categoryStoreName = getStoreLabel(cat.store?.nameEn || "", cat.store?.nameBn || "");
 
                 return (
                   <button key={cat.id || "all"} type="button" onClick={() => setSelectedCategory(cat.id)} className={isActive ? "rounded-xl bg-[#2771cb] px-4 py-2 text-sm font-semibold text-white" : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"}>
                     <div>{translateContent(cat.nameEn)}</div>
-                    {showStoreNames && categoryStoreName ? <div className={`text-[10px] ${isActive ? "text-[#e5f1ff]" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
+                    {showStoreNames && categoryStoreName ? <div data-no-translate="true" className={`text-[10px] ${isActive ? "text-[#e5f1ff]" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
                   </button>
                 );
               })}
@@ -544,7 +667,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             ) : null}
 
             <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {filteredProducts.map((product) => <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} showStoreName={showStoreNames} />)}
+              {filteredProducts.map((product) => <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} showStoreName={showStoreNames} storeLabel={getStoreLabel(product.storeName, product.storeNameBn)} />)}
               {filteredProducts.length === 0 ? <div className="col-span-full py-12 text-center text-slate-500">{t("pos.noProductsFound")}</div> : null}
             </div>
           </section>
@@ -554,7 +677,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
               <div>
                 <div className="text-[28px] font-black leading-none text-[#2771cb]">{t("pos.customerOrder")}</div>
                 <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: currentOrderId || "---" })}</div>
-                {cartStoreName ? <div className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
+                {cartStoreName ? <div data-no-translate="true" className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
               </div>
               <ChevronDown className="h-5 w-5 text-slate-500" />
             </div>
@@ -565,7 +688,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
               {cart.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">{t("pos.noItemsInCart")}</div>
               ) : (
-                cart.map((item) => <CartItem key={item.id} item={item} onUpdateQuantity={updateQuantity} onRemove={removeFromCart} onEditNote={updateItemNote} showStoreName={showStoreNames} />)
+                cart.map((item) => <CartItem key={item.id} item={item} onUpdateQuantity={updateQuantity} onRemove={removeFromCart} onEditNote={updateItemNote} showStoreName={showStoreNames} storeLabel={getStoreLabel(item.storeName, item.storeNameBn)} />)
               )}
             </div>
 

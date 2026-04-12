@@ -31,6 +31,7 @@ export default async function PosPage() {
           select: {
             id: true,
             nameEn: true,
+            nameBn: true,
             logoUrl: true,
             location: true,
             vatNumber: true,
@@ -56,7 +57,7 @@ export default async function PosPage() {
     sessionUser.role === "SUPER_ADMIN"
       ? prisma.store.findMany({
           orderBy: { nameEn: "asc" },
-          select: { id: true, nameEn: true, vatPercentage: true }
+          select: { id: true, nameEn: true, nameBn: true, vatPercentage: true }
         })
       : Promise.resolve([])
   ]);

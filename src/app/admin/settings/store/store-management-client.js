@@ -5,15 +5,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, CircleAlert, Pencil, Plus, Search, Store, Upload, UserMinus, UserPlus, Users } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { assignStoreManager, createStoreManager, saveStoreDetails, unassignStoreManager } from "./actions";
 
 const DEFAULT_MANAGER_PASSWORD = "password123";
 const INITIAL_ACTION_STATE = { status: "idle", message: "" };
 
 function Toast({ toast, onClose }) {
+  const { t } = useTranslation();
+
   if (!toast) return null;
 
   const isError = toast.status === "error";
@@ -23,16 +27,18 @@ function Toast({ toast, onClose }) {
       <div className="flex items-start gap-3">
         {isError ? <CircleAlert className="mt-0.5 h-5 w-5 text-[#13508b]" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-slate-900">{isError ? "Action failed" : "Success"}</div>
+          <div className="text-sm font-semibold text-slate-900">{isError ? t("storeManagement.statusError") : t("storeManagement.statusSuccess")}</div>
           <div className="mt-1 text-sm text-slate-600">{toast.message}</div>
         </div>
-        <button type="button" onClick={onClose} className="text-sm text-slate-400 hover:text-slate-600">Close</button>
+        <button type="button" onClick={onClose} className="text-sm text-slate-400 hover:text-slate-600">{t("storeManagement.close")}</button>
       </div>
     </div>
   );
 }
 
 function StoreLogoInput({ selectedStore }) {
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(selectedStore?.logoUrl || "");
   const [isDragging, setIsDragging] = useState(false);
@@ -68,7 +74,7 @@ function StoreLogoInput({ selectedStore }) {
 
   return (
     <label className="block text-sm text-slate-700 md:col-span-2">
-      <span className="mb-2 block font-medium">Store Logo</span>
+      <span className="mb-2 block font-medium">{t("storeManagement.storeLogo")}</span>
       <div
         role="button"
         tabIndex={0}
@@ -114,14 +120,23 @@ function StoreLogoInput({ selectedStore }) {
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
             {previewUrl ? (
-              <Image src={previewUrl} alt={selectedStore?.nameEn || "Store logo preview"} width={64} height={64} className="h-16 w-16 rounded-2xl object-cover" unoptimized={previewUrl.startsWith("blob:")} />
+              <Image
+                src={previewUrl}
+                alt={selectedStore?.nameEn
+                  ? t("storeManagement.storeLogoPreview", { storeName: translateContent(selectedStore.nameEn) })
+                  : t("storeManagement.defaultStoreLogoPreview")}
+                width={64}
+                height={64}
+                className="h-16 w-16 rounded-2xl object-cover"
+                unoptimized={previewUrl.startsWith("blob:")}
+              />
             ) : (
               <Upload className="h-6 w-6 text-slate-400" />
             )}
           </div>
           <div>
-            <div className="font-medium text-slate-900">Upload store logo</div>
-            <div className="mt-1 text-sm text-slate-500">Drag an image here or click to choose a file.</div>
+            <div className="font-medium text-slate-900">{t("storeManagement.uploadStoreLogo")}</div>
+            <div className="mt-1 text-sm text-slate-500">{t("storeManagement.uploadStoreLogoHint")}</div>
           </div>
         </div>
       </div>
@@ -130,19 +145,22 @@ function StoreLogoInput({ selectedStore }) {
 }
 
 function ModalActions({ pending, submitLabel, onCancel }) {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-8 flex gap-3">
       <button type="button" onClick={onCancel} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">
-        Cancel
+        {t("common.cancel")}
       </button>
       <Button type="submit" className="flex-1 rounded-2xl py-3" disabled={pending}>
-        {pending ? "Saving..." : submitLabel}
+        {pending ? t("common.saving") : submitLabel}
       </Button>
     </div>
   );
 }
 
 function StoreDetailsModal({ isOpen, selectedStore, allowUserStoreFallback, onClose, onToast, onSuccess }) {
+  const { t } = useTranslation();
   const [state, formAction, pending] = useActionState(saveStoreDetails, INITIAL_ACTION_STATE);
 
   useEffect(() => {
@@ -156,8 +174,8 @@ function StoreDetailsModal({ isOpen, selectedStore, allowUserStoreFallback, onCl
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-2xl" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">{selectedStore ? "Edit Store" : "Create Store"}</h3>
-      <p className="mt-2 text-sm text-slate-500">Keep it simple: name, location, VAT, and logo.</p>
+      <h3 className="text-2xl font-bold text-slate-900">{selectedStore ? t("storeManagement.editStore") : t("storeManagement.createStore")}</h3>
+      <p className="mt-2 text-sm text-slate-500">{t("storeManagement.storeModalSubtitle")}</p>
       <form action={formAction} className="mt-6 space-y-5" encType="multipart/form-data">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
         <input type="hidden" name="allowUserStoreFallback" value={String(allowUserStoreFallback)} />
@@ -166,33 +184,35 @@ function StoreDetailsModal({ isOpen, selectedStore, allowUserStoreFallback, onCl
           <StoreLogoInput selectedStore={selectedStore} />
 
           <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">Store Name</span>
-            <input name="storeName" type="text" required defaultValue={selectedStore?.nameEn || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="BPC Dhaka" />
+            <span className="mb-2 block font-medium">{t("storeManagement.storeName")}</span>
+            <input name="storeName" type="text" required defaultValue={selectedStore?.nameEn || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.storeNamePlaceholder")} />
           </label>
 
           <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">Store Location</span>
-            <input name="storeLocation" type="text" defaultValue={selectedStore?.location || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Dhaka, Bangladesh" />
+            <span className="mb-2 block font-medium">{t("storeManagement.storeLocation")}</span>
+            <input name="storeLocation" type="text" defaultValue={selectedStore?.location || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.storeLocationPlaceholder")} />
           </label>
 
           <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">VAT Number</span>
-            <input name="vatNumber" type="text" defaultValue={selectedStore?.vatNumber || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Optional" />
+            <span className="mb-2 block font-medium">{t("storeManagement.vatNumber")}</span>
+            <input name="vatNumber" type="text" defaultValue={selectedStore?.vatNumber || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.vatNumberPlaceholder")} />
           </label>
 
           <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">VAT Percentage</span>
+            <span className="mb-2 block font-medium">{t("storeManagement.vatPercentage")}</span>
             <input name="vatPercentage" type="number" min="0" step="0.01" defaultValue={selectedStore?.vatPercentage ?? 0} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="5" />
           </label>
         </div>
 
-        <ModalActions pending={pending} submitLabel={selectedStore ? "Save Store" : "Create Store"} onCancel={onClose} />
+        <ModalActions pending={pending} submitLabel={selectedStore ? t("storeManagement.saveStore") : t("storeManagement.createStore")} onCancel={onClose} />
       </form>
     </ModalShell>
   );
 }
 
 function AssignManagerModal({ isOpen, selectedStore, managers, onClose, onToast, onSuccess }) {
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
   const [state, formAction, pending] = useActionState(assignStoreManager, INITIAL_ACTION_STATE);
 
   useEffect(() => {
@@ -214,30 +234,41 @@ function AssignManagerModal({ isOpen, selectedStore, managers, onClose, onToast,
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-lg" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">Assign Existing Manager</h3>
-      <p className="mt-2 text-sm text-slate-500">Choose a manager and attach them to {selectedStore?.nameEn || "this store"}.</p>
+      <h3 className="text-2xl font-bold text-slate-900">{t("storeManagement.assignExistingManager")}</h3>
+      <p className="mt-2 text-sm text-slate-500">{t("storeManagement.assignManagerSubtitle", { storeName: selectedStore?.nameEn ? translateContent(selectedStore.nameEn) : t("storeManagement.thisStore") })}</p>
       <form action={formAction} className="mt-6 space-y-4">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
 
         <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">Manager</span>
+          <span className="mb-2 block font-medium">{t("storeManagement.manager")}</span>
           <select name="managerId" defaultValue="" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <option value="">Select a manager</option>
+            <option value="">{t("storeManagement.selectManager")}</option>
             {managerOptions.map((manager) => (
               <option key={manager.id} value={manager.id}>
-                {manager.name} ({manager.email}){manager.store ? ` - currently at ${manager.store.nameEn}` : " - unassigned"}
+                {manager.store
+                  ? t("storeManagement.managerOptionAssigned", {
+                      name: manager.name,
+                      email: manager.email,
+                      storeName: translateContent(manager.store.nameEn)
+                    })
+                  : t("storeManagement.managerOptionUnassigned", {
+                      name: manager.name,
+                      email: manager.email
+                    })}
               </option>
             ))}
           </select>
         </label>
 
-        <ModalActions pending={pending} submitLabel="Assign Manager" onCancel={onClose} />
+        <ModalActions pending={pending} submitLabel={t("storeManagement.assignManager")} onCancel={onClose} />
       </form>
     </ModalShell>
   );
 }
 
 function CreateManagerModal({ isOpen, selectedStore, onClose, onToast, onSuccess }) {
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
   const [state, formAction, pending] = useActionState(createStoreManager, INITIAL_ACTION_STATE);
 
   useEffect(() => {
@@ -251,34 +282,35 @@ function CreateManagerModal({ isOpen, selectedStore, onClose, onToast, onSuccess
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-lg" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">Create Manager</h3>
-      <p className="mt-2 text-sm text-slate-500">Add a new manager directly to {selectedStore?.nameEn || "this store"}.</p>
+      <h3 className="text-2xl font-bold text-slate-900">{t("storeManagement.createManager")}</h3>
+      <p className="mt-2 text-sm text-slate-500">{t("storeManagement.createManagerSubtitle", { storeName: selectedStore?.nameEn ? translateContent(selectedStore.nameEn) : t("storeManagement.thisStore") })}</p>
       <form action={formAction} className="mt-6 space-y-4">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
 
         <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">Manager Name</span>
-          <input name="managerName" type="text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Store Manager" />
+          <span className="mb-2 block font-medium">{t("storeManagement.managerName")}</span>
+          <input name="managerName" type="text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.managerNamePlaceholder")} />
         </label>
 
         <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">Manager Email</span>
-          <input name="managerEmail" type="email" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="manager@shop.local" />
+          <span className="mb-2 block font-medium">{t("storeManagement.managerEmail")}</span>
+          <input name="managerEmail" type="email" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.managerEmailPlaceholder")} />
         </label>
 
         <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">Password</span>
+          <span className="mb-2 block font-medium">{t("storeManagement.password")}</span>
           <input name="managerPassword" type="text" defaultValue={DEFAULT_MANAGER_PASSWORD} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-          <span className="mt-2 block text-xs text-slate-500">Default password is <code>password123</code> unless you change it here.</span>
+          <span className="mt-2 block text-xs text-slate-500">{t("storeManagement.defaultPasswordHint", { password: DEFAULT_MANAGER_PASSWORD })}</span>
         </label>
 
-        <ModalActions pending={pending} submitLabel="Create Manager" onCancel={onClose} />
+        <ModalActions pending={pending} submitLabel={t("storeManagement.createManager")} onCancel={onClose} />
       </form>
     </ModalShell>
   );
 }
 
 function UnassignManagerModal({ isOpen, manager, storeId, onClose, onToast, onSuccess }) {
+  const { t } = useTranslation();
   const [state, formAction, pending] = useActionState(unassignStoreManager, INITIAL_ACTION_STATE);
 
   useEffect(() => {
@@ -292,12 +324,12 @@ function UnassignManagerModal({ isOpen, manager, storeId, onClose, onToast, onSu
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-md" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">Remove Manager</h3>
-      <p className="mt-2 text-sm text-slate-500">{manager ? `Remove ${manager.name} from this store?` : "Remove this manager from the store?"}</p>
+      <h3 className="text-2xl font-bold text-slate-900">{t("storeManagement.removeManager")}</h3>
+      <p className="mt-2 text-sm text-slate-500">{manager ? t("storeManagement.removeManagerPrompt", { name: manager.name }) : t("storeManagement.removeManagerFallback")}</p>
       <form action={formAction} className="mt-6">
         <input type="hidden" name="managerId" value={manager?.id || ""} />
         <input type="hidden" name="storeId" value={storeId || ""} />
-        <ModalActions pending={pending} submitLabel="Remove Manager" onCancel={onClose} />
+        <ModalActions pending={pending} submitLabel={t("storeManagement.removeManager")} onCancel={onClose} />
       </form>
     </ModalShell>
   );
@@ -334,6 +366,8 @@ export function StoreManagementClient({
   manageLinkPrefix,
   allowUserStoreFallback = false
 }) {
+  const { t } = useTranslation();
+  const { translateContent } = useTranslatedContent();
   const [toast, setToast] = useState(null);
   const [query, setQuery] = useState("");
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
@@ -351,17 +385,28 @@ export function StoreManagementClient({
   }, [toast]);
 
   const selectedStoreId = selectedStore?.id || "";
+  const localizedTitle = showStoreList
+    ? t("storeManagement.multiStoreTitle", { defaultValue: title })
+    : t("pages.storeSettingsTitle", { defaultValue: title });
+  const localizedSubtitle = showStoreList
+    ? t("storeManagement.multiStoreSubtitle", { defaultValue: subtitle })
+    : t("pages.storeSettingsSubtitle", { defaultValue: subtitle });
   const currentQuery = useMemo(() => new URLSearchParams(searchParams?.toString() || ""), [searchParams]);
   const filteredStores = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return stores;
 
     return stores.filter((store) => {
+      const translatedName = translateContent(store.nameEn).toLowerCase();
+      const translatedLocation = store.location ? translateContent(store.location).toLowerCase() : "";
+
       return store.nameEn.toLowerCase().includes(normalizedQuery)
+        || translatedName.includes(normalizedQuery)
         || (store.location || "").toLowerCase().includes(normalizedQuery)
+        || translatedLocation.includes(normalizedQuery)
         || (store.vatNumber || "").toLowerCase().includes(normalizedQuery);
     });
-  }, [query, stores]);
+  }, [query, stores, translateContent]);
 
   function buildStoreHref(storeId) {
     const params = new URLSearchParams(currentQuery.toString());
@@ -428,38 +473,38 @@ export function StoreManagementClient({
       <div className="space-y-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-slate-900">{title}</h2>
-            <p className="text-sm text-slate-500">{subtitle}</p>
+            <h2 className="text-2xl font-black text-slate-900">{localizedTitle}</h2>
+            <p className="text-sm text-slate-500">{localizedSubtitle}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             {createLink ? (
               <Link href={createLink} className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
-                Open Multi-Store View
+                {t("storeManagement.openMultiStoreView")}
               </Link>
             ) : null}
             <Button className="rounded-2xl px-4 py-3" onClick={() => setIsStoreModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              {selectedStore ? "Edit Store" : "Create Store"}
+              {selectedStore ? t("storeManagement.editStore") : t("storeManagement.createStore")}
             </Button>
             {selectedStore ? (
               <Button variant="outline" className="rounded-2xl px-4 py-3" onClick={() => setIsAssignModalOpen(true)}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Assign Manager
+                {t("storeManagement.assignManager")}
               </Button>
             ) : null}
             {selectedStore ? (
               <Button variant="outline" className="rounded-2xl px-4 py-3" onClick={() => setIsCreateManagerModalOpen(true)}>
                 <Users className="mr-2 h-4 w-4" />
-                New Manager
+                {t("storeManagement.newManager")}
               </Button>
             ) : null}
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <SummaryCard label="Stores" value={stores.length} hint="Total branches currently configured." />
-          <SummaryCard label="Assigned Managers" value={managers.length - unassignedManagers} hint="Managers already attached to a store." />
-          <SummaryCard label="Unassigned Managers" value={unassignedManagers} hint="Managers ready to be assigned." />
+          <SummaryCard label={t("storeManagement.stores")} value={stores.length} hint={t("storeManagement.storesHint")} />
+          <SummaryCard label={t("storeManagement.assignedManagers")} value={managers.length - unassignedManagers} hint={t("storeManagement.assignedManagersHint")} />
+          <SummaryCard label={t("storeManagement.unassignedManagers")} value={unassignedManagers} hint={t("storeManagement.unassignedManagersHint")} />
         </div>
 
         {showStoreList ? (
@@ -471,11 +516,11 @@ export function StoreManagementClient({
                   type="text"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search stores by name, location, or VAT"
+                  placeholder={t("storeManagement.searchStoresPlaceholder")}
                   className="w-full rounded-2xl border border-slate-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-400"
                 />
               </label>
-              <div className="flex items-center justify-end text-sm text-slate-500">Showing {filteredStores.length} of {stores.length} stores.</div>
+              <div className="flex items-center justify-end text-sm text-slate-500">{t("storeManagement.showingStores", { visible: filteredStores.length, total: stores.length })}</div>
             </div>
           </Card>
         ) : null}
@@ -483,14 +528,14 @@ export function StoreManagementClient({
         {showStoreList ? (
           <Card className="overflow-hidden">
             <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_140px_130px] gap-4 border-b border-slate-100 bg-slate-50 px-6 py-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              <div>Store</div>
-              <div>Location</div>
-              <div>Managers</div>
-              <div className="text-right">Action</div>
+              <div>{t("storeManagement.columnStore")}</div>
+              <div>{t("storeManagement.columnLocation")}</div>
+              <div>{t("storeManagement.columnManagers")}</div>
+              <div className="text-right">{t("common.action")}</div>
             </div>
             <div className="divide-y divide-slate-100">
               {filteredStores.length === 0 ? (
-                <div className="px-6 py-10 text-center text-sm text-slate-500">No stores match the current search.</div>
+                <div className="px-6 py-10 text-center text-sm text-slate-500">{t("storeManagement.noStoresMatch")}</div>
               ) : null}
               {filteredStores.map((store) => {
                 const isActive = store.id === selectedStoreId;
@@ -500,19 +545,19 @@ export function StoreManagementClient({
                     <Link href={buildStoreHref(store.id)} className="min-w-0">
                       <div className="flex items-center gap-4">
                         <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${isActive ? "bg-[#2771cb] text-white" : "bg-slate-100 text-slate-700"}`}>
-                          {store.logoUrl ? <Image src={store.logoUrl} alt={store.nameEn} width={48} height={48} className="h-12 w-12 rounded-2xl object-cover" /> : getInitials(store.nameEn)}
+                          {store.logoUrl ? <Image src={store.logoUrl} alt={translateContent(store.nameEn)} width={48} height={48} className="h-12 w-12 rounded-2xl object-cover" /> : getInitials(store.nameEn)}
                         </div>
                         <div className="min-w-0">
-                          <div className="truncate font-semibold text-slate-900">{store.nameEn}</div>
-                          <div className="mt-1 truncate text-sm text-slate-500">VAT {store.vatPercentage ?? 0}%{store.vatNumber ? ` • ${store.vatNumber}` : ""}</div>
+                          <div className="truncate font-semibold text-slate-900">{translateContent(store.nameEn)}</div>
+                          <div className="mt-1 truncate text-sm text-slate-500">{t("storeManagement.vatSummary", { percentage: store.vatPercentage ?? 0 })}{store.vatNumber ? ` • ${store.vatNumber}` : ""}</div>
                         </div>
                       </div>
                     </Link>
-                    <div className="text-sm text-slate-600">{store.location || "No location"}</div>
+                    <div className="text-sm text-slate-600">{store.location ? translateContent(store.location) : t("storeManagement.noLocation")}</div>
                     <div className="text-sm font-semibold text-slate-900">{store.users.length}</div>
                     <div className="flex justify-end">
                       <Link href={buildStoreHref(store.id)} className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        Open
+                        {t("storeManagement.open")}
                       </Link>
                     </div>
                   </div>
@@ -528,19 +573,19 @@ export function StoreManagementClient({
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div className="flex items-start gap-4">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">
-                    {selectedStore.logoUrl ? <Image src={selectedStore.logoUrl} alt={selectedStore.nameEn} width={64} height={64} className="h-16 w-16 rounded-2xl object-cover" /> : getInitials(selectedStore.nameEn)}
+                    {selectedStore.logoUrl ? <Image src={selectedStore.logoUrl} alt={translateContent(selectedStore.nameEn)} width={64} height={64} className="h-16 w-16 rounded-2xl object-cover" /> : getInitials(selectedStore.nameEn)}
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-xl font-bold text-slate-900">{selectedStore.nameEn}</h3>
+                      <h3 className="text-xl font-bold text-slate-900">{translateContent(selectedStore.nameEn)}</h3>
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                        {selectedStore.location || "No location"}
+                        {selectedStore.location ? translateContent(selectedStore.location) : t("storeManagement.noLocation")}
                       </span>
                     </div>
-                    <div className="mt-2 text-sm text-slate-500">VAT {Number(selectedStore.vatPercentage || 0).toFixed(2)}%{selectedStore.vatNumber ? ` • ${selectedStore.vatNumber}` : ""}</div>
+                    <div className="mt-2 text-sm text-slate-500">{t("storeManagement.vatSummary", { percentage: Number(selectedStore.vatPercentage || 0).toFixed(2) })}{selectedStore.vatNumber ? ` • ${selectedStore.vatNumber}` : ""}</div>
                     <div className="mt-3 flex flex-wrap gap-5 text-xs font-medium uppercase tracking-wide text-slate-400">
-                      <span>{assignedManagers.length} assigned manager(s)</span>
-                      <span>Store code {selectedStore.code}</span>
+                      <span>{t("storeManagement.assignedManagerCount", { count: assignedManagers.length })}</span>
+                      <span>{t("storeManagement.storeCode", { code: selectedStore.code })}</span>
                     </div>
                   </div>
                 </div>
@@ -549,12 +594,12 @@ export function StoreManagementClient({
                   {showStoreList ? null : (
                     <Link href={`${pathname === "/admin/settings/store" ? "/admin/settings/store/manage" : "/admin/settings/store"}?storeId=${selectedStore.id}`} className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
                       <Store className="mr-2 h-4 w-4" />
-                      {pathname === "/admin/settings/store" ? "Open Multi-Store View" : "Open Store Setup"}
+                      {pathname === "/admin/settings/store" ? t("storeManagement.openMultiStoreView") : t("storeManagement.openStoreSetup")}
                     </Link>
                   )}
                   <Button variant="outline" className="rounded-2xl px-4 py-3" onClick={() => setIsStoreModalOpen(true)}>
                     <Pencil className="mr-2 h-4 w-4" />
-                    Edit Details
+                    {t("storeManagement.editDetails")}
                   </Button>
                 </div>
               </div>
@@ -563,14 +608,14 @@ export function StoreManagementClient({
             <div className="space-y-5 px-6 py-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-lg font-bold text-slate-900">Assigned Managers</div>
-                  <div className="text-sm text-slate-500">Use simple actions to add, create, or remove store managers.</div>
+                  <div className="text-lg font-bold text-slate-900">{t("storeManagement.assignedManagers")}</div>
+                  <div className="text-sm text-slate-500">{t("storeManagement.assignedManagersSubtitle")}</div>
                 </div>
               </div>
 
               {assignedManagers.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
-                  No managers are assigned to this store yet.
+                  {t("storeManagement.noAssignedManagers")}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -582,7 +627,7 @@ export function StoreManagementClient({
                       </div>
                       <Button variant="outline" className="rounded-xl" onClick={() => setManagerToUnassign(manager)}>
                         <UserMinus className="mr-2 h-4 w-4" />
-                        Remove
+                        {t("storeManagement.removeManager")}
                       </Button>
                     </div>
                   ))}
@@ -592,7 +637,7 @@ export function StoreManagementClient({
           </Card>
         ) : (
           <Card className="p-10 text-center text-slate-500">
-            Select a store to view details and manage its managers.
+            {t("storeManagement.selectStoreEmpty")}
           </Card>
         )}
       </div>

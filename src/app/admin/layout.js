@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }) {
   ]);
 
   const stores = sessionUser.role === "SUPER_ADMIN"
-    ? await prisma.store.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, nameEn: true } })
+    ? await prisma.store.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, nameEn: true, nameBn: true } })
     : [];
 
   return (

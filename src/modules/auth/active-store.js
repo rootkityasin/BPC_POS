@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 const ACTIVE_STORE_COOKIE = "activeStoreId";
 
@@ -23,7 +24,14 @@ export async function getActiveStoreId(user) {
   if (user.role === "SUPER_ADMIN") {
     const cookieStore = await cookies();
     const activeStoreId = cookieStore.get(ACTIVE_STORE_COOKIE)?.value;
-    return activeStoreId || null;
+    if (!activeStoreId) return null;
+
+    const store = await prisma.store.findUnique({
+      where: { id: activeStoreId },
+      select: { id: true }
+    });
+
+    return store?.id || null;
   }
 
   return null;
