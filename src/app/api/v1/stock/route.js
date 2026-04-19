@@ -3,11 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
 import { getActiveStoreId } from "@/modules/auth/active-store";
 import { translateTexts } from "@/modules/i18n/libretranslate-service";
+import { FEATURE_KEYS, canManage, canView } from "@/core/policies/permission-policy";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (user.role !== "SUPER_ADMIN" && !canView(user.permissions, FEATURE_KEYS.STOCK)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const storeId = await getActiveStoreId(user);
@@ -23,6 +27,13 @@ export async function GET() {
 
 export async function POST(request) {
   const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (user.role !== "SUPER_ADMIN" && !canManage(user.permissions, FEATURE_KEYS.STOCK)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const storeId = await getActiveStoreId(user);
   if (!storeId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

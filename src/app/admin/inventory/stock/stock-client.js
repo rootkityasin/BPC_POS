@@ -14,7 +14,7 @@ function formatCurrency(value) {
   return `৳${Number(value).toFixed(2)}`;
 }
 
-export function StockClient({ stockItems, canCreate = true, showStoreColumn = false }) {
+export function StockClient({ stockItems, canCreate = true, canManage = true, showStoreColumn = false }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -143,7 +143,7 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
                 <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.createdBy")}</th>
                 <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.supplier")}</th>
                 {showStoreColumn ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">Store</th> : null}
-                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.action")}</th>
+                {canManage ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.action")}</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -155,20 +155,22 @@ export function StockClient({ stockItems, canCreate = true, showStoreColumn = fa
                   <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{translateContent(item.supplier)}</td>
                   {showStoreColumn ? <td className="px-8 py-5 font-medium text-slate-800">{item.store?.nameEn || "Unknown store"}</td> : null}
-                  <td className="px-8 py-5">
-                    <div className="action-menu-container relative w-max">
-                      <button type="button" onClick={() => toggleMenu(item.id)} className="flex items-center justify-center text-[#2771cb] hover:opacity-75 focus:outline-none">
-                        <Menu className="h-5 w-5" />
-                      </button>
+                  {canManage ? (
+                    <td className="px-8 py-5">
+                      <div className="action-menu-container relative w-max">
+                        <button type="button" onClick={() => toggleMenu(item.id)} className="flex items-center justify-center text-[#2771cb] hover:opacity-75 focus:outline-none">
+                          <Menu className="h-5 w-5" />
+                        </button>
 
-                      {activeMenuId === item.id && (
-                        <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
-                          <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#e5f1ff] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-[#d6e8ff]">{t("common.edit")}</button>
-                          <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
+                        {activeMenuId === item.id && (
+                          <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
+                            <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#e5f1ff] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-[#d6e8ff]">{t("common.edit")}</button>
+                            <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

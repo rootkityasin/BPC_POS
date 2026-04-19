@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useActionState, useEffect, useMemo, useState } from "react";
+import { Fragment, useActionState, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ChevronDown, CircleAlert, KeyRound, Search, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -243,9 +243,9 @@ export function RolesClient({ managers, permissionSections, stats }) {
     }
   }, [filteredManagers, openManagerId]);
 
-  function handleRefresh() {
+  const handleRefresh = useCallback(() => {
     router.refresh();
-  }
+  }, [router]);
 
   return (
     <>

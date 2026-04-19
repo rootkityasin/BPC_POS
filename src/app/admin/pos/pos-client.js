@@ -22,6 +22,80 @@ function formatCurrency(value) {
   return `৳${Number(value || 0).toFixed(2)}`;
 }
 
+function normalizeCustomerName(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function normalizeBangladeshPhone(value) {
+  const normalizedValue = String(value || "").replace(/[^\d+]/g, "").trim();
+
+  if (!normalizedValue) return "";
+  if (normalizedValue.startsWith("+880")) return normalizedValue.slice(4);
+  if (normalizedValue.startsWith("880")) return normalizedValue.slice(3);
+  if (normalizedValue.startsWith("0")) return normalizedValue.slice(1);
+  return normalizedValue;
+}
+
+function isValidBangladeshName(value) {
+  const normalizedValue = normalizeCustomerName(value);
+  if (!normalizedValue) return false;
+  if (normalizedValue.length < 2 || normalizedValue.length > 60) return false;
+  return /^[A-Za-z\u0980-\u09FF.' ]+$/.test(normalizedValue);
+}
+
+function isValidBangladeshPhone(value) {
+  const normalizedValue = normalizeBangladeshPhone(value);
+  if (!normalizedValue) return false;
+  return /^1[3-9]\d{8}$/.test(normalizedValue);
+}
+
+function formatBangladeshPhoneForStorage(value) {
+  const normalizedValue = normalizeBangladeshPhone(value);
+  return normalizedValue ? `+880${normalizedValue}` : "";
+}
+
+function printHtmlDirect(html) {
+  if (typeof window === "undefined" || !html) return false;
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const cleanup = () => {
+    iframe.remove();
+  };
+
+  const frameDocument = iframe.contentWindow?.document;
+  if (!frameDocument) {
+    cleanup();
+    return false;
+  }
+
+  frameDocument.open();
+  frameDocument.write(html);
+  frameDocument.close();
+
+  const frameWindow = iframe.contentWindow;
+  if (!frameWindow) {
+    cleanup();
+    return false;
+  }
+
+  setTimeout(() => {
+    frameWindow.focus();
+    frameWindow.print();
+    setTimeout(cleanup, 1000);
+  }, 80);
+
+  return true;
+}
+
 function useCachedStoreLabels(storeEntries) {
   const { i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -244,6 +318,14 @@ function PaymentDetailsModal({
   const paid = Number(amountPaid || 0);
   const due = Math.max(totals.totalAmount - paid, 0);
   const changeDue = Math.max(paid - totals.totalAmount, 0);
+  const normalizedCustomerName = normalizeCustomerName(customerName);
+  const normalizedCustomerPhone = normalizeBangladeshPhone(customerPhone);
+  const hasName = Boolean(normalizedCustomerName);
+  const hasPhone = Boolean(normalizedCustomerPhone);
+  const hasCustomerDetails = hasName || hasPhone;
+  const hasValidName = !hasName || isValidBangladeshName(normalizedCustomerName);
+  const hasValidPhone = !hasPhone || isValidBangladeshPhone(normalizedCustomerPhone);
+  const canConfirm = hasCustomerDetails && hasValidName && hasValidPhone;
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-4xl" onBackdropClick={onClose}>
@@ -254,11 +336,20 @@ function PaymentDetailsModal({
           <div className="mt-8 space-y-5">
             <div className="grid gap-3 md:grid-cols-[130px_minmax(0,1fr)] md:items-center">
               <label className="text-xl font-medium text-slate-700">Customer Name</label>
-              <input type="text" value={customerName} onChange={(event) => onCustomerNameChange(event.target.value)} placeholder="Enter customer name" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base outline-none focus:border-[#2f6fc6]" />
+              <div>
+                <input type="text" value={customerName} onChange={(event) => onCustomerNameChange(event.target.value)} placeholder="Enter customer name" className={`w-full rounded-xl border px-4 py-3 text-base outline-none ${hasValidName ? "border-slate-200 focus:border-[#2f6fc6]" : "border-red-300 focus:border-red-500"}`} />
+                {!hasValidName ? <p className="mt-2 text-xs text-red-500">Use a real name with Bangla or English letters only.</p> : null}
+              </div>
             </div>
             <div className="grid gap-3 md:grid-cols-[130px_minmax(0,1fr)] md:items-center">
               <label className="text-xl font-medium text-slate-700">Contact Number</label>
-              <input type="tel" value={customerPhone} onChange={(event) => onCustomerPhoneChange(event.target.value)} placeholder="Enter contact number" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base outline-none focus:border-[#2f6fc6]" />
+              <div>
+                <div className={`flex items-center rounded-xl border bg-white ${hasValidPhone ? "border-slate-200 focus-within:border-[#2f6fc6]" : "border-red-300 focus-within:border-red-500"}`}>
+                  <span className="rounded-l-xl bg-slate-50 px-4 py-3 text-base font-medium text-slate-500">+880</span>
+                  <input type="tel" inputMode="numeric" value={normalizedCustomerPhone} onChange={(event) => onCustomerPhoneChange(normalizeBangladeshPhone(event.target.value))} placeholder="1712345678" className="w-full rounded-r-xl border-0 px-4 py-3 text-base outline-none placeholder:text-slate-400" />
+                </div>
+                {!hasValidPhone ? <p className="mt-2 text-xs text-red-500">Use a valid Bangladesh number like `01XXXXXXXXX` or `+8801XXXXXXXXX`.</p> : null}
+              </div>
             </div>
           </div>
 
@@ -320,13 +411,12 @@ function PaymentDetailsModal({
             </div>
           </div>
 
-          <div className="mt-4 flex gap-4">
-            <button type="button" onClick={onConfirm} disabled={isProcessing} className="flex-1 rounded-2xl bg-[#2f6fc6] px-5 py-4 text-lg font-semibold text-white transition-colors hover:bg-[#255ca8] disabled:opacity-50">
-              {isProcessing ? "Processing..." : "Confirm"}
+          <div className="mt-4 space-y-3">
+            <button type="button" onClick={onConfirm} disabled={isProcessing || !canConfirm} className="w-full rounded-2xl bg-[#2f6fc6] px-5 py-4 text-lg font-semibold text-white transition-colors hover:bg-[#255ca8] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500">
+              {isProcessing ? "Processing..." : "Complete Order & Print"}
             </button>
-            <button type="button" onClick={() => onAmountPaidChange(String(totals.totalAmount.toFixed(2)))} className="flex-1 rounded-2xl bg-[#e8f1ff] px-5 py-4 text-lg font-semibold text-[#2f6fc6] transition-colors hover:bg-[#d9e8ff]">
-              Full Payment
-            </button>
+            {!hasCustomerDetails ? <p className="text-sm text-amber-600">Enter a customer name or contact number to complete the order.</p> : null}
+            {hasCustomerDetails && (!hasValidName || !hasValidPhone) ? <p className="text-sm text-amber-600">Fix the invalid customer information before completing the order.</p> : null}
           </div>
         </div>
       </div>
@@ -465,6 +555,24 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   async function handleCheckoutConfirm() {
     if (cart.length === 0) return;
 
+    const normalizedCustomerName = normalizeCustomerName(customerName);
+    const normalizedCustomerPhone = normalizeBangladeshPhone(customerPhone);
+
+    if (!normalizedCustomerName && !normalizedCustomerPhone) {
+      alert("Customer name or contact number is required to complete the order.");
+      return;
+    }
+
+    if (normalizedCustomerName && !isValidBangladeshName(normalizedCustomerName)) {
+      alert("Enter a valid customer name using Bangla or English letters.");
+      return;
+    }
+
+    if (normalizedCustomerPhone && !isValidBangladeshPhone(normalizedCustomerPhone)) {
+      alert("Enter a valid Bangladesh phone number.");
+      return;
+    }
+
     const checkoutStoreId = cartStoreId || selectedStoreFilter;
     if (!checkoutStoreId || checkoutStoreId === "all") {
       setCartNotice("Select a store or add items from a single store before checkout.");
@@ -474,8 +582,8 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     setIsProcessing(true);
     try {
       const result = await createOrder(checkoutStoreId, {
-        customerName,
-        customerPhone,
+        customerName: normalizedCustomerName,
+        customerPhone: formatBangladeshPhoneForStorage(normalizedCustomerPhone),
         paymentMethod,
         splitCount,
         amountPaid: Number(amountPaid || 0),
@@ -491,6 +599,12 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
         tax: getTax(),
         total: getTotal()
       });
+
+      const receiptPaperWidth = result.store?.receiptPaperWidth || "80mm";
+      const receiptHtml = buildReceiptHtml(result, t, (item) => item.itemName || "Item", {
+        paperWidthOverride: receiptPaperWidth
+      });
+      printHtmlDirect(receiptHtml);
 
       alert(`Order placed successfully!\nInvoice: ${result.invoiceNumber}`);
       setIsCheckoutOpen(false);
@@ -587,7 +701,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                 <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
                 <div data-no-translate="true" className="mt-1 text-sm text-slate-500">{pageStoreName}</div>
               </div>
-              <div className="relative z-50 flex w-full max-w-[760px] items-center gap-3">
+              <div className="relative z-40 flex w-full max-w-[620px] items-center gap-3 xl:mr-[390px]">
                 <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
                   <input
                     type="text"
@@ -615,7 +729,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                   </div>
                 ) : null}
 
-                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="rounded-2xl bg-[#2771cb] px-8 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b]">
+                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="shrink-0 rounded-2xl bg-[#2771cb] px-6 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b]">
                   Search
                 </button>
 

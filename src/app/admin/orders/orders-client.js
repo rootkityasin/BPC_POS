@@ -280,13 +280,13 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                 <th className="px-5 py-3">{t("orders.total")}</th>
                 <th className="px-5 py-3">{t("orders.items")}</th>
                 <th className="px-5 py-3">{t("orders.printReceipt")}</th>
-                <th className="px-5 py-3">{t("common.action")}</th>
+                {canManage ? <th className="px-5 py-3">{t("common.action")}</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={showStoreColumn ? 9 : 8} className="px-5 py-10 text-center text-slate-500">{t("orders.noOrdersYet")}</td>
+                  <td colSpan={(showStoreColumn ? 9 : 8) - (canManage ? 0 : 1)} className="px-5 py-10 text-center text-slate-500">{t("orders.noOrdersYet")}</td>
                 </tr>
               ) : (
                 orders.map((order) => {
@@ -329,8 +329,8 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                           {printingOrderId === order.id ? t("common.processing") : t("orders.printReceipt")}
                         </button>
                       </td>
-                      <td className="px-5 py-4 text-slate-500">
-                        {canManage ? (
+                      {canManage ? (
+                        <td className="px-5 py-4 text-slate-500">
                           <button
                             type="button"
                             onClick={() => openEditModal(order)}
@@ -339,10 +339,8 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                             <Pencil className="h-4 w-4" />
                             {t("common.edit")}
                           </button>
-                        ) : (
-                          t("common.viewOnly")
-                        )}
-                      </td>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })

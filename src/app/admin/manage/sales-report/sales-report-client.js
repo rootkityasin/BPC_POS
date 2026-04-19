@@ -1,11 +1,73 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Download, TrendingUp } from "lucide-react";
+import { ChevronDown, Download, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+
+const FILTER_OPTIONS = [
+  { key: "category", label: "Category", updates: { view: "accumulated", breakdown: "category" } },
+  { key: "item", label: "Item", updates: { view: "accumulated", breakdown: "subcategory" } },
+  { key: "daily", label: "Daily", updates: { view: "daily", breakdown: "" } },
+  { key: "weekly", label: "Weekly", updates: { view: "weekly", breakdown: "" } },
+  { key: "accumulated", label: "Accumulated", updates: { view: "accumulated", breakdown: "category" } },
+  { key: "shift", label: "Shift wise", updates: { view: "shift", breakdown: "" } }
+];
+
+function getViewTitle(view) {
+  switch (view) {
+    case "accumulated":
+      return "Accumulated Sales";
+    case "shift":
+      return "Shift Wise Sell";
+    case "weekly":
+      return "Weekly Sell";
+    default:
+      return "Daily Sell";
+  }
+}
+
+function getViewSubtitle(view, scopeMode) {
+  const prefix = scopeMode === "all-stores" ? "Cross-store" : "Store-level";
+
+  switch (view) {
+    case "accumulated":
+      return `${prefix} all-time sales overview.`;
+    case "shift":
+      return `${prefix} sales grouped by shift.`;
+    case "weekly":
+      return `${prefix} sales grouped by day for the last 7 days.`;
+    default:
+      return `${prefix} sales grouped by hour for today.`;
+  }
+}
+
+function formatBreakdownLabel(option) {
+  switch (option) {
+    case "category":
+      return "Category";
+    case "subcategory":
+      return "Subcategory";
+    case "day":
+      return "Day";
+    case "store":
+      return "Store";
+    case "others":
+      return "Others Sell";
+    default:
+      return option;
+  }
+}
+
+function getActiveFilterKey(report) {
+  if (report.reportView === "daily") return "daily";
+  if (report.reportView === "weekly") return "weekly";
+  if (report.reportView === "shift") return "shift";
+  if (report.reportView === "accumulated" && report.filters.breakdown === "subcategory") return "item";
+  return "category";
+}
 
 function buildLinePath(values, width, height) {
   if (!values.length) return "";
@@ -90,11 +152,35 @@ function SingleLineChart({ labels, values }) {
 export function SalesReportClient({ report }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef(null);
+  const filterButtonRef = useRef(null);
 
-  const chartSeries = useMemo(
-    () => [{ label: report.filters.breakdown, color: "#2771cb", values: report.salesBreakdown.values }],
-    [report.filters.breakdown, report.salesBreakdown.values]
+  const activeFilterKey = getActiveFilterKey(report);
+  const activeFilterLabel = useMemo(
+    () => FILTER_OPTIONS.find((option) => option.key === activeFilterKey)?.label || "Filter",
+    [activeFilterKey]
   );
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!filterMenuRef.current && !filterButtonRef.current) return;
+      if (filterMenuRef.current?.contains(event.target) || filterButtonRef.current?.contains(event.target)) return;
+      setFilterMenuOpen(false);
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setFilterMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   function updateFilters(nextValues) {
     const params = new URLSearchParams();
@@ -106,6 +192,7 @@ export function SalesReportClient({ report }) {
     });
 
     router.push(`${pathname}?${params.toString()}`);
+    setFilterMenuOpen(false);
   }
 
   function handleExport() {
@@ -132,7 +219,7 @@ export function SalesReportClient({ report }) {
   }
 
   return (
-      <div className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <h2 className="text-2xl font-black text-slate-900">{report.title}</h2>
@@ -143,19 +230,37 @@ export function SalesReportClient({ report }) {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <select value={report.filters.range} onChange={(event) => updateFilters({ range: event.target.value })} className="min-w-[150px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400">
-            <option value="today">Today</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-            <option value="month">This Month</option>
-            <option value="custom">Custom</option>
-          </select>
-          {report.filters.range === "custom" ? (
-            <>
-              <input type="date" value={report.filters.from} onChange={(event) => updateFilters({ range: "custom", from: event.target.value })} className="min-w-[150px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400" />
-              <input type="date" value={report.filters.to} onChange={(event) => updateFilters({ range: "custom", to: event.target.value })} className="min-w-[150px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400" />
-            </>
-          ) : null}
+          <div className="relative" ref={filterMenuRef}>
+            <button
+              ref={filterButtonRef}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={filterMenuOpen}
+              onClick={() => setFilterMenuOpen((value) => !value)}
+              className="flex min-w-[156px] items-center justify-between gap-3 rounded-[18px] bg-white px-4 py-3 text-left text-[14px] font-medium text-[#2771cb] shadow-[0_6px_20px_rgba(15,23,42,0.08)] ring-1 ring-transparent transition hover:bg-[#fffdfa] focus:outline-none focus:ring-[#f2dfcb]"
+            >
+              <span className="truncate">{activeFilterLabel}</span>
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${filterMenuOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {filterMenuOpen ? (
+              <div className="absolute right-0 top-full z-50 mt-2 w-[165px] rounded-[18px] bg-white p-2 shadow-[0_16px_40px_rgba(15,23,42,0.12)]">
+                {FILTER_OPTIONS.map((option) => {
+                  const selected = option.key === activeFilterKey;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => updateFilters(option.updates)}
+                      className={`block w-full rounded-[14px] px-3 py-2 text-left text-[14px] leading-5 transition ${selected ? "bg-[#fbeede] text-[#2771cb]" : "text-[#2771cb] hover:bg-[#f7f7f7]"}`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -186,19 +291,19 @@ export function SalesReportClient({ report }) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <Card className="min-w-0 p-6 overflow-hidden">
+        <Card className="min-w-0 overflow-hidden p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
-              <div className="text-lg font-bold text-slate-900">Sales Breakdown</div>
-              <div className="mt-1 text-sm text-slate-500">
-                {report.scopeMode === "all-stores" ? "Cross-store breakdown for super admin overview." : "Store-level sales breakdown based on dish-related groupings."}
-              </div>
+              <div className="text-lg font-bold text-slate-900">{getViewTitle(report.reportView)}</div>
+              <div className="mt-1 text-sm text-slate-500">{getViewSubtitle(report.reportView, report.scopeMode)}</div>
             </div>
-            <select value={report.filters.breakdown} onChange={(event) => updateFilters({ breakdown: event.target.value })} className="min-w-[150px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400">
-              {report.filters.breakdownOptions.map((option) => (
-                <option key={option} value={option}>{option[0].toUpperCase()}{option.slice(1)}</option>
-              ))}
-            </select>
+            {report.filters.breakdownOptions.length > 0 ? (
+              <select value={report.filters.breakdown} onChange={(event) => updateFilters({ breakdown: event.target.value })} className="min-w-[150px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400">
+                {report.filters.breakdownOptions.map((option) => (
+                  <option key={option} value={option}>{formatBreakdownLabel(option)}</option>
+                ))}
+              </select>
+            ) : null}
           </div>
           <div className="mt-6">
             <SingleLineChart labels={report.salesBreakdown.labels} values={report.salesBreakdown.values} />

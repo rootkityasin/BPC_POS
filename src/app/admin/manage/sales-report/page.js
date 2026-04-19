@@ -16,9 +16,7 @@ export default async function SalesReportPage({ searchParams }) {
   const activeStoreId = await getActiveStoreId(user);
   const resolvedSearchParams = await searchParams;
   const filters = {
-    range: sanitizeQueryValue(resolvedSearchParams?.range),
-    from: sanitizeQueryValue(resolvedSearchParams?.from),
-    to: sanitizeQueryValue(resolvedSearchParams?.to),
+    view: sanitizeQueryValue(resolvedSearchParams?.view || resolvedSearchParams?.range),
     breakdown: sanitizeQueryValue(resolvedSearchParams?.breakdown)
   };
   const report = await getSalesReportDashboard(user, activeStoreId, filters);

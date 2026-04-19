@@ -1,13 +1,74 @@
-import { endOfDay, endOfMonth, format, startOfDay, startOfMonth, subDays } from "date-fns";
+import { endOfDay, format, startOfDay, subDays } from "date-fns";
 import { prisma } from "@/lib/prisma";
-
-function normalizeDate(value, fallback) {
-  const date = value ? new Date(String(value)) : fallback;
-  return Number.isNaN(date?.getTime?.()) ? fallback : date;
-}
 
 function clampCurrency(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+}
+
+function getOrderTotal(order) {
+  return Number(order.totalAmount || 0);
+}
+
+function getInsightWindow() {
+  const todayEnd = endOfDay(new Date());
+  return { from: startOfDay(subDays(new Date(), 29)), to: todayEnd };
+}
+
+function resolveView(filters = {}) {
+  const validViews = new Set(["accumulated", "shift", "weekly", "daily"]);
+  const requestedView = String(filters.view || filters.range || "daily").toLowerCase();
+  return validViews.has(requestedView) ? requestedView : "daily";
+}
+
+function resolveWindow(view) {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+
+  if (view === "accumulated") {
+    return {
+      view,
+      from: new Date(0),
+      to: todayEnd,
+      previousRange: null
+    };
+  }
+
+  if (view === "weekly") {
+    const from = startOfDay(subDays(now, 6));
+    const to = todayEnd;
+    return {
+      view,
+      from,
+      to,
+      previousRange: {
+        from: startOfDay(subDays(from, 7)),
+        to: endOfDay(subDays(from, 1))
+      }
+    };
+  }
+
+  if (view === "shift") {
+    return {
+      view,
+      from: todayStart,
+      to: todayEnd,
+      previousRange: {
+        from: startOfDay(subDays(now, 1)),
+        to: endOfDay(subDays(now, 1))
+      }
+    };
+  }
+
+  return {
+    view: "daily",
+    from: todayStart,
+    to: todayEnd,
+    previousRange: {
+      from: startOfDay(subDays(now, 1)),
+      to: endOfDay(subDays(now, 1))
+    }
+  };
 }
 
 function buildScope(user, storeId) {
@@ -20,39 +81,6 @@ function buildScope(user, storeId) {
   }
 
   return {};
-}
-
-function resolveRange(filters = {}) {
-  const todayStart = startOfDay(new Date());
-  const todayEnd = endOfDay(new Date());
-  const range = String(filters.range || "today");
-
-  if (range === "7d") {
-    return { range, from: startOfDay(subDays(new Date(), 6)), to: todayEnd };
-  }
-
-  if (range === "30d") {
-    return { range, from: startOfDay(subDays(new Date(), 29)), to: todayEnd };
-  }
-
-  if (range === "month") {
-    return { range, from: startOfMonth(new Date()), to: endOfMonth(new Date()) };
-  }
-
-  if (range === "custom") {
-    const from = startOfDay(normalizeDate(filters.from, todayStart));
-    const to = endOfDay(normalizeDate(filters.to, todayEnd));
-    return from <= to ? { range, from, to } : { range, from: to, to: from };
-  }
-
-  return { range: "today", from: todayStart, to: todayEnd };
-}
-
-function buildPreviousRange(currentRange) {
-  const duration = currentRange.to.getTime() - currentRange.from.getTime();
-  const previousTo = new Date(currentRange.from.getTime() - 1);
-  const previousFrom = new Date(previousTo.getTime() - duration);
-  return { from: previousFrom, to: previousTo };
 }
 
 function getCustomerKey(order) {
@@ -105,6 +133,61 @@ function buildDelta(current, previous) {
   return {
     value: rounded,
     label: `${rounded >= 0 ? "+" : ""}${rounded}% from previous period`
+  };
+}
+
+function getShiftLabel(hour) {
+  if (hour < 8) return "12 AM - 08 AM";
+  if (hour < 16) return "08 AM - 04 PM";
+  return "04 PM - 12 AM";
+}
+
+function buildShiftBreakdown(orders) {
+  const shiftOrder = ["12 AM - 08 AM", "08 AM - 04 PM", "04 PM - 12 AM"];
+  const totals = new Map(shiftOrder.map((label) => [label, 0]));
+
+  for (const order of orders) {
+    const label = getShiftLabel(new Date(order.createdAt).getHours());
+    totals.set(label, (totals.get(label) || 0) + getOrderTotal(order));
+  }
+
+  return {
+    labels: shiftOrder,
+    values: shiftOrder.map((label) => clampCurrency(totals.get(label) || 0))
+  };
+}
+
+function buildHourlyBreakdown(orders) {
+  const totals = new Map(Array.from({ length: 24 }, (_, hour) => [hour, 0]));
+
+  for (const order of orders) {
+    const hour = new Date(order.createdAt).getHours();
+    totals.set(hour, (totals.get(hour) || 0) + getOrderTotal(order));
+  }
+
+  return {
+    labels: Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, "0")}h`),
+    values: Array.from({ length: 24 }, (_, hour) => clampCurrency(totals.get(hour) || 0))
+  };
+}
+
+function buildWeeklyBreakdown(orders) {
+  const buckets = new Map();
+
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const day = startOfDay(subDays(new Date(), offset));
+    buckets.set(day.toISOString().slice(0, 10), { label: format(day, "EEE"), value: 0 });
+  }
+
+  for (const order of orders) {
+    const dayKey = startOfDay(new Date(order.createdAt)).toISOString().slice(0, 10);
+    if (!buckets.has(dayKey)) continue;
+    buckets.get(dayKey).value += getOrderTotal(order);
+  }
+
+  return {
+    labels: [...buckets.values()].map((bucket) => bucket.label),
+    values: [...buckets.values()].map((bucket) => clampCurrency(bucket.value))
   };
 }
 
@@ -183,6 +266,13 @@ function buildBreakdown(orders, scopeMode, breakdown) {
   } else {
     for (const order of orders) {
       for (const item of order.items || []) {
+        if (breakdown === "others") {
+          if (item.dish) continue;
+          const label = item.stockItem?.name || item.itemName || "Others Sell";
+          totals.set(label, (totals.get(label) || 0) + (Number(item.unitPrice || 0) * Number(item.quantity || 0)));
+          continue;
+        }
+
         const label = breakdown === "subcategory"
           ? item.dish?.subCategory?.nameEn || item.dish?.category?.nameEn || item.stockItem?.name || item.itemName || "Uncategorized"
           : item.dish?.category?.nameEn || item.stockItem?.name || item.itemName || "Uncategorized";
@@ -200,6 +290,44 @@ function buildBreakdown(orders, scopeMode, breakdown) {
     labels: entries.map((entry) => entry.label),
     values: entries.map((entry) => entry.value)
   };
+}
+
+function buildSalesBreakdown(orders, scopeMode, view, breakdown) {
+  if (view === "shift") return buildShiftBreakdown(orders);
+  if (view === "weekly") return buildWeeklyBreakdown(orders);
+  if (view === "daily") return buildHourlyBreakdown(orders);
+  return buildBreakdown(orders, scopeMode, breakdown);
+}
+
+function buildReportTitle(view, scopeMode) {
+  if (view === "accumulated") return scopeMode === "all-stores" ? "Accumulated Sales" : "Store Accumulated Sales";
+  if (view === "shift") return scopeMode === "all-stores" ? "Shift Wise Sell" : "Store Shift Wise Sell";
+  if (view === "weekly") return scopeMode === "all-stores" ? "Weekly Sell" : "Store Weekly Sell";
+  return scopeMode === "all-stores" ? "Daily Sell" : "Store Daily Sell";
+}
+
+function buildReportSubtitle(view, scopeMode) {
+  if (view === "accumulated") {
+    return scopeMode === "all-stores"
+      ? "All-time sales across the selected scope."
+      : "All-time sales for the active store scope.";
+  }
+
+  if (view === "shift") {
+    return scopeMode === "all-stores"
+      ? "Today's sales grouped into 8-hour shifts."
+      : "Today's store sales grouped into 8-hour shifts.";
+  }
+
+  if (view === "weekly") {
+    return scopeMode === "all-stores"
+      ? "Last 7 days of sales grouped by day."
+      : "Last 7 days of store sales grouped by day.";
+  }
+
+  return scopeMode === "all-stores"
+    ? "Today's sales grouped by hour."
+    : "Today's store sales grouped by hour.";
 }
 
 function buildTopProducts(orders) {
@@ -238,13 +366,17 @@ function buildTopProducts(orders) {
 
 export async function getSalesReportDashboard(user, activeStoreId, filters = {}) {
   const scope = buildScope(user, activeStoreId);
-  const currentRange = resolveRange(filters);
-  const previousRange = buildPreviousRange(currentRange);
+  const view = resolveView(filters);
+  const currentRange = resolveWindow(view);
+  const previousRange = currentRange.previousRange;
   const scopeMode = user.role === "SUPER_ADMIN" && !activeStoreId ? "all-stores" : "single-store";
-  const breakdownOptions = scopeMode === "all-stores"
+  const breakdownOptions = view === "accumulated" && scopeMode === "all-stores"
     ? ["store", "day"]
-    : ["category", "subcategory", "day"];
-  const selectedBreakdown = breakdownOptions.includes(filters.breakdown) ? filters.breakdown : breakdownOptions[0];
+    : view === "accumulated"
+      ? ["category", "subcategory", "others", "day"]
+      : [];
+  const selectedBreakdown = breakdownOptions.includes(filters.breakdown) ? filters.breakdown : breakdownOptions[0] || view;
+  const hasPreviousRange = Boolean(previousRange);
 
   const [orders, previousOrders, historicalCustomers] = await Promise.all([
     prisma.order.findMany({
@@ -266,18 +398,20 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
         }
       }
     }),
-    prisma.order.findMany({
-      where: {
-        ...scope,
-        createdAt: {
-          gte: previousRange.from,
-          lte: previousRange.to
-        }
-      },
-      include: {
-        items: { select: { quantity: true } }
-      }
-    }),
+    previousRange
+      ? prisma.order.findMany({
+          where: {
+            ...scope,
+            createdAt: {
+              gte: previousRange.from,
+              lte: previousRange.to
+            }
+          },
+          include: {
+            items: { select: { quantity: true } }
+          }
+        })
+      : Promise.resolve([]),
     prisma.order.findMany({
       where: scope,
       select: {
@@ -304,20 +438,19 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
   }
 
   const summary = summarizeOrders(orders, firstOrderByCustomer, orderCountByCustomer, currentRange.from, currentRange.to);
-  const previousSummary = summarizeOrders(previousOrders, firstOrderByCustomer, orderCountByCustomer, previousRange.from, previousRange.to);
+  const previousSummary = hasPreviousRange
+    ? summarizeOrders(previousOrders, firstOrderByCustomer, orderCountByCustomer, previousRange.from, previousRange.to)
+    : null;
 
   return {
     scopeMode,
-    title: scopeMode === "all-stores" ? "Sales Report" : "Store Sales Report",
-    subtitle: scopeMode === "all-stores"
-      ? "Cross-store performance, customer activity, and best-selling products."
-      : "Branch-level performance, customer activity, and top-selling products.",
+    title: buildReportTitle(view, scopeMode),
+    subtitle: buildReportSubtitle(view, scopeMode),
     filters: {
-      range: currentRange.range,
-      from: format(currentRange.from, "yyyy-MM-dd"),
-      to: format(currentRange.to, "yyyy-MM-dd"),
+      view,
       breakdown: selectedBreakdown,
-      breakdownOptions
+      breakdownOptions,
+      viewOptions: ["accumulated", "shift", "weekly", "daily"]
     },
     summary: {
       totalSales: summary.totalSales,
@@ -325,14 +458,21 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
       productsSold: summary.productsSold,
       newCustomers: summary.newCustomers,
       deltas: {
-        totalSales: buildDelta(summary.totalSales, previousSummary.totalSales),
-        totalOrders: buildDelta(summary.totalOrders, previousSummary.totalOrders),
-        productsSold: buildDelta(summary.productsSold, previousSummary.productsSold),
-        newCustomers: buildDelta(summary.newCustomers, previousSummary.newCustomers)
+        totalSales: buildDelta(summary.totalSales, previousSummary?.totalSales),
+        totalOrders: buildDelta(summary.totalOrders, previousSummary?.totalOrders),
+        productsSold: buildDelta(summary.productsSold, previousSummary?.productsSold),
+        newCustomers: buildDelta(summary.newCustomers, previousSummary?.newCustomers)
       }
     },
-    visitorInsights: buildVisitorInsights(orders, firstOrderByCustomer, orderCountByCustomer, currentRange.from, currentRange.to),
-    salesBreakdown: buildBreakdown(orders, scopeMode, selectedBreakdown),
+    visitorInsights: buildVisitorInsights(
+      orders,
+      firstOrderByCustomer,
+      orderCountByCustomer,
+      view === "accumulated" ? getInsightWindow().from : currentRange.from,
+      currentRange.to
+    ),
+    salesBreakdown: buildSalesBreakdown(orders, scopeMode, view, selectedBreakdown),
+    reportView: view,
     topProducts: buildTopProducts(orders)
   };
 }

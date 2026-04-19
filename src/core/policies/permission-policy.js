@@ -16,7 +16,7 @@ export const FEATURE_KEYS = {
 
 const managerDefaults = {
   [FEATURE_KEYS.POS]: { canView: true, canManage: true },
-  [FEATURE_KEYS.ORDERS]: { canView: true, canManage: true },
+  [FEATURE_KEYS.ORDERS]: { canView: true, canManage: false },
   [FEATURE_KEYS.STOCK]: { canView: true, canManage: true },
   [FEATURE_KEYS.CATEGORY]: { canView: true, canManage: false },
   [FEATURE_KEYS.SUBCATEGORY]: { canView: true, canManage: false },
