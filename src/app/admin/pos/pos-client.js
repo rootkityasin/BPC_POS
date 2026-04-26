@@ -542,7 +542,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     }
   }, [isCheckoutOpen, vatBreakdown.totalAmount]);
 
-  const allCategories = useMemo(() => [{ id: null, nameEn: "All" }, ...visibleCategories, { id: "__inventory__", nameEn: "Inventory" }], [visibleCategories]);
+  const allCategories = useMemo(() => [...visibleCategories, { id: "__inventory__", nameEn: "Inventory" }, { id: null, nameEn: "All" }], [visibleCategories]);
 
   function handleAddToCart(product) {
     if (cart.length > 0 && cartStoreId && cartStoreId !== product.storeId) {
