@@ -15,5 +15,5 @@ export default async function DeviceSettingsPage() {
   const settings = await getDeviceSettings(storeId);
   const canEdit = hasManageAccess(user, FEATURE_KEYS.DEVICE_SETTINGS);
 
-  return <DeviceSettingsClient settings={settings} canEdit={canEdit} storeName={settings?.storeName || "BPC POS"} />;
+  return <DeviceSettingsClient settings={settings} canEdit={canEdit} storeName={settings?.storeName || "Store"} />;
 }

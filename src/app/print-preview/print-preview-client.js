@@ -20,7 +20,7 @@ function buildPrinterResults(printers) {
 export function PrintPreviewClient({ previewKey }) {
   const iframeRef = useRef(null);
   const [payload, setPayload] = useState(null);
-  const [paperWidth, setPaperWidth] = useState("80mm");
+  const [paperWidth, setPaperWidth] = useState("58mm");
   const [printerResults, setPrinterResults] = useState([]);
   const [selectedPrinterId, setSelectedPrinterId] = useState("");
   const [scanMessage, setScanMessage] = useState("Saved printers are shown below. Browser Bluetooth scan is attempted when supported.");
@@ -38,7 +38,7 @@ export function PrintPreviewClient({ previewKey }) {
 
   const previewHtml = useMemo(() => {
     if (!payload?.previews) return "";
-    return payload.previews[paperWidth] || payload.previews["80mm"] || payload.previews["58mm"] || "";
+    return payload.previews[paperWidth] || payload.previews[payload.defaultPaperWidth] || payload.previews["58mm"] || payload.previews["80mm"] || "";
   }, [paperWidth, payload]);
 
   async function handleScanPrinters() {

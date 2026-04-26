@@ -26,15 +26,15 @@ function buildInitialState(settings) {
 
   const defaultPrinterKey = settings?.defaultPrinterId
     ? printers.find((printer) => printer.id === settings.defaultPrinterId)?.clientKey || ""
-    : printers[0]?.clientKey || "";
+    : "";
 
   return {
     timezone: settings?.timezone || "Asia/Dhaka",
     defaultPrinterKey,
     receiptTheme: settings?.receiptTheme || "modern",
     receiptFontSize: settings?.receiptFontSize || 14,
-    receiptAccentColor: settings?.receiptAccentColor || "#2771cb",
-    receiptPaperWidth: settings?.receiptPaperWidth || "80mm",
+    receiptAccentColor: settings?.receiptAccentColor || "#ff242d",
+    receiptPaperWidth: settings?.receiptPaperWidth || "58mm",
     receiptHeaderText: settings?.receiptHeaderText || "",
     receiptFooterText: settings?.receiptFooterText || "",
     receiptShowLogo: Boolean(settings?.receiptShowLogo),
@@ -47,6 +47,12 @@ function buildInitialState(settings) {
     receiptWatermark: settings?.receiptWatermark ?? 0.1,
     printers
   };
+}
+
+function getStoreInitials(storeName) {
+  const words = String(storeName || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "ST";
+  return words.slice(0, 2).map((word) => word.charAt(0).toUpperCase()).join("");
 }
 
 function StatusToast({ state }) {
@@ -64,19 +70,27 @@ function StatusToast({ state }) {
   );
 }
 
-function ReceiptPreview({ storeName, settings }) {
-  const sampleItems = [
-    { name: "Chicken Fried Rice", quantity: 2, price: 280, note: "Extra spicy" },
-    { name: "Soft Drink", quantity: 1, price: 80, note: "" }
-  ];
-  const grossAmount = sampleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const { subtotalAmount, vatAmount, totalAmount } = calculateVatInclusiveTotals(grossAmount, 5);
+function ReceiptPreview({ settings }) {
+  const [hasLogoError, setHasLogoError] = useState(false);
+  const storeName = settings.storeName || "Store";
+  const previewOrder = settings.previewOrder;
+  const sampleItems = previewOrder?.items || [];
+  const grossAmount = sampleItems.reduce((sum, item) => sum + (Number(item.unitPrice || 0) * Number(item.quantity || 0)), 0);
+  const vatPercentage = Number(previewOrder?.vatPercentage || 0);
+  const fallbackTotals = calculateVatInclusiveTotals(grossAmount, vatPercentage);
+  const subtotalAmount = Number(previewOrder?.subtotalAmount ?? fallbackTotals.subtotalAmount);
+  const vatAmount = Number(previewOrder?.vatAmount ?? fallbackTotals.vatAmount);
+  const totalAmount = Number(previewOrder?.totalAmount ?? fallbackTotals.totalAmount);
   const paperClass = settings.receiptPaperWidth === "58mm" ? "max-w-[290px]" : "max-w-[360px]";
   const themeClass = settings.receiptTheme === "classic"
     ? "border-[#e2d7c0] bg-[#fffdf7]"
     : settings.receiptTheme === "minimal"
       ? "border-slate-200 bg-white"
       : "border-[#e5f1ff] bg-gradient-to-b from-white to-[#e5f1ff]";
+
+  useEffect(() => {
+    setHasLogoError(false);
+  }, [settings.storeLogoUrl]);
 
   return (
     <div className={`mx-auto rounded-[30px] border p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${paperClass} ${themeClass}`} style={{ fontSize: `${settings.receiptFontSize}px` }}>
@@ -86,50 +100,59 @@ function ReceiptPreview({ storeName, settings }) {
         </div>
         <div className="relative z-10">
           {settings.receiptShowLogo ? (
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">BPC</div>
+            settings.storeLogoUrl && !hasLogoError ? (
+              <img src={settings.storeLogoUrl} alt={storeName} onError={() => setHasLogoError(true)} className="mx-auto mb-4 h-16 w-16 rounded-2xl object-cover" />
+            ) : (
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">{getStoreInitials(storeName)}</div>
+            )
           ) : null}
           <div className="text-center">
             <div className="text-xl font-black" style={{ color: settings.receiptAccentColor }}>{storeName}</div>
-            {settings.receiptShowSeller ? <div className="mt-1 text-xs text-slate-500">House 12, Dhaka</div> : null}
+            {settings.receiptShowSeller && settings.storeLocation ? <div className="mt-1 text-xs text-slate-500">{settings.storeLocation}</div> : null}
             {settings.receiptHeaderText ? <div className="mt-2 text-xs text-slate-500">{settings.receiptHeaderText}</div> : null}
           </div>
 
-          <div className="mt-5 space-y-1 text-sm text-slate-600">
-            <div><span className="font-semibold text-slate-900">Invoice:</span> INV-20260411-0001</div>
-            {settings.receiptShowBuyer ? <div><span className="font-semibold text-slate-900">Customer:</span> Walk-in customer</div> : null}
-            {settings.receiptShowBuyer ? <div><span className="font-semibold text-slate-900">Phone:</span> 01700000000</div> : null}
-            {settings.receiptShowOrderStatus ? <div><span className="font-semibold text-slate-900">Status:</span> PENDING</div> : null}
-          </div>
+          {previewOrder ? (
+            <>
+              <div className="mt-5 space-y-1 text-sm text-slate-600">
+                <div><span className="font-semibold text-slate-900">Invoice:</span> {previewOrder.invoiceNumber}</div>
+                {settings.receiptShowBuyer && previewOrder.customerName ? <div><span className="font-semibold text-slate-900">Customer:</span> {previewOrder.customerName}</div> : null}
+                {settings.receiptShowBuyer && previewOrder.customerPhone ? <div><span className="font-semibold text-slate-900">Phone:</span> {previewOrder.customerPhone}</div> : null}
+                {settings.receiptShowOrderStatus && previewOrder.status ? <div><span className="font-semibold text-slate-900">Status:</span> {previewOrder.status}</div> : null}
+              </div>
 
-          <div className="mt-5 border-t border-slate-200 pt-4">
-            <div className="grid grid-cols-[minmax(0,1fr)_50px_80px] gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              <div>Item</div>
-              <div className="text-center">Qty</div>
-              <div className="text-right">Price</div>
-            </div>
-            <div className="mt-3 space-y-3">
-              {sampleItems.map((item) => (
-                <div key={item.name} className="grid grid-cols-[minmax(0,1fr)_50px_80px] gap-3 text-sm text-slate-700">
-                  <div>
-                    <div>{item.name}</div>
-                    {settings.receiptShowItemNotes && item.note ? <div className="mt-1 text-xs text-slate-400">Note: {item.note}</div> : null}
-                  </div>
-                  <div className="text-center">{item.quantity}</div>
-                  <div className="text-right">{(item.price * item.quantity).toFixed(2)}</div>
+              <div className="mt-5 border-t border-slate-200 pt-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_50px_80px] gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <div>Item</div>
+                  <div className="text-center">Qty</div>
+                  <div className="text-right">Price</div>
                 </div>
-              ))}
+                <div className="mt-3 space-y-3">
+                  {sampleItems.map((item) => (
+                    <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_50px_80px] gap-3 text-sm text-slate-700">
+                      <div>{item.itemName}</div>
+                      <div className="text-center">{item.quantity}</div>
+                      <div className="text-right">{(Number(item.unitPrice || 0) * Number(item.quantity || 0)).toFixed(2)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-sm text-slate-700">
+                <div className="flex justify-between"><span>Items Total</span><span>{grossAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Less Included VAT</span><span>-{vatAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Subtotal</span><span>{subtotalAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>VAT ({vatPercentage.toFixed(2)}%)</span><span>{vatAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between text-base font-black text-slate-900"><span>Total</span><span>{totalAmount.toFixed(2)}</span></div>
+              </div>
+
+              {settings.receiptShowQr ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-center text-xs text-slate-500">QR: {previewOrder.invoiceNumber}</div> : null}
+            </>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+              No recent order data is available for this store yet.
             </div>
-          </div>
-
-          <div className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-sm text-slate-700">
-            <div className="flex justify-between"><span>Items Total</span><span>{grossAmount.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span>Less Included VAT</span><span>-{vatAmount.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span>Subtotal</span><span>{subtotalAmount.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span>VAT (5.00%)</span><span>{vatAmount.toFixed(2)}</span></div>
-            <div className="flex justify-between text-base font-black text-slate-900"><span>Total</span><span>{totalAmount.toFixed(2)}</span></div>
-          </div>
-
-          {settings.receiptShowQr ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-center text-xs text-slate-500">QR: INV-20260411-0001</div> : null}
+          )}
           {settings.receiptShowSign ? <div className="mt-5 border-t border-dashed border-slate-300 pt-4 text-xs text-slate-500">Authorized signature: ____________________</div> : null}
           {settings.receiptFooterText ? <div className="mt-5 text-center text-xs text-slate-500">{settings.receiptFooterText}</div> : null}
         </div>
@@ -147,6 +170,13 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
   }, [settings]);
 
   const printersJson = useMemo(() => JSON.stringify(formState.printers), [formState.printers]);
+  const previewSettings = useMemo(() => ({
+    ...formState,
+    storeName: settings?.storeName || storeName || "Store",
+    storeLocation: settings?.storeLocation || "",
+    storeLogoUrl: settings?.storeLogoUrl || "",
+    previewOrder: settings?.previewOrder || null
+  }), [formState, settings, storeName]);
 
   function updatePrinter(clientKey, patch) {
     setFormState((current) => ({
@@ -359,7 +389,7 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
             <h3 className="text-lg font-bold text-slate-900">Live Receipt Preview</h3>
             <p className="text-sm text-slate-500">Preview updates instantly as you edit the receipt layout.</p>
           </div>
-          <ReceiptPreview storeName={storeName} settings={formState} />
+          <ReceiptPreview settings={previewSettings} />
         </Card>
       </form>
     </div>

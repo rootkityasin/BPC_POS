@@ -223,7 +223,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
 
     const popup = openPrintPreview({
       title: `Receipt ${orderCode}`,
-      defaultPaperWidth: order.store?.receiptPaperWidth || "80mm",
+      defaultPaperWidth: order.store?.receiptPaperWidth || "58mm",
       printers: order.store?.terminals || [],
       previews: {
         "58mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), { paperWidthOverride: "58mm" }),

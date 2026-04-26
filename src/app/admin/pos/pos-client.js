@@ -19,6 +19,26 @@ const PAYMENT_METHODS = [
   { id: "mobile", label: "Mobile Banking" }
 ];
 
+const BANGLADESH_TIMEZONE = "Asia/Dhaka";
+
+function normalizeCategoryKey(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z]/g, "");
+}
+
+function getDefaultCategoryKeyForBangladeshTime() {
+  const hour = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: BANGLADESH_TIMEZONE,
+    hour: "numeric",
+    hour12: false,
+    hourCycle: "h23"
+  }).format(new Date()));
+
+  if (hour >= 5 && hour < 11) return "breakfast";
+  if (hour >= 11 && hour < 15) return "lunch";
+  if (hour >= 15 && hour < 18) return "meal";
+  return "dinner";
+}
+
 function formatCurrency(value) {
   return `৳${Number(value || 0).toFixed(2)}`;
 }
@@ -211,13 +231,20 @@ function useCachedStoreLabels(storeEntries) {
 function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
+  const [hasImageError, setHasImageError] = useState(false);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [product.imageUrl]);
+
+  const showImage = Boolean(product.imageUrl) && !hasImageError;
 
   return (
     <article className="group relative rounded-[26px] border border-slate-100 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_20px_50px_rgba(15,23,42,0.1)]">
       <div className="relative h-28 rounded-[20px] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.nameEn} className="h-full w-full object-cover" />
+          {showImage ? (
+            <img src={product.imageUrl} alt={product.nameEn} onError={() => setHasImageError(true)} className="h-full w-full object-cover" />
           ) : (
             <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
           )}
@@ -431,6 +458,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   const store = usePosStore();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
+  const defaultCategoryScopeRef = useRef(null);
 
   const cart = useMemo(() => store?.cart || [], [store?.cart]);
   const currentOrderId = store?.currentOrderId || null;
@@ -519,6 +547,32 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   const visibleCategories = useMemo(() => {
     return categories.filter((category) => selectedStoreFilter === "all" || category.storeId === selectedStoreFilter);
   }, [categories, selectedStoreFilter]);
+
+  useEffect(() => {
+    const scopedCategories = categories.filter((category) => selectedStoreFilter === "all" || category.storeId === selectedStoreFilter);
+
+    if (selectedStoreFilter === "all") {
+      defaultCategoryScopeRef.current = selectedStoreFilter;
+      return;
+    }
+
+    if (defaultCategoryScopeRef.current === selectedStoreFilter) {
+      return;
+    }
+
+    defaultCategoryScopeRef.current = selectedStoreFilter;
+
+    if (selectedCategory === "__inventory__" || scopedCategories.some((category) => category.id === selectedCategory)) {
+      return;
+    }
+
+    const defaultCategoryKey = getDefaultCategoryKeyForBangladeshTime();
+    const defaultCategory = scopedCategories.find((category) => normalizeCategoryKey(category.nameEn) === defaultCategoryKey);
+
+    if (defaultCategory) {
+      setSelectedCategory(defaultCategory.id);
+    }
+  }, [categories, selectedCategory, selectedStoreFilter, setSelectedCategory]);
 
   const suggestionProducts = useMemo(() => {
     if (isSearching && searchQuery) {
@@ -609,7 +663,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
         total: getTotal()
       });
 
-      const receiptPaperWidth = result.store?.receiptPaperWidth || "80mm";
+      const receiptPaperWidth = result.store?.receiptPaperWidth || "58mm";
       const receiptHtml = buildReceiptHtml(result, t, (item) => item.itemName || "Item", {
         paperWidthOverride: receiptPaperWidth
       });
@@ -668,7 +722,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
 
     const popup = openPrintPreview({
       title: `Order Slip ${formatOrderId(draftOrder.invoiceNumber) || "----"}`,
-      defaultPaperWidth: previewStore.receiptPaperWidth || "80mm",
+      defaultPaperWidth: previewStore.receiptPaperWidth || "58mm",
       printers: previewStore.terminals || [],
       previews: {
         "58mm": buildReceiptHtml(draftOrder, t, (item) => item.itemName || "Item", { paperWidthOverride: "58mm" }),

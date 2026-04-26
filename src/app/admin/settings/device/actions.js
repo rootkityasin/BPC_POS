@@ -50,6 +50,7 @@ export async function saveDeviceSettings(_, formData) {
     });
 
     revalidatePath("/admin/settings/device");
+    revalidatePath("/admin/pos");
     revalidatePath("/admin/orders");
     return { status: "success", message: "Device settings saved successfully." };
   } catch (error) {

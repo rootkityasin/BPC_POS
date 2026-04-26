@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
 import { getActiveStoreId } from "@/modules/auth/active-store";
@@ -8,6 +9,11 @@ import path from "path";
 
 function buildSku() {
   return `DISH-${Date.now().toString(36).toUpperCase()}`;
+}
+
+function revalidateDishPages() {
+  revalidatePath("/admin/dishes");
+  revalidatePath("/admin/pos");
 }
 
 export async function POST(request) {
@@ -99,6 +105,7 @@ export async function POST(request) {
   });
 
   await translateTexts({ texts: [nameEn], sourceLanguage: "en", targetLanguage: "bn" });
+  revalidateDishPages();
 
   return NextResponse.json(dish);
 }
@@ -214,6 +221,8 @@ export async function PATCH(request) {
     }
   });
 
+  revalidateDishPages();
+
   return NextResponse.json(dish);
 }
 
@@ -240,6 +249,8 @@ export async function DELETE(request) {
   }
 
   await prisma.dish.delete({ where: { id } });
+
+  revalidateDishPages();
 
   return NextResponse.json({ success: true });
 }

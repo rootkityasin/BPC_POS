@@ -37,8 +37,8 @@ export function getReceiptSettingsFromStore(store) {
   return {
     theme: store?.receiptTheme || "modern",
     fontSize: Number(store?.receiptFontSize || 14),
-    accentColor: store?.receiptAccentColor || "#2771cb",
-    paperWidth: store?.receiptPaperWidth || "80mm",
+    accentColor: store?.receiptAccentColor || "#ff242d",
+    paperWidth: store?.receiptPaperWidth || "58mm",
     headerText: store?.receiptHeaderText || "",
     footerText: store?.receiptFooterText || "",
     showLogo: Boolean(store?.receiptShowLogo),

@@ -174,7 +174,35 @@ export async function createOrder(storeId, orderData) {
             }))
           }
         },
-        include: { items: { include: { dish: true, stockItem: true } } }
+        include: {
+          store: {
+            select: {
+              id: true,
+              nameEn: true,
+              nameBn: true,
+              logoUrl: true,
+              location: true,
+              vatNumber: true,
+              vatPercentage: true,
+              receiptPaperWidth: true,
+              receiptTheme: true,
+              receiptFontSize: true,
+              receiptAccentColor: true,
+              receiptHeaderText: true,
+              receiptFooterText: true,
+              receiptShowLogo: true,
+              receiptShowSeller: true,
+              receiptShowBuyer: true,
+              receiptShowOrderStatus: true,
+              receiptShowItemNotes: true,
+              receiptShowQr: true,
+              receiptShowSign: true,
+              receiptWatermark: true,
+              terminals: true
+            }
+          },
+          items: { include: { dish: true, stockItem: true } }
+        }
       });
 
       // Break loop if successful

@@ -56,7 +56,7 @@ model Store {
   receiptTheme       String @default("modern")
   receiptFontSize    Int @default(14)
   receiptAccentColor String @default("#ff242d")
-  receiptPaperWidth  String @default("80mm")
+  receiptPaperWidth  String @default("58mm")
   receiptHeaderText  String?
   receiptFooterText  String?
   receiptShowLogo    Boolean @default(true)

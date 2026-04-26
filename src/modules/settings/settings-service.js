@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 const VALID_RECEIPT_THEMES = new Set(["modern", "minimal", "classic"]);
 const VALID_PAPER_WIDTHS = new Set(["58mm", "80mm"]);
 const VALID_PRINTER_STATUSES = new Set(["CONNECTED", "DISCONNECTED", "MAINTENANCE"]);
+const DEFAULT_TIMEZONE = "Asia/Dhaka";
+const DEFAULT_RECEIPT_THEME = "modern";
+const DEFAULT_RECEIPT_FONT_SIZE = 14;
+const DEFAULT_RECEIPT_ACCENT_COLOR = "#ff242d";
+const DEFAULT_RECEIPT_PAPER_WIDTH = "58mm";
+const DEFAULT_RECEIPT_WATERMARK = 0.1;
 
 function clampNumber(value, min, max, fallback) {
   const numericValue = Number(value);
@@ -37,26 +43,45 @@ function buildTerminalCode(name) {
 export async function getDeviceSettings(storeId) {
   if (!storeId) return null;
 
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    include: {
-      terminals: {
-        orderBy: { createdAt: "asc" }
+  const [store, latestOrder] = await Promise.all([
+    prisma.store.findUnique({
+      where: { id: storeId },
+      include: {
+        terminals: {
+          orderBy: { createdAt: "asc" }
+        }
       }
-    }
-  });
+    }),
+    prisma.order.findFirst({
+      where: { storeId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: {
+          select: {
+            id: true,
+            itemName: true,
+            quantity: true,
+            unitPrice: true,
+            printStatus: true
+          }
+        }
+      }
+    })
+  ]);
 
   if (!store) return null;
 
   return {
     storeName: store.nameEn,
-    timezone: store.timezone,
+    storeLocation: store.location,
+    storeLogoUrl: store.logoUrl,
+    timezone: store.timezone || DEFAULT_TIMEZONE,
     printers: store.terminals,
     defaultPrinterId: store.defaultPrinterId,
-    receiptTheme: store.receiptTheme,
-    receiptFontSize: store.receiptFontSize,
-    receiptAccentColor: store.receiptAccentColor,
-    receiptPaperWidth: store.receiptPaperWidth,
+    receiptTheme: store.receiptTheme || DEFAULT_RECEIPT_THEME,
+    receiptFontSize: Number(store.receiptFontSize || DEFAULT_RECEIPT_FONT_SIZE),
+    receiptAccentColor: store.receiptAccentColor || DEFAULT_RECEIPT_ACCENT_COLOR,
+    receiptPaperWidth: store.receiptPaperWidth || DEFAULT_RECEIPT_PAPER_WIDTH,
     receiptHeaderText: store.receiptHeaderText,
     receiptFooterText: store.receiptFooterText,
     receiptShowLogo: store.receiptShowLogo,
@@ -66,16 +91,31 @@ export async function getDeviceSettings(storeId) {
     receiptShowItemNotes: store.receiptShowItemNotes,
     receiptShowQr: store.receiptShowQr,
     receiptShowSign: store.receiptShowSign,
-    receiptWatermark: store.receiptWatermark
+    receiptWatermark: store.receiptWatermark ?? DEFAULT_RECEIPT_WATERMARK,
+    previewOrder: latestOrder
+      ? {
+          invoiceNumber: latestOrder.invoiceNumber,
+          customerName: latestOrder.customerName,
+          customerPhone: latestOrder.customerPhone,
+          status: latestOrder.status,
+          subtotalAmount: latestOrder.subtotalAmount,
+          vatAmount: latestOrder.vatAmount,
+          vatPercentage: latestOrder.vatPercentage,
+          totalAmount: latestOrder.totalAmount,
+          createdAt: latestOrder.createdAt,
+          items: latestOrder.items
+        }
+      : null
   };
 }
 
 export async function updateDeviceSettings(storeId, payload) {
-  const receiptTheme = VALID_RECEIPT_THEMES.has(payload.receiptTheme) ? payload.receiptTheme : "modern";
-  const receiptPaperWidth = VALID_PAPER_WIDTHS.has(payload.receiptPaperWidth) ? payload.receiptPaperWidth : "80mm";
-  const receiptFontSize = clampNumber(payload.receiptFontSize, 10, 18, 14);
-  const receiptWatermark = clampNumber(payload.receiptWatermark, 0, 1, 0.1);
+  const receiptTheme = VALID_RECEIPT_THEMES.has(payload.receiptTheme) ? payload.receiptTheme : DEFAULT_RECEIPT_THEME;
+  const receiptPaperWidth = VALID_PAPER_WIDTHS.has(payload.receiptPaperWidth) ? payload.receiptPaperWidth : DEFAULT_RECEIPT_PAPER_WIDTH;
+  const receiptFontSize = clampNumber(payload.receiptFontSize, 10, 18, DEFAULT_RECEIPT_FONT_SIZE);
+  const receiptWatermark = clampNumber(payload.receiptWatermark, 0, 1, DEFAULT_RECEIPT_WATERMARK);
   const printers = Array.isArray(payload.printers) ? payload.printers : [];
+  const timezone = sanitizeText(payload.timezone) || DEFAULT_TIMEZONE;
 
   return prisma.$transaction(async (tx) => {
     const existingTerminals = await tx.terminal.findMany({
@@ -104,7 +144,7 @@ export async function updateDeviceSettings(storeId, payload) {
             printerConnection,
             printerModel,
             printerStatus,
-            timezone: sanitizeText(payload.timezone) || "Asia/Dhaka"
+            timezone
           }
         });
         if (clientKey) printerIdByKey.set(clientKey, updatedPrinter.id);
@@ -120,7 +160,7 @@ export async function updateDeviceSettings(storeId, payload) {
           printerConnection,
           printerModel,
           printerStatus,
-          timezone: sanitizeText(payload.timezone) || "Asia/Dhaka"
+          timezone
         }
       });
       if (clientKey) printerIdByKey.set(clientKey, createdPrinter.id);
@@ -132,11 +172,11 @@ export async function updateDeviceSettings(storeId, payload) {
     return tx.store.update({
       where: { id: storeId },
       data: {
-        timezone: sanitizeText(payload.timezone) || "Asia/Dhaka",
+        timezone,
         defaultPrinterId,
         receiptTheme,
         receiptFontSize,
-        receiptAccentColor: sanitizeHexColor(payload.receiptAccentColor),
+        receiptAccentColor: sanitizeHexColor(payload.receiptAccentColor, DEFAULT_RECEIPT_ACCENT_COLOR),
         receiptPaperWidth,
         receiptHeaderText: sanitizeNullableText(payload.receiptHeaderText),
         receiptFooterText: sanitizeNullableText(payload.receiptFooterText),
