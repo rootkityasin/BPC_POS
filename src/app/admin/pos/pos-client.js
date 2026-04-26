@@ -788,10 +788,8 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-[28px] font-black leading-none text-[#2771cb]">{t("pos.customerOrder")}</div>
-                <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: formatOrderId(currentOrderId) || "----" })}</div>
                 {cartStoreName ? <div data-no-translate="true" className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
               </div>
-              <ChevronDown className="h-5 w-5 text-slate-500" />
             </div>
 
             {cartNotice ? <div className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{cartNotice}</div> : null}
