@@ -24,6 +24,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     quantity: "",
@@ -65,8 +66,54 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   }
 
   function resetForm() {
+    setEditingItem(null);
     setFormData({ name: "", quantity: "", supplier: "", createdBy: "", price: "" });
     setError("");
+  }
+
+  function openAddModal() {
+    resetForm();
+    setIsAddModalOpen(true);
+  }
+
+  function openEditModal(item) {
+    setActiveMenuId(null);
+    setEditingItem(item);
+    setFormData({
+      name: item.name || item.dish?.nameEn || "",
+      quantity: String(item.quantity ?? ""),
+      supplier: item.supplier || "",
+      createdBy: item.createdBy || "",
+      price: item.price === null || item.price === undefined ? "" : String(item.price)
+    });
+    setError("");
+    setIsAddModalOpen(true);
+  }
+
+  async function handleDelete(item) {
+    setActiveMenuId(null);
+
+    if (!window.confirm(`Delete ${item.name || item.dish?.nameEn || "this item"}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/v1/stock", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, storeId: item.storeId || item.store?.id || "" })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        alert(data.error || "Failed to delete stock item.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      alert("Failed to delete stock item.");
+    }
   }
 
   async function handleSave() {
@@ -75,9 +122,11 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
 
     try {
       const response = await fetch("/api/v1/stock", {
-        method: "POST",
+        method: editingItem ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: editingItem?.id,
+          storeId: editingItem?.storeId || editingItem?.store?.id || "",
           name: formData.name,
           quantity: Number(formData.quantity || 0),
           supplier: formData.supplier,
@@ -121,10 +170,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
         </div>
         <button
           type="button"
-          onClick={() => {
-            resetForm();
-            setIsAddModalOpen(true);
-          }}
+          onClick={openAddModal}
           disabled={!canCreate}
           className="text-[15px] font-bold text-[#2771cb] transition-colors hover:text-[#13508b]"
         >
@@ -164,8 +210,8 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
 
                         {activeMenuId === item.id && (
                           <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
-                            <button type="button" className="mb-1 block w-full rounded-[16px] bg-[#e5f1ff] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-[#d6e8ff]">{t("common.edit")}</button>
-                            <button type="button" className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
+                            <button type="button" onClick={() => openEditModal(item)} className="mb-1 block w-full rounded-[16px] bg-[#e5f1ff] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-[#d6e8ff]">{t("common.edit")}</button>
+                            <button type="button" onClick={() => handleDelete(item)} className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-slate-50">{t("common.delete")}</button>
                           </div>
                         )}
                       </div>
@@ -223,7 +269,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
         maxWidthClass="max-w-md"
         onBackdropClick={() => setIsAddModalOpen(false)}
       >
-        <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{t("stock.addNewItem")}</h3>
+        <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{editingItem ? t("common.edit") : t("stock.addNewItem")}</h3>
         <div className="space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.itemName")}</label>
@@ -280,7 +326,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           {error ? <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div> : null}
           <div className="mt-8 flex gap-3">
             <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
-            <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#2771cb] py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">{isSaving ? t("common.saving") : t("stock.saveItem")}</button>
+            <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#2771cb] py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">{isSaving ? t("common.saving") : editingItem ? t("common.save") : t("stock.saveItem")}</button>
           </div>
         </div>
       </ModalShell>

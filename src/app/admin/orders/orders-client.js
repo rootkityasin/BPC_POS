@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Printer } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { formatOrderId } from "@/lib/order-id";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
 import { openPrintPreview } from "@/modules/receipts/print-preview";
@@ -218,8 +219,10 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
   }
 
   async function handlePrint(order) {
+    const orderCode = formatOrderId(order.invoiceNumber) || "----";
+
     const popup = openPrintPreview({
-      title: `Receipt ${order.invoiceNumber}`,
+      title: `Receipt ${orderCode}`,
       defaultPaperWidth: order.store?.receiptPaperWidth || "80mm",
       printers: order.store?.terminals || [],
       previews: {
@@ -295,7 +298,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                   return (
                     <tr key={order.id}>
                       <td className="px-5 py-4 font-semibold text-slate-800">
-                        <div>{order.invoiceNumber}</div>
+                        <div>{formatOrderId(order.invoiceNumber) || "----"}</div>
                         <div className="mt-1 text-xs font-normal text-slate-500">{new Date(order.createdAt).toLocaleString()}</div>
                       </td>
                       <td className="px-5 py-4">

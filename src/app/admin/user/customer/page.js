@@ -6,6 +6,7 @@ import { getCustomerDashboard } from "@/modules/customers/customer-service";
 import { requireFeatureView } from "@/modules/rbac/access";
 import { getActiveStoreId } from "@/modules/auth/active-store";
 import { formatCurrency } from "@/lib/utils";
+import { formatOrderId } from "@/lib/order-id";
 
 export const dynamic = "force-dynamic";
 
@@ -157,7 +158,7 @@ export default async function CustomerPage({ searchParams }) {
                   {customer.recentOrders.map((order) => (
                     <div key={order.id} className="grid grid-cols-[160px_120px_110px_minmax(0,1fr)] gap-4 px-5 py-4 text-sm text-slate-600">
                       <div>
-                        <div className="font-semibold text-slate-900">{order.invoiceNumber}</div>
+                        <div className="font-semibold text-slate-900">{formatOrderId(order.invoiceNumber) || "----"}</div>
                         <div className="mt-1 text-xs uppercase tracking-wide text-slate-400">{order.status}</div>
                       </div>
                       <div>{formatDate(order.createdAt)}</div>

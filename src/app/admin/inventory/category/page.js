@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { FEATURE_KEYS } from "@/core/policies/permission-policy";
-import { requireFeatureView } from "@/modules/rbac/access";
+import { hasManageAccess, requireFeatureView } from "@/modules/rbac/access";
 import { getActiveStoreId } from "@/modules/auth/active-store";
 import { CategoryClient } from "./category-client";
 
@@ -9,6 +9,8 @@ export default async function CategoryPage() {
   const storeId = await getActiveStoreId(user);
   const where = user.role === "SUPER_ADMIN" && !storeId ? {} : { storeId };
   const canManageStoreScope = user.role !== "SUPER_ADMIN" || Boolean(storeId);
+  const canManageCategories = hasManageAccess(user, FEATURE_KEYS.CATEGORY);
+  const canManageSubCategories = hasManageAccess(user, FEATURE_KEYS.SUBCATEGORY);
   
   const [categories, subCategories] = await Promise.all([
     prisma.category.findMany({
@@ -35,6 +37,13 @@ export default async function CategoryPage() {
   ]);
 
   return (
-    <CategoryClient categories={categories} subCategories={subCategories} canCreate={canManageStoreScope} showStoreColumn={user.role === "SUPER_ADMIN" && !storeId} />
+    <CategoryClient
+      categories={categories}
+      subCategories={subCategories}
+      canManageCategories={canManageCategories}
+      canManageSubCategories={canManageSubCategories}
+      canCreate={canManageStoreScope}
+      showStoreColumn={user.role === "SUPER_ADMIN" && !storeId}
+    />
   );
 }

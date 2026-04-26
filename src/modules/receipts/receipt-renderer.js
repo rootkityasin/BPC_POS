@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/utils";
+import { formatOrderId } from "@/lib/order-id";
 
 function escapeHtml(value) {
   return String(value)
@@ -80,6 +81,7 @@ export function buildReceiptHtml(order, t, getItemLabel, options = {}) {
   const customerPhone = formatReceiptField(order.customerPhone);
   const operatorName = order.createdBy || order.cashierName || order.operatorName || order.user?.name || "Ade";
   const invoiceNumber = String(order.invoiceNumber || "");
+  const shortOrderId = formatOrderId(invoiceNumber);
   const invoiceFontSize = receiptPaperWidth === "58mm" ? 18 : 20;
 
   const totalItemsAmount = Number(order.totalAmount || 0);
@@ -232,7 +234,7 @@ export function buildReceiptHtml(order, t, getItemLabel, options = {}) {
 
           <div class="order-box">
             <div class="order-label">Order ID</div>
-            <div class="order-number">${escapeHtml(invoiceNumber)}</div>
+            <div class="order-number">${escapeHtml(shortOrderId || invoiceNumber)}</div>
           </div>
 
           <div class="section">

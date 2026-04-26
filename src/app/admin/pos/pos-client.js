@@ -9,6 +9,7 @@ import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
 import { openPrintPreview } from "@/modules/receipts/print-preview";
 import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
+import { formatOrderId } from "@/lib/order-id";
 import { useTranslation } from "react-i18next";
 
 const NOOP = () => {};
@@ -322,10 +323,9 @@ function PaymentDetailsModal({
   const normalizedCustomerPhone = normalizeBangladeshPhone(customerPhone);
   const hasName = Boolean(normalizedCustomerName);
   const hasPhone = Boolean(normalizedCustomerPhone);
-  const hasCustomerDetails = hasName || hasPhone;
   const hasValidName = !hasName || isValidBangladeshName(normalizedCustomerName);
   const hasValidPhone = !hasPhone || isValidBangladeshPhone(normalizedCustomerPhone);
-  const canConfirm = hasCustomerDetails && hasValidName && hasValidPhone;
+  const canConfirm = hasValidName && hasValidPhone;
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-4xl" onBackdropClick={onClose}>
@@ -415,8 +415,7 @@ function PaymentDetailsModal({
             <button type="button" onClick={onConfirm} disabled={isProcessing || !canConfirm} className="w-full rounded-2xl bg-[#2f6fc6] px-5 py-4 text-lg font-semibold text-white transition-colors hover:bg-[#255ca8] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500">
               {isProcessing ? "Processing..." : "Complete Order & Print"}
             </button>
-            {!hasCustomerDetails ? <p className="text-sm text-amber-600">Enter a customer name or contact number to complete the order.</p> : null}
-            {hasCustomerDetails && (!hasValidName || !hasValidPhone) ? <p className="text-sm text-amber-600">Fix the invalid customer information before completing the order.</p> : null}
+            {(!hasValidName || !hasValidPhone) ? <p className="text-sm text-amber-600">Fix the invalid customer information before completing the order.</p> : null}
           </div>
         </div>
       </div>
@@ -558,11 +557,6 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     const normalizedCustomerName = normalizeCustomerName(customerName);
     const normalizedCustomerPhone = normalizeBangladeshPhone(customerPhone);
 
-    if (!normalizedCustomerName && !normalizedCustomerPhone) {
-      alert("Customer name or contact number is required to complete the order.");
-      return;
-    }
-
     if (normalizedCustomerName && !isValidBangladeshName(normalizedCustomerName)) {
       alert("Enter a valid customer name using Bangla or English letters.");
       return;
@@ -582,8 +576,8 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     setIsProcessing(true);
     try {
       const result = await createOrder(checkoutStoreId, {
-        customerName: normalizedCustomerName,
-        customerPhone: formatBangladeshPhoneForStorage(normalizedCustomerPhone),
+        customerName: normalizedCustomerName || null,
+        customerPhone: formatBangladeshPhoneForStorage(normalizedCustomerPhone) || null,
         paymentMethod,
         splitCount,
         amountPaid: Number(amountPaid || 0),
@@ -606,7 +600,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
       });
       printHtmlDirect(receiptHtml);
 
-      alert(`Order placed successfully!\nInvoice: ${result.invoiceNumber}`);
+      alert(`Order placed successfully!\nInvoice: ${formatOrderId(result.invoiceNumber) || "----"}`);
       setIsCheckoutOpen(false);
       clearCart();
       initializeOrder();
@@ -658,7 +652,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     };
 
     const popup = openPrintPreview({
-      title: `Order Slip ${draftOrder.invoiceNumber}`,
+      title: `Order Slip ${formatOrderId(draftOrder.invoiceNumber) || "----"}`,
       defaultPaperWidth: previewStore.receiptPaperWidth || "80mm",
       printers: previewStore.terminals || [],
       previews: {
@@ -790,7 +784,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <div className="text-[28px] font-black leading-none text-[#2771cb]">{t("pos.customerOrder")}</div>
-                <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: currentOrderId || "---" })}</div>
+                <div className="mt-2 text-sm text-slate-500">{t("pos.orderNo", { id: formatOrderId(currentOrderId) || "----" })}</div>
                 {cartStoreName ? <div data-no-translate="true" className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
               </div>
               <ChevronDown className="h-5 w-5 text-slate-500" />

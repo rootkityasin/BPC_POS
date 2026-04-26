@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatOrderId } from "@/lib/order-id";
 
 export const NOTIFICATION_AUDIENCES = {
   SUPER_ADMIN: "SUPER_ADMIN",
@@ -73,11 +74,13 @@ async function createAudienceNotifications(notifications) {
 export async function emitNotificationEvent(eventName, payload) {
   switch (eventName) {
     case "order.created": {
+      const orderCode = formatOrderId(payload.invoiceNumber) || "----";
+
       await createAudienceNotifications([
         {
           storeId: payload.storeId,
           title: "New order placed",
-          message: `${payload.invoiceNumber} was placed${payload.customerName ? ` for ${payload.customerName}` : ""} with a total of ${payload.totalAmount}.`,
+          message: `${orderCode} was placed${payload.customerName ? ` for ${payload.customerName}` : ""} with a total of ${payload.totalAmount}.`,
           type: "ORDER_CREATED",
           severity: "INFO",
           audience: NOTIFICATION_AUDIENCES.STORE

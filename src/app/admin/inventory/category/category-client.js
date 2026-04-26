@@ -8,7 +8,14 @@ import { useTranslation } from "react-i18next";
 
 const CATEGORY_FORM = { nameEn: "", color: "#2771cb" };
 
-export function CategoryClient({ categories, subCategories, canCreate = true, showStoreColumn = false }) {
+export function CategoryClient({
+  categories,
+  subCategories,
+  canCreate = true,
+  canManageCategories = true,
+  canManageSubCategories = true,
+  showStoreColumn = false
+}) {
   const router = useRouter();
   const { t } = useTranslation();
   const { translateContent } = useTranslatedContent();
@@ -18,6 +25,8 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingKind, setEditingKind] = useState(null);
   const [categoryForm, setCategoryForm] = useState(CATEGORY_FORM);
   const [subCategoryForm, setSubCategoryForm] = useState({
     nameEn: "",
@@ -36,6 +45,7 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
   const modalTitle = activeTab === "categories" ? t("categoryPage.addNewCategory") : t("categoryPage.addNewSubCategory");
   const addButtonLabel = activeTab === "categories" ? t("common.addCategory") : t("common.addSubCategory");
   const subCategoryChoices = useMemo(() => categories, [categories]);
+  const currentTabCanManage = activeTab === "categories" ? canManageCategories : canManageSubCategories;
 
   function formatDate(dateString) {
     if (!dateString) return "N/A";
@@ -45,22 +55,73 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
 
   function openAddModal() {
     setError("");
+    setEditingItem(null);
+    setEditingKind(null);
     setCategoryForm(CATEGORY_FORM);
     setSubCategoryForm({ nameEn: "", categoryId: categories[0]?.id || "" });
     setIsAddModalOpen(true);
   }
 
+  function openEditModal(item) {
+    setError("");
+    setEditingItem(item);
+    if (activeTab === "categories") {
+      setEditingKind("category");
+      setCategoryForm({ nameEn: item.nameEn || "", color: item.color || "#2771cb" });
+    } else {
+      setEditingKind("subcategory");
+      setSubCategoryForm({ nameEn: item.nameEn || "", categoryId: item.categoryId || categories[0]?.id || "" });
+    }
+    setIsAddModalOpen(true);
+  }
+
+  async function handleDelete(item) {
+    const endpoint = activeTab === "categories" ? "/api/v1/category" : "/api/v1/subcategory";
+
+    if (!window.confirm(`Delete ${translateContent(item.nameEn)}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, storeId: item.storeId || item.store?.id || "" })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        alert(data.error || "Failed to delete item.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      alert("Failed to delete item.");
+    }
+  }
+
   async function handleSave() {
     const isCategory = activeTab === "categories";
     const endpoint = isCategory ? "/api/v1/category" : "/api/v1/subcategory";
-    const payload = isCategory ? categoryForm : subCategoryForm;
+    const payload = isCategory
+      ? {
+          id: editingKind === "category" ? editingItem?.id : undefined,
+          storeId: editingKind === "category" ? editingItem?.storeId || editingItem?.store?.id || "" : undefined,
+          ...categoryForm
+        }
+      : {
+          id: editingKind === "subcategory" ? editingItem?.id : undefined,
+          storeId: editingKind === "subcategory" ? editingItem?.storeId || editingItem?.store?.id || "" : undefined,
+          ...subCategoryForm
+        };
 
     setError("");
     setIsSaving(true);
 
     try {
       const response = await fetch(endpoint, {
-        method: "POST",
+        method: editingItem ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -73,6 +134,8 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
 
       window.dispatchEvent(new Event("bpc:translations-updated"));
       setIsAddModalOpen(false);
+      setEditingItem(null);
+      setEditingKind(null);
       router.refresh();
     } catch {
       setError("Failed to save item.");
@@ -103,10 +166,10 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
         <button
           type="button"
           onClick={openAddModal}
-          disabled={!canCreate}
+          disabled={!canCreate || !currentTabCanManage}
           className="text-[17px] font-bold text-[#2771cb] transition-colors hover:text-[#13508b]"
         >
-          {canCreate ? addButtonLabel : "Select a store to add items"}
+          {canCreate && currentTabCanManage ? addButtonLabel : "Select a store to add items"}
         </button>
       </div>
 
@@ -161,7 +224,7 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
               {showStoreColumn ? <div className="col-span-2">Store</div> : null}
               <div className={`${showStoreColumn ? "col-span-2" : "col-span-3"} text-center`}>{t("common.totalDishes")}</div>
               <div className="col-span-2 text-center">{t("common.lastUpdated")}</div>
-              <div className="col-span-1 text-center">{t("common.actions")}</div>
+              {canManageCategories ? <div className="col-span-1 text-center">{t("common.actions")}</div> : null}
             </>
           ) : (
             <>
@@ -171,7 +234,7 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
               {showStoreColumn ? <div className="col-span-2">Store</div> : null}
               <div className="col-span-2 text-center">{t("common.totalDishes")}</div>
               <div className="col-span-2 text-center">{t("common.lastUpdated")}</div>
-              <div className="col-span-1 text-center">{t("common.actions")}</div>
+              {canManageSubCategories ? <div className="col-span-1 text-center">{t("common.actions")}</div> : null}
             </>
           )}
         </div>
@@ -191,14 +254,16 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
                      {item._count?.dishes || 0} {t((item._count?.dishes || 0) === 1 ? "common.dish" : "dishes.title")}
                    </div>
                    <div className="col-span-2 text-center text-[14px] font-medium text-[#2771cb]/70">{formatDate(item.updatedAt)}</div>
-                   <div className="col-span-1 flex items-center justify-center gap-3">
-                    <button type="button" className="text-[#2771cb] transition-colors hover:text-[#13508b]">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button type="button" className="text-[#2771cb]/50 transition-colors hover:text-[#2771cb]">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                   {canManageCategories ? (
+                     <div className="col-span-1 flex items-center justify-center gap-3">
+                      <button type="button" onClick={() => openEditModal(item)} className="text-[#2771cb] transition-colors hover:text-[#13508b]">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(item)} className="text-[#2771cb]/50 transition-colors hover:text-[#2771cb]">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                   ) : null}
                 </>
               ) : (
                 <>
@@ -216,14 +281,16 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
                      {item._count?.dishes || 0} {t((item._count?.dishes || 0) === 1 ? "common.dish" : "dishes.title")}
                    </div>
                    <div className="col-span-2 text-center text-[14px] font-medium text-[#2771cb]/70">{formatDate(item.updatedAt)}</div>
-                   <div className="col-span-1 flex items-center justify-center gap-3">
-                    <button type="button" className="text-[#2771cb] transition-colors hover:text-[#13508b]">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button type="button" className="text-[#2771cb]/50 transition-colors hover:text-[#2771cb]">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                   {canManageSubCategories ? (
+                     <div className="col-span-1 flex items-center justify-center gap-3">
+                      <button type="button" onClick={() => openEditModal(item)} className="text-[#2771cb] transition-colors hover:text-[#13508b]">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(item)} className="text-[#2771cb]/50 transition-colors hover:text-[#2771cb]">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                   ) : null}
                 </>
               )}
             </div>
@@ -285,7 +352,7 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[32px] bg-white p-8 shadow-2xl">
             <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-[#2771cb]">{modalTitle}</h3>
+              <h3 className="text-2xl font-bold text-[#2771cb]">{editingItem ? t("common.edit") : modalTitle}</h3>
               <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-[#2771cb] hover:opacity-70">
                 <X className="h-6 w-6" />
               </button>
@@ -362,7 +429,7 @@ export function CategoryClient({ categories, subCategories, canCreate = true, sh
                   disabled={isSaving}
                    className="flex-1 rounded-2xl bg-[#2771cb] py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50"
                 >
-                  {isSaving ? t("common.saving") : activeTab === "categories" ? t("categoryPage.saveCategory") : t("categoryPage.saveSubCategory")}
+                  {isSaving ? t("common.saving") : editingItem ? t("common.save") : activeTab === "categories" ? t("categoryPage.saveCategory") : t("categoryPage.saveSubCategory")}
                 </button>
               </div>
             </div>
