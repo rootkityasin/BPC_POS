@@ -462,6 +462,17 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   const [splitCount, setSplitCount] = useState(1);
   const [amountPaid, setAmountPaid] = useState("0");
   const [cartNotice, setCartNotice] = useState("");
+  
+  const [toastMessage, setToastMessage] = useState(null);
+  const [toastType, setToastType] = useState("success");
+  const toastTimerRef = useRef(null);
+
+  const showToast = useCallback((message, type = "success") => {
+    setToastMessage(message);
+    setToastType(type);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 4000);
+  }, []);
 
   const storeLabelEntries = useMemo(() => [
     ...(storeDetails?.nameEn ? [{ nameEn: storeDetails.nameEn, nameBn: storeDetails.nameBn }] : []),
@@ -562,12 +573,12 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     const normalizedCustomerPhone = normalizeBangladeshPhone(customerPhone);
 
     if (normalizedCustomerName && !isValidBangladeshName(normalizedCustomerName)) {
-      alert("Enter a valid customer name using Bangla or English letters.");
+      showToast("Enter a valid customer name using Bangla or English letters.", "error");
       return;
     }
 
     if (normalizedCustomerPhone && !isValidBangladeshPhone(normalizedCustomerPhone)) {
-      alert("Enter a valid Bangladesh phone number.");
+      showToast("Enter a valid Bangladesh phone number.", "error");
       return;
     }
 
@@ -604,14 +615,14 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
       });
       printHtmlDirect(receiptHtml);
 
-      alert(`Order placed successfully!\nInvoice: ${formatOrderId(result.invoiceNumber) || "----"}`);
+      showToast(`Order placed successfully!\nInvoice: ${formatOrderId(result.invoiceNumber) || "----"}`, "success");
       setIsCheckoutOpen(false);
       clearCart();
       initializeOrder();
       setCartNotice("");
     } catch (error) {
       console.error("Checkout error:", error);
-      alert("Failed to place order. Please try again.");
+      showToast("Failed to place order. Please try again.", "error");
     } finally {
       setIsProcessing(false);
     }
@@ -666,12 +677,18 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
     });
 
     if (!popup) {
-      alert("Popup was blocked. Please allow popups and try again.");
+      showToast("Popup was blocked. Please allow popups and try again.", "error");
     }
   }
 
   return (
     <>
+      {toastMessage ? (
+        <div className={`fixed leading-tight text-center left-1/2 top-6 z-[100] max-w-sm -translate-x-1/2 whitespace-pre-wrap rounded-[24px] px-6 py-4 text-[15px] font-semibold flex items-center justify-center shadow-[0_30px_60px_rgba(15,23,42,0.2)] transition-all ${toastType === "error" ? "bg-[#fff1f2] text-[#e11d48] border border-[#ffe4e6]" : "bg-[#e5f1ff] text-[#2771cb] border border-[#cbe3ff]"}`}>
+          {toastMessage}
+        </div>
+      ) : null}
+
       <PaymentDetailsModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
