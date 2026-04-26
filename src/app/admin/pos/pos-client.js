@@ -214,9 +214,13 @@ function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
 
   return (
     <article className="group relative rounded-[26px] border border-slate-100 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_20px_50px_rgba(15,23,42,0.1)]">
-      <div className="relative h-28 rounded-[20px] bg-gradient-to-br from-slate-100 to-slate-200">
+      <div className="relative h-28 rounded-[20px] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt={product.nameEn} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
+          )}
         </div>
         <button type="button" className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#2771cb] shadow-sm transition-transform hover:scale-110">
           <Heart className="h-3.5 w-3.5" />

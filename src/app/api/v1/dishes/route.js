@@ -110,8 +110,50 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { id, showOnList, nameEn, categoryId, subCategoryId, ingredientStockItemIds, price, imageUrl, createdBy } = body;
+  const contentType = request.headers.get("content-type") || "";
+  let id, nameEn, categoryId, subCategoryId, ingredientStockItemIds, price, createdBy, imageUrl, showOnList, clearImage;
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+    id = String(formData.get("id") || "").trim();
+    nameEn = String(formData.get("nameEn") || "").trim();
+    categoryId = String(formData.get("categoryId") || "").trim();
+    subCategoryId = String(formData.get("subCategoryId") || "").trim();
+    const ingredientIdsRaw = formData.get("ingredientStockItemIds");
+    ingredientStockItemIds = ingredientIdsRaw ? JSON.parse(ingredientIdsRaw) : undefined;
+    price = formData.get("price") ? Number(formData.get("price")) : undefined;
+    showOnList = formData.has("showOnList") ? formData.get("showOnList") === "true" : undefined;
+    createdBy = String(formData.get("createdBy") || "").trim();
+    clearImage = formData.get("clearImage") === "true";
+
+    const imageFile = formData.get("image");
+    if (imageFile && imageFile.size > 0) {
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const uploadsDir = path.join(process.cwd(), "public", "uploads", "dishes");
+      await mkdir(uploadsDir, { recursive: true });
+
+      const ext = imageFile.name.split(".").pop() || "png";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      const filePath = path.join(uploadsDir, fileName);
+
+      await writeFile(filePath, buffer);
+      imageUrl = `/uploads/dishes/${fileName}`;
+    }
+  } else {
+    const body = await request.json();
+    id = body.id;
+    nameEn = body.nameEn;
+    categoryId = body.categoryId;
+    subCategoryId = body.subCategoryId;
+    ingredientStockItemIds = body.ingredientStockItemIds;
+    price = body.price;
+    showOnList = body.showOnList;
+    createdBy = body.createdBy;
+    imageUrl = body.imageUrl;
+    clearImage = body.imageUrl === null;
+  }
 
   if (!id) {
     return NextResponse.json({ error: "Dish ID is required" }, { status: 400 });
@@ -127,13 +169,13 @@ export async function PATCH(request) {
 
   const updateData = {};
 
-  if (typeof showOnList === "boolean") {
+  if (showOnList !== undefined) {
     updateData.showOnList = showOnList;
   }
-  if (nameEn !== undefined) {
+  if (nameEn) {
     updateData.nameEn = String(nameEn).trim();
   }
-  if (categoryId !== undefined) {
+  if (categoryId) {
     updateData.categoryId = String(categoryId).trim();
   }
   if (subCategoryId !== undefined) {
@@ -142,10 +184,14 @@ export async function PATCH(request) {
   if (price !== undefined) {
     updateData.price = Number(price);
   }
-  if (imageUrl !== undefined) {
+  
+  if (imageUrl !== undefined && imageUrl !== null) {
     updateData.imageUrl = imageUrl;
+  } else if (clearImage) {
+    updateData.imageUrl = null;
   }
-  if (createdBy !== undefined) {
+
+  if (createdBy) {
     updateData.createdBy = String(createdBy).trim();
   }
 

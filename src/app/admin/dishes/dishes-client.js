@@ -47,20 +47,26 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
     const dishId = editingDish?.id;
 
     if (isEditing && dishId) {
+      const fd = new FormData();
+      fd.append("id", dishId);
+      fd.append("nameEn", formData.nameEn);
+      fd.append("categoryId", formData.categoryId);
+      fd.append("subCategoryId", formData.subCategoryId);
+      fd.append("ingredientStockItemIds", JSON.stringify(formData.ingredientStockItemIds));
+      fd.append("price", String(formData.price));
+      fd.append("showOnList", String(formData.showOnList));
+      fd.append("createdBy", formData.createdBy || userEmail || "Admin");
+      
+      if (formData.imageFile) {
+        fd.append("image", formData.imageFile);
+      } else if (formData.imageUrl === null) {
+        // Explicitly clear image if they removed it without adding a new one
+        fd.append("clearImage", "true");
+      }
+
       const res = await fetch("/api/v1/dishes", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: dishId,
-          nameEn: formData.nameEn,
-          categoryId: formData.categoryId,
-          subCategoryId: formData.subCategoryId,
-          ingredientStockItemIds: formData.ingredientStockItemIds,
-          price: formData.price,
-          showOnList: formData.showOnList,
-          createdBy: formData.createdBy,
-          imageUrl: formData.imageUrl
-        })
+        body: fd
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
