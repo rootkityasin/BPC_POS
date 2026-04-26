@@ -127,7 +127,6 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
 }
 
 export async function createOrder(storeId, orderData) {
-  const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36).toUpperCase()}`;
   const store = await prisma.store.findUnique({
     where: { id: storeId },
     select: { vatNumber: true, vatPercentage: true }
@@ -140,30 +139,59 @@ export async function createOrder(storeId, orderData) {
   const grossAmount = orderData.items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
   const { subtotalAmount, vatAmount, totalAmount } = calculateVatInclusiveTotals(grossAmount, vatPercentage);
 
-  const order = await prisma.order.create({
-    data: {
-      storeId,
-      invoiceNumber,
-      customerName: orderData.customerName || null,
-      customerPhone: orderData.customerPhone || null,
-      status: "PENDING",
-      subtotalAmount,
-      vatAmount,
-      vatPercentage,
-      vatNumber: store?.vatNumber || null,
-      totalAmount,
-      items: {
-        create: orderData.items.map((item) => ({
-          dishId: item.productType === "dish" ? item.productId : null,
-          stockItemId: item.productType === "stock" ? item.productId : null,
-          itemName: item.name,
-          quantity: item.quantity,
-          unitPrice: item.price
-        }))
+  let order;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (attempts < maxAttempts) {
+    try {
+      const result = await prisma.$queryRaw`SELECT "invoiceNumber" FROM "Order" WHERE "invoiceNumber" ~ '^[0-9]+$' ORDER BY CAST("invoiceNumber" AS INTEGER) DESC LIMIT 1`;
+      let nextSeq = 1;
+      if (result && result.length > 0) {
+        nextSeq = parseInt(result[0].invoiceNumber, 10) + 1;
       }
-    },
-    include: { items: { include: { dish: true, stockItem: true } } }
-  });
+      const invoiceNumber = nextSeq.toString().padStart(5, '0');
+
+      order = await prisma.order.create({
+        data: {
+          storeId,
+          invoiceNumber,
+          customerName: orderData.customerName || null,
+          customerPhone: orderData.customerPhone || null,
+          status: "PENDING",
+          subtotalAmount,
+          vatAmount,
+          vatPercentage,
+          vatNumber: store?.vatNumber || null,
+          totalAmount,
+          items: {
+            create: orderData.items.map((item) => ({
+              dishId: item.productType === "dish" ? item.productId : null,
+              stockItemId: item.productType === "stock" ? item.productId : null,
+              itemName: item.name,
+              quantity: item.quantity,
+              unitPrice: item.price
+            }))
+          }
+        },
+        include: { items: { include: { dish: true, stockItem: true } } }
+      });
+
+      // Break loop if successful
+      break;
+    } catch (error) {
+      if (error.code === 'P2002' && error.meta?.target?.includes('invoiceNumber')) {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw new Error("System is busy. Failed to generate a unique order ID. Please try again.");
+        }
+        // Small delay to prevent tight loop collisions
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+        continue;
+      }
+      throw error;
+    }
+  }
 
   for (const item of orderData.items) {
     if (item.productType === "dish") {
