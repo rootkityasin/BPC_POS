@@ -33,3 +33,29 @@ input,
 select {
   font: inherit;
 }
+
+/* Shared popup scrollbar theme */
+.popup-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #2771cb #e5f1ff;
+}
+
+.popup-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.popup-scrollbar::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #f8fbff 0%, #e5f1ff 100%);
+  border-radius: 9999px;
+}
+
+.popup-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4a8dde 0%, #2771cb 100%);
+  border-radius: 9999px;
+  border: 2px solid #e5f1ff;
+}
+
+.popup-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3b81d6 0%, #13508b 100%);
+}

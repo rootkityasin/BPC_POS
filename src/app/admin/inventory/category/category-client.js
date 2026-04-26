@@ -350,10 +350,15 @@ export function CategoryClient({
 
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[32px] bg-white p-8 shadow-2xl">
+          <div className="popup-scrollbar w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[32px] bg-white p-8 shadow-2xl">
             <div className="mb-6 flex items-center justify-between">
               <h3 className="text-2xl font-bold text-[#2771cb]">{editingItem ? t("common.edit") : modalTitle}</h3>
-              <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-[#2771cb] hover:opacity-70">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                aria-label="Close popup"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
+              >
                 <X className="h-6 w-6" />
               </button>
             </div>

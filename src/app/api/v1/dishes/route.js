@@ -170,3 +170,30 @@ export async function PATCH(request) {
 
   return NextResponse.json(dish);
 }
+
+export async function DELETE(request) {
+  const user = await getSessionUser();
+  const storeId = await getActiveStoreId(user);
+  if (!storeId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const id = String(body.id || "").trim();
+
+  if (!id) {
+    return NextResponse.json({ error: "Dish ID is required" }, { status: 400 });
+  }
+
+  const existingDish = await prisma.dish.findFirst({
+    where: { id, storeId }
+  });
+
+  if (!existingDish) {
+    return NextResponse.json({ error: "Dish not found" }, { status: 404 });
+  }
+
+  await prisma.dish.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}

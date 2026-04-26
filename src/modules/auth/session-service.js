@@ -78,7 +78,28 @@ export async function getSessionUser() {
   if (!accessToken) return null;
 
   try {
-    return await verifyAccessToken(accessToken);
+    const tokenPayload = await verifyAccessToken(accessToken);
+    const user = await prisma.user.findUnique({
+      where: { id: tokenPayload.sub },
+      include: {
+        role: true,
+        permissionOverrides: true
+      }
+    });
+
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    return {
+      ...tokenPayload,
+      id: user.id,
+      sub: user.id,
+      email: user.email,
+      role: user.role.code,
+      storeId: user.storeId,
+      permissions: buildPermissionMap(user.role.code, user.permissionOverrides)
+    };
   } catch {
     return null;
   }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { DishModal } from "@/components/dishes/dish-modal";
-import { Search, Plus, Image as ImageIcon } from "lucide-react";
+import { Search, Plus, Image as ImageIcon, Menu } from "lucide-react";
 
 export function DishesClient({ dishes, categories, stockItems, canManage, userEmail, showStoreColumn = false }) {
   const router = useRouter();
@@ -17,6 +17,18 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [activeMenuId, setActiveMenuId] = useState(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!event.target.closest(".action-menu-container")) {
+        setActiveMenuId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filteredDishes = useMemo(() => {
     if (!searchQuery.trim()) return dishes;
@@ -96,12 +108,43 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
     }
   }
 
+  function toggleMenu(id) {
+    setActiveMenuId(activeMenuId === id ? null : id);
+  }
+
+  async function handleDelete(dish) {
+    setActiveMenuId(null);
+
+    if (!window.confirm(`Delete ${translateContent(dish.nameEn) || "this dish"}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/v1/dishes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: dish.id })
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        alert(data.error || "Failed to delete dish.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      alert("Failed to delete dish.");
+    }
+  }
+
   function openCreateModal() {
     setEditingDish(null);
     setIsModalOpen(true);
   }
 
   function openEditModal(dish) {
+    setActiveMenuId(null);
     setEditingDish(dish);
     setIsModalOpen(true);
   }
@@ -219,13 +262,34 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                     </td>
                     {canManage && (
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(dish)}
-                          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                        >
-                          {t("common.edit")}
-                        </button>
+                        <div className="action-menu-container relative w-max">
+                          <button
+                            type="button"
+                            onClick={() => toggleMenu(dish.id)}
+                            className="flex items-center justify-center text-[#2771cb] hover:opacity-75 focus:outline-none"
+                          >
+                            <Menu className="h-5 w-5" />
+                          </button>
+
+                          {activeMenuId === dish.id && (
+                            <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-[24px] border border-slate-100 bg-white p-2.5 shadow-[0_20px_60px_rgba(15,23,42,0.15)]">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(dish)}
+                                className="mb-1 block w-full rounded-[16px] bg-[#e5f1ff] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-[#d6e8ff]"
+                              >
+                                {t("common.edit")}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(dish)}
+                                className="block w-full rounded-[16px] px-5 py-3 text-left text-[14px] font-semibold text-[#2771cb] transition-colors hover:bg-slate-50"
+                              >
+                                {t("common.delete")}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
