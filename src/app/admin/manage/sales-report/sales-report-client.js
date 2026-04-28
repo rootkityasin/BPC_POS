@@ -88,15 +88,17 @@ function buildLinePath(values, width, height) {
 function StatCard({ title, value, delta, toneClass }) {
   const valueLength = String(value || "").length;
   const valueSizeClass = valueLength > 14
-    ? "text-base sm:text-lg xl:text-xl"
+    ? "text-xs sm:text-sm xl:text-base"
     : valueLength > 10
-      ? "text-lg sm:text-xl xl:text-2xl"
-      : "text-xl sm:text-2xl xl:text-[26px]";
+      ? "text-sm sm:text-base xl:text-lg"
+      : valueLength > 7
+        ? "text-base sm:text-lg xl:text-xl"
+        : "text-lg sm:text-xl xl:text-2xl";
 
   return (
     <div className={`flex min-w-0 flex-col rounded-[24px] p-5 ${toneClass}`}>
-      <div className="text-sm font-semibold text-slate-700">{title}</div>
-      <div className={`mt-3 whitespace-normal font-black leading-tight tracking-[-0.02em] text-slate-900 ${valueSizeClass}`}>{value}</div>
+      <div className="min-w-0 text-sm font-semibold leading-snug text-balance text-slate-700">{title}</div>
+      <div className={`mt-3 min-w-0 whitespace-nowrap font-black leading-tight tracking-[-0.03em] text-slate-900 ${valueSizeClass}`}>{value}</div>
       <div className={`mt-auto pt-4 text-xs font-medium leading-5 ${delta.value >= 0 ? "text-emerald-600" : "text-[#13508b]"}`}>
         <span className="block text-balance">{delta.label}</span>
       </div>
@@ -369,7 +371,7 @@ export function SalesReportClient({ report }) {
             </div>
             <TrendingUp className="h-5 w-5 text-slate-300" />
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
             <StatCard title="Total Sales" value={formatCurrency(report.summary.totalSales)} delta={report.summary.deltas.totalSales} toneClass="bg-[#e5f1ff]" />
             <StatCard title="Total Refunds" value={formatCurrency(report.summary.totalRefunds)} delta={report.summary.deltas.totalRefunds} toneClass="bg-orange-50" />
             <StatCard title="Total Order" value={String(report.summary.totalOrders)} delta={report.summary.deltas.totalOrders} toneClass="bg-amber-50" />
