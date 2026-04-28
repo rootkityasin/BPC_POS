@@ -30,6 +30,28 @@ function includeOrderRelations() {
   };
 }
 
+function resolveRefundItem(orderItems, refundItem) {
+  const requestedItemId = String(refundItem?.itemId || "").trim();
+  if (!requestedItemId) return null;
+
+  const directMatch = orderItems.find((item) => item.id === requestedItemId);
+  if (directMatch) return directMatch;
+
+  const stockItemId = String(refundItem?.stockItemId || "").trim();
+  if (stockItemId) {
+    const stockMatches = orderItems.filter((item) => item.stockItemId === stockItemId);
+    if (stockMatches.length === 1) return stockMatches[0];
+  }
+
+  const dishId = String(refundItem?.dishId || "").trim();
+  if (dishId) {
+    const dishMatches = orderItems.filter((item) => item.dishId === dishId);
+    if (dishMatches.length === 1) return dishMatches[0];
+  }
+
+  return null;
+}
+
 export async function POST(request) {
   try {
     const user = await getSessionUser();
@@ -69,11 +91,10 @@ export async function POST(request) {
       return NextResponse.json({ error: "Cannot refund a cancelled order" }, { status: 400 });
     }
 
-    const itemMap = new Map(existingOrder.items.map((item) => [item.id, item]));
-
     // Validate all refund items
-    for (const { itemId, quantity } of refundItems) {
-      const item = itemMap.get(itemId);
+    for (const refundItem of refundItems) {
+      const quantity = Number(refundItem?.quantity || 0);
+      const item = resolveRefundItem(existingOrder.items, refundItem);
       if (!item) {
         return NextResponse.json({ error: "Invalid order item" }, { status: 400 });
       }
@@ -98,19 +119,20 @@ export async function POST(request) {
     // Process refunds: update item quantities and restore stock
     let totalRefundAmount = 0;
 
-    for (const { itemId, quantity } of refundItems) {
-      const item = itemMap.get(itemId);
+    for (const refundItem of refundItems) {
+      const quantity = Number(refundItem?.quantity || 0);
+      const item = resolveRefundItem(existingOrder.items, refundItem);
       totalRefundAmount += quantity * item.unitPrice;
 
       const nextQuantity = Math.max(0, Number(item.quantity || 0) - quantity);
 
       if (nextQuantity === 0) {
         await prisma.orderItem.delete({
-          where: { id: itemId }
+          where: { id: item.id }
         });
       } else {
         await prisma.orderItem.update({
-          where: { id: itemId },
+          where: { id: item.id },
           data: {
             quantity: nextQuantity
           }

@@ -174,7 +174,16 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent }) {
     try {
       const itemsToRefund = Object.entries(refundData)
         .filter(([_, qty]) => qty > 0)
-        .map(([itemId, qty]) => ({ itemId, quantity: qty }));
+        .map(([itemId, qty]) => {
+          const item = refundableItems.find((entry) => entry.id === itemId);
+
+          return {
+            itemId,
+            stockItemId: item?.stockItemId || null,
+            dishId: item?.dishId || null,
+            quantity: Number(qty)
+          };
+        });
 
       const response = await fetch("/api/v1/orders/refund", {
         method: "POST",

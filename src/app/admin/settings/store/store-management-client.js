@@ -176,7 +176,7 @@ function StoreDetailsModal({ isOpen, selectedStore, allowUserStoreFallback, onCl
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-2xl" onBackdropClick={onClose}>
       <h3 className="text-2xl font-bold text-slate-900">{selectedStore ? t("storeManagement.editStore") : t("storeManagement.createStore")}</h3>
       <p className="mt-2 text-sm text-slate-500">{t("storeManagement.storeModalSubtitle")}</p>
-      <form action={formAction} className="mt-6 space-y-5" encType="multipart/form-data">
+      <form action={formAction} className="mt-6 space-y-5">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
         <input type="hidden" name="allowUserStoreFallback" value={String(allowUserStoreFallback)} />
 
