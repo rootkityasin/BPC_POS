@@ -96,6 +96,7 @@ function getCustomerKey(order) {
 function summarizeOrders(orders, firstOrderByCustomer = new Map(), orderCountByCustomer = new Map(), rangeStart = null, rangeEnd = null) {
   const summary = {
     totalSales: 0,
+    totalRefunds: 0,
     totalOrders: orders.length,
     productsSold: 0,
     newCustomers: 0
@@ -105,7 +106,8 @@ function summarizeOrders(orders, firstOrderByCustomer = new Map(), orderCountByC
   for (const order of orders) {
     summary.totalSales += Number(order.totalAmount || 0);
     for (const item of order.items || []) {
-      summary.productsSold += Number(item.quantity || 0);
+      summary.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
+      summary.totalRefunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
     }
 
     const customerKey = getCustomerKey(order);
@@ -119,6 +121,7 @@ function summarizeOrders(orders, firstOrderByCustomer = new Map(), orderCountByC
   }
 
   summary.totalSales = clampCurrency(summary.totalSales);
+  summary.totalRefunds = clampCurrency(summary.totalRefunds);
   return summary;
 }
 
@@ -408,7 +411,7 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
             }
           },
           include: {
-            items: { select: { quantity: true } }
+            items: { select: { quantity: true, unitPrice: true } }
           }
         })
       : Promise.resolve([]),
@@ -454,11 +457,13 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
     },
     summary: {
       totalSales: summary.totalSales,
+      totalRefunds: summary.totalRefunds,
       totalOrders: summary.totalOrders,
       productsSold: summary.productsSold,
       newCustomers: summary.newCustomers,
       deltas: {
         totalSales: buildDelta(summary.totalSales, previousSummary?.totalSales),
+        totalRefunds: buildDelta(summary.totalRefunds, previousSummary?.totalRefunds),
         totalOrders: buildDelta(summary.totalOrders, previousSummary?.totalOrders),
         productsSold: buildDelta(summary.productsSold, previousSummary?.productsSold),
         newCustomers: buildDelta(summary.newCustomers, previousSummary?.newCustomers)

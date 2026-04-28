@@ -60,6 +60,8 @@ model Store {
   receiptHeaderText  String?
   receiptFooterText  String?
   receiptShowLogo    Boolean @default(true)
+  receiptShowTopLogo Boolean @default(true)
+  receiptShowBottomLogo Boolean @default(true)
   receiptShowSeller  Boolean @default(true)
   receiptShowBuyer   Boolean @default(true)
   receiptShowOrderStatus Boolean @default(true)
@@ -67,6 +69,7 @@ model Store {
   receiptShowQr      Boolean @default(true)
   receiptShowSign    Boolean @default(false)
   receiptWatermark   Float @default(0.1)
+  receiptFrontOpacity Float @default(1)
   defaultPrinterId   String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -237,6 +240,8 @@ model Order {
   id            String @id @default(cuid())
   storeId       String
   invoiceNumber String @unique
+  receiptPublicCode String? @unique
+  createdBy     String?
   customerName  String?
   customerPhone String?
   status        String
@@ -260,6 +265,7 @@ model OrderItem {
   quantity    Int
   unitPrice   Float
   printStatus String @default("Not Printed")
+  refundedQuantity Int @default(0)
   order       Order @relation(fields: [orderId], references: [id])
   dish       Dish? @relation(fields: [dishId], references: [id])
   stockItem  StockItem? @relation(fields: [stockItemId], references: [id])

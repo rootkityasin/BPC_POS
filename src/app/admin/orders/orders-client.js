@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Printer } from "lucide-react";
+import { Download, Pencil, Printer, Search, RotateCcw, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { formatOrderId } from "@/lib/order-id";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
 import { openPrintPreview } from "@/modules/receipts/print-preview";
+import { buildReportHtml, buildTableSectionHtml, downloadCsv, openPrintWindow } from "@/modules/reports/report-export";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
 
@@ -61,6 +63,239 @@ function getPrintStatusLabel(t, status) {
 
 function getItemLabel(item, translateContent) {
   return translateContent(item.dish?.nameEn || item.stockItem?.name || item.itemName || "Item");
+}
+
+function isOrderUpdated(order) {
+  if (!order?.createdAt || !order?.updatedAt) return false;
+  const createdAt = new Date(order.createdAt);
+  const updatedAt = new Date(order.updatedAt);
+  if (Number.isNaN(createdAt.getTime()) || Number.isNaN(updatedAt.getTime())) return false;
+  return updatedAt.getTime() - createdAt.getTime() > 1000;
+}
+
+function printHtmlDirect(html) {
+  if (typeof window === "undefined" || !html) return false;
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+
+  const cleanup = () => {
+    iframe.remove();
+  };
+
+  const frameDocument = iframe.contentWindow?.document;
+  if (!frameDocument) {
+    cleanup();
+    return false;
+  }
+
+  frameDocument.open();
+  frameDocument.write(html);
+  frameDocument.close();
+
+  const frameWindow = iframe.contentWindow;
+  if (!frameWindow) {
+    cleanup();
+    return false;
+  }
+
+  setTimeout(() => {
+    frameWindow.focus();
+    frameWindow.print();
+    setTimeout(cleanup, 1000);
+  }, 80);
+
+  return true;
+}
+
+
+function OrderRefundModal({ order, onClose, onSave, t, translateContent }) {
+  const [refundData, setRefundData] = useState({});
+  const [removedItems, setRemovedItems] = useState({});
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!order) return null;
+
+  const refundableItems = order.items.filter(item => (item.quantity || 0) > 0);
+  const hasRefundableItems = refundableItems.length > 0;
+  
+  const handleQuantityChange = (itemId, maxQty, value, isDish) => {
+    if (isDish) return;
+    const qty = Math.max(0, Math.min(maxQty, parseInt(value || "0", 10)));
+    setRefundData(prev => ({ ...prev, [itemId]: qty }));
+    setRemovedItems((prev) => {
+      if (!prev[itemId]) return prev;
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  };
+
+  const toggleRemoveItem = (itemId, maxQty) => {
+    const shouldRemove = !removedItems[itemId];
+
+    setRemovedItems((prev) => {
+      const next = { ...prev };
+      if (shouldRemove) {
+        next[itemId] = true;
+      } else {
+        delete next[itemId];
+      }
+      return next;
+    });
+
+    setRefundData((prev) => ({
+      ...prev,
+      [itemId]: shouldRemove ? maxQty : 0
+    }));
+  };
+
+  const totalRefundAmount = refundableItems.reduce((sum, item) => {
+    return sum + (refundData[item.id] || 0) * (item.unitPrice || 0);
+  }, 0);
+
+  const hasSelection = Object.values(refundData).some(qty => qty > 0);
+
+  async function handleRefundSubmit(e) {
+    e.preventDefault();
+    if (!hasSelection) return;
+    
+    setIsProcessing(true);
+    setError("");
+
+    try {
+      const itemsToRefund = Object.entries(refundData)
+        .filter(([_, qty]) => qty > 0)
+        .map(([itemId, qty]) => ({ itemId, quantity: qty }));
+
+      const response = await fetch("/api/v1/orders/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, refundItems: itemsToRefund })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.error || t("orders.refundFailed", { defaultValue: "Failed to process refund." }));
+        return;
+      }
+
+      onSave(data.order);
+    } catch (err) {
+      setError(t("orders.refundFailed", { defaultValue: "Failed to process refund." }));
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  return (
+    <ModalShell isOpen maxWidthClass="max-w-2xl" onBackdropClick={onClose}>
+      <h3 className="text-2xl font-bold text-orange-600">{t("orders.refundOrder", { defaultValue: "Refund Order" })}</h3>
+      <p className="mt-2 text-sm text-slate-500">
+        {t("orders.refundOrderSubtitle", { orderId: formatOrderId(order.invoiceNumber) || "----", defaultValue: "Select items and quantities to return from this order." })}
+      </p>
+
+      {!hasRefundableItems ? (
+        <div className="mt-6 rounded-2xl bg-slate-50 p-6 text-center text-sm font-medium text-slate-500">
+          {t("orders.noRefundableItems", { defaultValue: "All items in this order have been fully refunded." })}
+        </div>
+      ) : (
+        <form onSubmit={handleRefundSubmit} className="mt-6 space-y-6">
+          <div className="overflow-hidden rounded-2xl border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left font-medium text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Item</th>
+                  <th className="px-4 py-3">Price</th>
+                  <th className="px-4 py-3">Return Qty</th>
+                  <th className="px-4 py-3 text-right">Remove</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {refundableItems.map(item => {
+                  const maxQty = item.quantity || 0;
+                  const currentQty = refundData[item.id] || 0;
+                  const isRemoved = Boolean(removedItems[item.id]);
+                  const isDish = Boolean(item.dishId);
+                  
+                  return (
+                    <tr key={item.id}>
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {getItemLabel(item, translateContent)}
+                        {isRemoved ? (
+                          <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
+                            Removed
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{formatCurrency(item.unitPrice)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max={maxQty}
+                            value={currentQty || ""}
+                            disabled={isRemoved || isDish}
+                            onChange={(e) => handleQuantityChange(item.id, maxQty, e.target.value, isDish)}
+                            className="w-20 rounded-xl border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-orange-500"
+                          />
+                          <span className="text-xs text-slate-400">/ {maxQty}</span>
+                        </div>
+                        {isDish ? (
+                          <div className="mt-1 text-xs text-slate-400">Full dish only</div>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => toggleRemoveItem(item.id, maxQty)}
+                          className={`inline-flex items-center justify-center rounded-full border p-2 transition ${isRemoved ? "border-orange-200 bg-orange-50 text-orange-600" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                          aria-label="Remove item"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {hasSelection && (
+            <div className="rounded-2xl bg-orange-50 px-5 py-4 flex items-center justify-between">
+              <span className="text-sm font-medium text-orange-700">{t("orders.refundAmount", { defaultValue: "Refund Amount" })}</span>
+              <span className="text-lg font-bold text-orange-700">{formatCurrency(totalRefundAmount)}</span>
+            </div>
+          )}
+
+          {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">
+              {t("common.cancel", { defaultValue: "Cancel" })}
+            </button>
+            <button
+              type="submit"
+              disabled={isProcessing || !hasSelection}
+              className="rounded-2xl bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+            >
+              {isProcessing ? t("common.processing", { defaultValue: "Processing..." }) : t("orders.processRefund", { defaultValue: "Process Refund" })}
+            </button>
+          </div>
+        </form>
+      )}
+    </ModalShell>
+  );
 }
 
 function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, t, translateContent }) {
@@ -154,6 +389,20 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
   const { translateContent } = useTranslatedContent();
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [refundOrder, setRefundOrder] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const rawInvoice = order.invoiceNumber || "";
+        const formattedInvoice = formatOrderId(order.invoiceNumber) || "";
+        return rawInvoice.toLowerCase().includes(query) || formattedInvoice.toLowerCase().includes(query);
+      }
+      return true;
+    });
+  }, [orders, searchQuery]);
   const [form, setForm] = useState({ customerName: "", customerPhone: "", status: "PENDING" });
   const [modalError, setModalError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -263,11 +512,146 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
     }
   }
 
+  async function handlePrintUpdated(order) {
+    const receiptPaperWidth = order.store?.receiptPaperWidth || "58mm";
+    const receiptHtml = buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), {
+      paperWidthOverride: receiptPaperWidth,
+      forceUpdated: true,
+      updatedAtOverride: order.updatedAt
+    });
+
+    const printed = printHtmlDirect(receiptHtml);
+    if (!printed) {
+      window.alert(t("orders.popupBlocked"));
+    }
+  }
+
+  function buildOrdersCsvRows() {
+    const header = [
+      "Invoice",
+      "Created At",
+      "Customer",
+      "Phone",
+      "Status",
+      "Print Status",
+      ...(showStoreColumn ? ["Store"] : []),
+      "Total",
+      "Items"
+    ];
+
+    const rows = filteredOrders.map((order) => {
+      const printStatus = getAggregatePrintStatus(order.items);
+      const itemsLabel = order.items
+        .map((item) => `${getItemLabel(item, translateContent)} x${Number(item.quantity || 0)}`)
+        .join("; ");
+
+      return [
+        formatOrderId(order.invoiceNumber) || "----",
+        new Date(order.createdAt).toLocaleString(),
+        order.customerName || t("orders.walkIn"),
+        order.customerPhone || t("orders.noCustomerPhone"),
+        getOrderStatusLabel(t, order.status),
+        getPrintStatusLabel(t, printStatus),
+        ...(showStoreColumn ? [order.store?.nameEn || "Unknown store"] : []),
+        formatCurrency(order.totalAmount),
+        itemsLabel
+      ];
+    });
+
+    return [header, ...rows];
+  }
+
+  function buildOrdersPdfHtml() {
+    const totalSales = filteredOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0);
+    const summaryRows = [
+      ["Total Orders", String(filteredOrders.length)],
+      ["Total Sales", formatCurrency(totalSales)]
+    ];
+
+    const columns = [
+      "Invoice",
+      "Created At",
+      "Customer",
+      "Phone",
+      "Status",
+      "Print Status",
+      ...(showStoreColumn ? ["Store"] : []),
+      "Total",
+      "Items"
+    ];
+
+    const rows = filteredOrders.map((order) => {
+      const printStatus = getAggregatePrintStatus(order.items);
+      const itemsLabel = order.items
+        .map((item) => `${getItemLabel(item, translateContent)} x${Number(item.quantity || 0)}`)
+        .join("; ");
+
+      return [
+        formatOrderId(order.invoiceNumber) || "----",
+        new Date(order.createdAt).toLocaleString(),
+        order.customerName || t("orders.walkIn"),
+        order.customerPhone || t("orders.noCustomerPhone"),
+        getOrderStatusLabel(t, order.status),
+        getPrintStatusLabel(t, printStatus),
+        ...(showStoreColumn ? [order.store?.nameEn || "Unknown store"] : []),
+        formatCurrency(order.totalAmount),
+        itemsLabel
+      ];
+    });
+
+    const sections = [
+      buildTableSectionHtml({
+        title: "Summary",
+        columns: ["Metric", "Value"],
+        rows: summaryRows
+      }),
+      buildTableSectionHtml({
+        title: "Orders",
+        columns,
+        rows
+      })
+    ];
+
+    return buildReportHtml({
+      title: t("orders.title"),
+      subtitle: t("orders.subtitle"),
+      metaLines: [
+        `Generated: ${new Date().toLocaleString()}`,
+        `Orders Included: ${filteredOrders.length}`
+      ],
+      sections
+    });
+  }
+
+  function handleExportCsv() {
+    downloadCsv("orders.csv", buildOrdersCsvRows());
+  }
+
+  function handleExportPdf() {
+    const html = buildOrdersPdfHtml();
+    const popup = openPrintWindow({ title: t("orders.title"), html });
+    if (!popup) {
+      window.alert("Popup blocked. Please allow popups to export PDF.");
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900">{t("orders.title")}</h2>
-        <p className="text-sm text-slate-500">{t("orders.subtitle")}</p>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900">{t("orders.title")}</h2>
+          <p className="text-sm text-slate-500">{t("orders.subtitle")}</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" variant="outline" className="rounded-2xl" onClick={handleExportCsv}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button type="button" className="rounded-2xl" onClick={handleExportPdf}>
+            <Download className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -283,16 +667,16 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                 <th className="px-5 py-3">{t("orders.total")}</th>
                 <th className="px-5 py-3">{t("orders.items")}</th>
                 <th className="px-5 py-3">{t("orders.printReceipt")}</th>
-                {canManage ? <th className="px-5 py-3">{t("common.action")}</th> : null}
+                {canManage ? <th className="px-5 py-3 text-right">{t("common.action")}</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {orders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={(showStoreColumn ? 9 : 8) - (canManage ? 0 : 1)} className="px-5 py-10 text-center text-slate-500">{t("orders.noOrdersYet")}</td>
                 </tr>
               ) : (
-                orders.map((order) => {
+                filteredOrders.map((order) => {
                   const printStatus = getAggregatePrintStatus(order.items);
 
                   return (
@@ -333,15 +717,27 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                         </button>
                       </td>
                       {canManage ? (
-                        <td className="px-5 py-4 text-slate-500">
-                          <button
+                        <td className="px-5 py-4 text-right text-slate-500">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
                             type="button"
                             onClick={() => openEditModal(order)}
                             className="inline-flex items-center gap-2 rounded-2xl bg-[#2771cb] px-4 py-2 font-semibold text-white hover:bg-[#13508b]"
                           >
                             <Pencil className="h-4 w-4" />
                             {t("common.edit")}
-                          </button>
+                            </button>
+                            {order.status !== "CANCELLED" ? (
+                              <button
+                                type="button"
+                                onClick={() => setRefundOrder(order)}
+                                className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 font-semibold text-orange-700 hover:bg-orange-100"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                                {t("orders.refund", { defaultValue: "Refund" })}
+                              </button>
+                            ) : null}
+                          </div>
                         </td>
                       ) : null}
                     </tr>
@@ -361,6 +757,17 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
         onSave={handleSave}
         saving={isSaving}
         error={modalError}
+        t={t}
+        translateContent={translateContent}
+      />
+      <OrderRefundModal
+        order={refundOrder}
+        onClose={() => setRefundOrder(null)}
+        onSave={(updatedOrder) => {
+          syncOrder(updatedOrder);
+          setRefundOrder(null);
+          handlePrintUpdated(updatedOrder);
+        }}
         t={t}
         translateContent={translateContent}
       />

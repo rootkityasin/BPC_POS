@@ -6,6 +6,7 @@ import { ChevronDown, Download, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { buildReportHtml, buildTableSectionHtml, downloadCsv, openPrintWindow } from "@/modules/reports/report-export";
 
 const FILTER_OPTIONS = [
   { key: "category", label: "Category", updates: { view: "accumulated", breakdown: "category" } },
@@ -93,10 +94,12 @@ function StatCard({ title, value, delta, toneClass }) {
       : "text-xl sm:text-2xl xl:text-[26px]";
 
   return (
-    <div className={`min-w-0 overflow-hidden rounded-[24px] p-5 ${toneClass}`}>
-      <div className="truncate text-sm font-semibold text-slate-700">{title}</div>
-      <div className={`mt-4 overflow-hidden text-ellipsis whitespace-nowrap font-black leading-tight tracking-[-0.02em] text-slate-900 ${valueSizeClass}`}>{value}</div>
-      <div className={`mt-3 break-words text-xs font-medium leading-5 ${delta.value >= 0 ? "text-emerald-600" : "text-[#13508b]"}`}>{delta.label}</div>
+    <div className={`flex min-w-0 flex-col rounded-[24px] p-5 ${toneClass}`}>
+      <div className="text-sm font-semibold text-slate-700">{title}</div>
+      <div className={`mt-3 whitespace-normal font-black leading-tight tracking-[-0.02em] text-slate-900 ${valueSizeClass}`}>{value}</div>
+      <div className={`mt-auto pt-4 text-xs font-medium leading-5 ${delta.value >= 0 ? "text-emerald-600" : "text-[#13508b]"}`}>
+        <span className="block text-balance">{delta.label}</span>
+      </div>
     </div>
   );
 }
@@ -195,27 +198,116 @@ export function SalesReportClient({ report }) {
     setFilterMenuOpen(false);
   }
 
-  function handleExport() {
-    const rows = [
+  function buildSalesReportCsvRows() {
+    return [
       ["Metric", "Value"],
-      ["Total Sales", report.summary.totalSales],
-      ["Total Orders", report.summary.totalOrders],
-      ["Products Sold", report.summary.productsSold],
-      ["New Customers", report.summary.newCustomers],
+      ["Total Sales", formatCurrency(report.summary.totalSales)],
+      ["Total Refunds", formatCurrency(report.summary.totalRefunds)],
+      ["Total Orders", String(report.summary.totalOrders)],
+      ["Products Sold", String(report.summary.productsSold)],
+      ["New Customers", String(report.summary.newCustomers)],
+      [],
+      ["Sales Breakdown"],
+      ["Label", "Amount"],
+      ...report.salesBreakdown.labels.map((label, index) => [label, formatCurrency(report.salesBreakdown.values[index] || 0)]),
       [],
       ["Top Products"],
       ["Rank", "Name", "Popularity %", "Sales %", "Sales Amount"],
-      ...report.topProducts.map((item) => [item.rank, item.name, item.popularityPct, item.salesPct, item.sales])
+      ...report.topProducts.map((item) => [
+        String(item.rank),
+        item.name,
+        String(item.popularityPct),
+        String(item.salesPct),
+        formatCurrency(item.sales)
+      ]),
+      [],
+      ["Visitor Insights"],
+      ["Window", "Loyal Customers", "New Customers", "Unique Customers"],
+      ...report.visitorInsights.labels.map((label, index) => [
+        label,
+        String(report.visitorInsights.series[0]?.values?.[index] ?? 0),
+        String(report.visitorInsights.series[1]?.values?.[index] ?? 0),
+        String(report.visitorInsights.series[2]?.values?.[index] ?? 0)
+      ])
+    ];
+  }
+
+  function buildSalesReportPdfHtml() {
+    const summaryRows = [
+      ["Total Sales", formatCurrency(report.summary.totalSales)],
+      ["Total Refunds", formatCurrency(report.summary.totalRefunds)],
+      ["Total Orders", String(report.summary.totalOrders)],
+      ["Products Sold", String(report.summary.productsSold)],
+      ["New Customers", String(report.summary.newCustomers)]
     ];
 
-    const csv = rows.map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "sales-report.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    const breakdownRows = report.salesBreakdown.labels.map((label, index) => [
+      label,
+      formatCurrency(report.salesBreakdown.values[index] || 0)
+    ]);
+
+    const topProductRows = report.topProducts.map((item) => [
+      String(item.rank),
+      item.name,
+      `${item.popularityPct}%`,
+      `${item.salesPct}%`,
+      formatCurrency(item.sales)
+    ]);
+
+    const visitorRows = report.visitorInsights.labels.map((label, index) => [
+      label,
+      String(report.visitorInsights.series[0]?.values?.[index] ?? 0),
+      String(report.visitorInsights.series[1]?.values?.[index] ?? 0),
+      String(report.visitorInsights.series[2]?.values?.[index] ?? 0)
+    ]);
+
+    const sections = [
+      buildTableSectionHtml({
+        title: "Summary",
+        columns: ["Metric", "Value"],
+        rows: summaryRows
+      }),
+      buildTableSectionHtml({
+        title: "Sales Breakdown",
+        columns: ["Label", "Amount"],
+        rows: breakdownRows
+      }),
+      buildTableSectionHtml({
+        title: "Top Products",
+        columns: ["Rank", "Name", "Popularity %", "Sales %", "Sales Amount"],
+        rows: topProductRows
+      }),
+      buildTableSectionHtml({
+        title: "Visitor Insights",
+        columns: ["Window", "Loyal Customers", "New Customers", "Unique Customers"],
+        rows: visitorRows
+      })
+    ];
+
+    const metaLines = [
+      `Generated: ${new Date().toLocaleString()}`,
+      `Scope: ${report.scopeMode === "all-stores" ? "All stores" : "Single store"}`,
+      `View: ${getViewTitle(report.reportView)}`
+    ];
+
+    return buildReportHtml({
+      title: report.title || "Sales Report",
+      subtitle: report.subtitle,
+      metaLines,
+      sections
+    });
+  }
+
+  function handleExportCsv() {
+    downloadCsv("sales-report.csv", buildSalesReportCsvRows());
+  }
+
+  function handleExportPdf() {
+    const html = buildSalesReportPdfHtml();
+    const popup = openPrintWindow({ title: report.title || "Sales Report", html });
+    if (!popup) {
+      window.alert("Popup blocked. Please allow popups to export PDF.");
+    }
   }
 
   return (
@@ -226,9 +318,13 @@ export function SalesReportClient({ report }) {
           <p className="mt-2 text-sm text-slate-500">{report.subtitle}</p>
         </div>
         <div className="flex w-full flex-wrap gap-3 xl:w-auto xl:justify-end">
-          <Button type="button" variant="outline" className="rounded-2xl" onClick={handleExport}>
+          <Button type="button" variant="outline" className="rounded-2xl" onClick={handleExportCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Export
+            Export CSV
+          </Button>
+          <Button type="button" className="rounded-2xl" onClick={handleExportPdf}>
+            <Download className="mr-2 h-4 w-4" />
+            Export PDF
           </Button>
           <div className="relative" ref={filterMenuRef}>
             <button
@@ -273,8 +369,9 @@ export function SalesReportClient({ report }) {
             </div>
             <TrendingUp className="h-5 w-5 text-slate-300" />
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <StatCard title="Total Sales" value={formatCurrency(report.summary.totalSales)} delta={report.summary.deltas.totalSales} toneClass="bg-[#e5f1ff]" />
+            <StatCard title="Total Refunds" value={formatCurrency(report.summary.totalRefunds)} delta={report.summary.deltas.totalRefunds} toneClass="bg-orange-50" />
             <StatCard title="Total Order" value={String(report.summary.totalOrders)} delta={report.summary.deltas.totalOrders} toneClass="bg-amber-50" />
             <StatCard title="Product Sold" value={String(report.summary.productsSold)} delta={report.summary.deltas.productsSold} toneClass="bg-emerald-50" />
             <StatCard title="New Customers" value={String(report.summary.newCustomers)} delta={report.summary.deltas.newCustomers} toneClass="bg-violet-50" />

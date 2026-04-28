@@ -1,11 +1,11 @@
 "use client";
 
-import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CircleAlert, Plus, Printer, Receipt, Save } from "lucide-react";
+import { CheckCircle2, CircleAlert, Plus, Printer, Receipt, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { saveDeviceSettings } from "./actions";
+import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
+import { clearStoreSalesData, saveDeviceSettings } from "./actions";
 
 const INITIAL_ACTION_STATE = { status: "idle", message: "" };
 
@@ -38,6 +38,8 @@ function buildInitialState(settings) {
     receiptHeaderText: settings?.receiptHeaderText || "",
     receiptFooterText: settings?.receiptFooterText || "",
     receiptShowLogo: Boolean(settings?.receiptShowLogo),
+    receiptShowTopLogo: Boolean(settings?.receiptShowTopLogo ?? settings?.receiptShowLogo),
+    receiptShowBottomLogo: Boolean(settings?.receiptShowBottomLogo ?? settings?.receiptShowLogo),
     receiptShowSeller: Boolean(settings?.receiptShowSeller),
     receiptShowBuyer: Boolean(settings?.receiptShowBuyer),
     receiptShowOrderStatus: Boolean(settings?.receiptShowOrderStatus),
@@ -45,14 +47,9 @@ function buildInitialState(settings) {
     receiptShowQr: Boolean(settings?.receiptShowQr),
     receiptShowSign: Boolean(settings?.receiptShowSign),
     receiptWatermark: settings?.receiptWatermark ?? 0.1,
+    receiptFrontOpacity: settings?.receiptFrontOpacity ?? 1,
     printers
   };
-}
-
-function getStoreInitials(storeName) {
-  const words = String(storeName || "").trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "ST";
-  return words.slice(0, 2).map((word) => word.charAt(0).toUpperCase()).join("");
 }
 
 function StatusToast({ state }) {
@@ -71,98 +68,71 @@ function StatusToast({ state }) {
 }
 
 function ReceiptPreview({ settings }) {
-  const [hasLogoError, setHasLogoError] = useState(false);
-  const storeName = settings.storeName || "Store";
   const previewOrder = settings.previewOrder;
-  const sampleItems = previewOrder?.items || [];
-  const grossAmount = sampleItems.reduce((sum, item) => sum + (Number(item.unitPrice || 0) * Number(item.quantity || 0)), 0);
-  const vatPercentage = Number(previewOrder?.vatPercentage || 0);
-  const fallbackTotals = calculateVatInclusiveTotals(grossAmount, vatPercentage);
-  const subtotalAmount = Number(previewOrder?.subtotalAmount ?? fallbackTotals.subtotalAmount);
-  const vatAmount = Number(previewOrder?.vatAmount ?? fallbackTotals.vatAmount);
-  const totalAmount = Number(previewOrder?.totalAmount ?? fallbackTotals.totalAmount);
-  const paperClass = settings.receiptPaperWidth === "58mm" ? "max-w-[290px]" : "max-w-[360px]";
-  const themeClass = settings.receiptTheme === "classic"
-    ? "border-[#e2d7c0] bg-[#fffdf7]"
-    : settings.receiptTheme === "minimal"
-      ? "border-slate-200 bg-white"
-      : "border-[#e5f1ff] bg-gradient-to-b from-white to-[#e5f1ff]";
+  const previewHtml = useMemo(() => {
+    if (!previewOrder) return "";
 
-  useEffect(() => {
-    setHasLogoError(false);
-  }, [settings.storeLogoUrl]);
+    return buildReceiptHtml({
+      ...previewOrder,
+      store: {
+        nameEn: settings.storeName || "Store",
+        logoUrl: settings.storeLogoUrl || null,
+        location: settings.storeLocation || null,
+        timezone: settings.timezone,
+        receiptTheme: settings.receiptTheme,
+        receiptFontSize: Number(settings.receiptFontSize || 14),
+        receiptAccentColor: settings.receiptAccentColor,
+        receiptPaperWidth: settings.receiptPaperWidth,
+        receiptHeaderText: settings.receiptHeaderText,
+        receiptFooterText: settings.receiptFooterText,
+        receiptShowLogo: settings.receiptShowLogo,
+        receiptShowTopLogo: settings.receiptShowTopLogo,
+        receiptShowBottomLogo: settings.receiptShowBottomLogo,
+        receiptShowSeller: settings.receiptShowSeller,
+        receiptShowBuyer: settings.receiptShowBuyer,
+        receiptShowOrderStatus: settings.receiptShowOrderStatus,
+        receiptShowItemNotes: settings.receiptShowItemNotes,
+        receiptShowQr: settings.receiptShowQr,
+        receiptShowSign: settings.receiptShowSign,
+        receiptWatermark: Number(settings.receiptWatermark ?? 0.1),
+        receiptFrontOpacity: Number(settings.receiptFrontOpacity ?? 1)
+      }
+    }, null, (item) => item.itemName || "Item", {
+      paperWidthOverride: settings.receiptPaperWidth
+    });
+  }, [previewOrder, settings]);
+
+  const previewWidthClass = settings.receiptPaperWidth === "58mm" ? "w-[300px]" : "w-[380px]";
+  const previewFrameClass = settings.receiptPaperWidth === "58mm" ? "h-[860px] w-[300px]" : "h-[900px] w-[380px]";
 
   return (
-    <div className={`mx-auto rounded-[30px] border p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${paperClass} ${themeClass}`} style={{ fontSize: `${settings.receiptFontSize}px` }}>
-      <div className="relative overflow-hidden rounded-[22px] border border-dashed border-slate-200 bg-white px-5 py-6">
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-4xl font-black" style={{ color: settings.receiptAccentColor, opacity: settings.receiptWatermark }}>
-          {storeName}
+    <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <div className="text-xl font-bold text-slate-900">Receipt Preview</div>
+          <div className="mt-1 text-sm text-slate-500">This is the exact same receipt renderer used by print preview and printing.</div>
         </div>
-        <div className="relative z-10">
-          {settings.receiptShowLogo ? (
-            settings.storeLogoUrl && !hasLogoError ? (
-              <img src={settings.storeLogoUrl} alt={storeName} onError={() => setHasLogoError(true)} className="mx-auto mb-4 h-16 w-16 rounded-2xl object-cover" />
-            ) : (
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-lg font-black text-white">{getStoreInitials(storeName)}</div>
-            )
-          ) : null}
-          <div className="text-center">
-            <div className="text-xl font-black" style={{ color: settings.receiptAccentColor }}>{storeName}</div>
-            {settings.receiptShowSeller && settings.storeLocation ? <div className="mt-1 text-xs text-slate-500">{settings.storeLocation}</div> : null}
-            {settings.receiptHeaderText ? <div className="mt-2 text-xs text-slate-500">{settings.receiptHeaderText}</div> : null}
-          </div>
-
-          {previewOrder ? (
-            <>
-              <div className="mt-5 space-y-1 text-sm text-slate-600">
-                <div><span className="font-semibold text-slate-900">Invoice:</span> {previewOrder.invoiceNumber}</div>
-                {settings.receiptShowBuyer && previewOrder.customerName ? <div><span className="font-semibold text-slate-900">Customer:</span> {previewOrder.customerName}</div> : null}
-                {settings.receiptShowBuyer && previewOrder.customerPhone ? <div><span className="font-semibold text-slate-900">Phone:</span> {previewOrder.customerPhone}</div> : null}
-                {settings.receiptShowOrderStatus && previewOrder.status ? <div><span className="font-semibold text-slate-900">Status:</span> {previewOrder.status}</div> : null}
-              </div>
-
-              <div className="mt-5 border-t border-slate-200 pt-4">
-                <div className="grid grid-cols-[minmax(0,1fr)_50px_80px] gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  <div>Item</div>
-                  <div className="text-center">Qty</div>
-                  <div className="text-right">Price</div>
-                </div>
-                <div className="mt-3 space-y-3">
-                  {sampleItems.map((item) => (
-                    <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_50px_80px] gap-3 text-sm text-slate-700">
-                      <div>{item.itemName}</div>
-                      <div className="text-center">{item.quantity}</div>
-                      <div className="text-right">{(Number(item.unitPrice || 0) * Number(item.quantity || 0)).toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-sm text-slate-700">
-                <div className="flex justify-between"><span>Items Total</span><span>{grossAmount.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Less Included VAT</span><span>-{vatAmount.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Subtotal</span><span>{subtotalAmount.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>VAT ({vatPercentage.toFixed(2)}%)</span><span>{vatAmount.toFixed(2)}</span></div>
-                <div className="flex justify-between text-base font-black text-slate-900"><span>Total</span><span>{totalAmount.toFixed(2)}</span></div>
-              </div>
-
-              {settings.receiptShowQr ? <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-center text-xs text-slate-500">QR: {previewOrder.invoiceNumber}</div> : null}
-            </>
-          ) : (
-            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
-              No recent order data is available for this store yet.
-            </div>
-          )}
-          {settings.receiptShowSign ? <div className="mt-5 border-t border-dashed border-slate-300 pt-4 text-xs text-slate-500">Authorized signature: ____________________</div> : null}
-          {settings.receiptFooterText ? <div className="mt-5 text-center text-xs text-slate-500">{settings.receiptFooterText}</div> : null}
-        </div>
+        <div className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{settings.receiptPaperWidth}</div>
       </div>
+
+      {previewOrder ? (
+        <div className="flex min-h-[780px] items-start justify-center overflow-auto rounded-[24px] bg-slate-100 p-6">
+          <div className={`origin-top scale-[0.92] xl:scale-100 ${previewWidthClass}`}>
+            <iframe title="Receipt preview" srcDoc={previewHtml} className={`overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-xl ${previewFrameClass}`} />
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+          No recent order data is available for this store yet.
+        </div>
+      )}
     </div>
   );
 }
 
 export function DeviceSettingsClient({ settings, canEdit, storeName }) {
   const [state, formAction, pending] = useActionState(saveDeviceSettings, INITIAL_ACTION_STATE);
+  const [clearState, clearAction, clearPending] = useActionState(clearStoreSalesData, INITIAL_ACTION_STATE);
   const [formState, setFormState] = useState(() => buildInitialState(settings));
 
   useEffect(() => {
@@ -213,6 +183,7 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
       </div>
 
       <StatusToast state={state} />
+      <StatusToast state={clearState} />
 
       <form action={formAction} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-6">
@@ -270,6 +241,11 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
                 <input name="receiptWatermark" type="number" min="0" max="1" step="0.05" value={formState.receiptWatermark} disabled={!canEdit} onChange={(event) => setFormState((current) => ({ ...current, receiptWatermark: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
               </label>
 
+              <label className="block text-sm text-slate-700">
+                <span className="mb-2 block font-medium">Front Opacity</span>
+                <input name="receiptFrontOpacity" type="number" min="0" max="1" step="0.05" value={formState.receiptFrontOpacity} disabled={!canEdit} onChange={(event) => setFormState((current) => ({ ...current, receiptFrontOpacity: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
+              </label>
+
               <label className="block text-sm text-slate-700 md:col-span-2">
                 <span className="mb-2 block font-medium">Header Text</span>
                 <textarea name="receiptHeaderText" rows="2" value={formState.receiptHeaderText} disabled={!canEdit} onChange={(event) => setFormState((current) => ({ ...current, receiptHeaderText: event.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Welcome message, tax notice, or service line" />
@@ -283,7 +259,8 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
 
             <div className="grid gap-3 md:grid-cols-2 text-sm text-slate-700">
               {[
-                ["receiptShowLogo", "Show Logo"],
+                ["receiptShowTopLogo", "Show Top Logo"],
+                ["receiptShowBottomLogo", "Show Bottom Logo"],
                 ["receiptShowSeller", "Show Seller Details"],
                 ["receiptShowBuyer", "Show Buyer Details"],
                 ["receiptShowOrderStatus", "Show Order Status"],
@@ -384,14 +361,38 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
           ) : null}
         </div>
 
-        <Card className="p-6">
-          <div className="mb-5">
-            <h3 className="text-lg font-bold text-slate-900">Live Receipt Preview</h3>
-            <p className="text-sm text-slate-500">Preview updates instantly as you edit the receipt layout.</p>
-          </div>
+        <div>
           <ReceiptPreview settings={previewSettings} />
-        </Card>
+        </div>
       </form>
+
+      {canEdit ? (
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+            Use this to clear customers, orders, and sales report history for the current store. Inventory and dishes stay intact.
+          </div>
+          <form
+            action={clearAction}
+            onSubmit={(event) => {
+              const confirmed = window.confirm(
+                "This will permanently delete customers, orders, and sales report data for this store. Inventory and dishes will remain. Continue?"
+              );
+              if (!confirmed) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <Button
+              type="submit"
+              disabled={clearPending}
+              className="rounded-2xl bg-red-600 px-6 py-3 text-white hover:bg-red-700"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {clearPending ? "Clearing..." : "Delete Sales Data"}
+            </Button>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }

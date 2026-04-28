@@ -171,11 +171,23 @@ export const resources = {
         itemMeta: "Qty: {{quantity}} • Price: {{price}}",
         updateFailed: "Failed to update order.",
         popupBlocked: "Popup blocked. Please allow popups to print the receipt.",
+        searchByOrderId: "Search by order ID...",
+        noSearchResults: "No orders match your search.",
+        refund: "Refund",
+        refundOrder: "Refund Order",
+        refundOrderSubtitle: "Select items and quantities to return from order #{{orderId}}.",
+        refundQty: "Qty",
+        refundAmount: "Refund Amount",
+        alreadyRefunded: "{{count}} refunded",
+        noRefundableItems: "All items in this order have been fully refunded.",
+        processRefund: "Process Refund",
+        refundFailed: "Failed to process refund.",
         statusValues: {
           pending: "Pending",
           processing: "Processing",
           completed: "Completed",
-          cancelled: "Cancelled"
+          cancelled: "Cancelled",
+          refunded: "Refunded"
         },
         printStatusValues: {
           notPrinted: "Not Printed",
@@ -509,11 +521,23 @@ export const resources = {
         itemMeta: "পরিমাণ: {{quantity}} • দাম: {{price}}",
         updateFailed: "অর্ডার আপডেট করা যায়নি।",
         popupBlocked: "পপআপ ব্লক করা হয়েছে। রসিদ প্রিন্ট করতে পপআপ অনুমতি দিন।",
+        searchByOrderId: "অর্ডার আইডি দিয়ে খুঁজুন...",
+        noSearchResults: "আপনার অনুসন্ধানের সাথে কোনো অর্ডার মেলেনি।",
+        refund: "রিফান্ড",
+        refundOrder: "অর্ডার রিফান্ড",
+        refundOrderSubtitle: "অর্ডার #{{orderId}} থেকে ফেরতযোগ্য আইটেম ও পরিমাণ নির্বাচন করুন।",
+        refundQty: "পরিমাণ",
+        refundAmount: "রিফান্ডের পরিমাণ",
+        alreadyRefunded: "{{count}} রিফান্ড হয়েছে",
+        noRefundableItems: "এই অর্ডারের সব আইটেম সম্পূর্ণ রিফান্ড করা হয়েছে।",
+        processRefund: "রিফান্ড প্রক্রিয়া করুন",
+        refundFailed: "রিফান্ড প্রক্রিয়া ব্যর্থ হয়েছে।",
         statusValues: {
           pending: "পেন্ডিং",
           processing: "প্রসেসিং",
           completed: "সম্পন্ন",
-          cancelled: "বাতিল"
+          cancelled: "বাতিল",
+          refunded: "রিফান্ডকৃত"
         },
         printStatusValues: {
           notPrinted: "প্রিন্ট হয়নি",

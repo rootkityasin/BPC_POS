@@ -1,9 +1,15 @@
 "use server";
 
+import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
+import { getSessionUser } from "@/modules/auth/session-service";
 import { emitNotificationEvent } from "@/modules/notifications/notification-service";
 import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
+
+function generateReceiptPublicCode() {
+  return crypto.randomBytes(12).toString("base64url");
+}
 
 export async function getPosCategories(storeId) {
   return prisma.category.findMany({
@@ -127,6 +133,7 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
 }
 
 export async function createOrder(storeId, orderData) {
+  const sessionUser = await getSessionUser();
   const store = await prisma.store.findUnique({
     where: { id: storeId },
     select: { vatNumber: true, vatPercentage: true }
@@ -156,6 +163,8 @@ export async function createOrder(storeId, orderData) {
         data: {
           storeId,
           invoiceNumber,
+          receiptPublicCode: generateReceiptPublicCode(),
+          createdBy: String(sessionUser?.name || sessionUser?.email || orderData.createdBy || "").trim() || null,
           customerName: orderData.customerName || null,
           customerPhone: orderData.customerPhone || null,
           status: "PENDING",
@@ -184,6 +193,7 @@ export async function createOrder(storeId, orderData) {
               location: true,
               vatNumber: true,
               vatPercentage: true,
+              timezone: true,
               receiptPaperWidth: true,
               receiptTheme: true,
               receiptFontSize: true,
@@ -191,6 +201,8 @@ export async function createOrder(storeId, orderData) {
               receiptHeaderText: true,
               receiptFooterText: true,
               receiptShowLogo: true,
+              receiptShowTopLogo: true,
+              receiptShowBottomLogo: true,
               receiptShowSeller: true,
               receiptShowBuyer: true,
               receiptShowOrderStatus: true,
@@ -198,6 +210,7 @@ export async function createOrder(storeId, orderData) {
               receiptShowQr: true,
               receiptShowSign: true,
               receiptWatermark: true,
+              receiptFrontOpacity: true,
               terminals: true
             }
           },

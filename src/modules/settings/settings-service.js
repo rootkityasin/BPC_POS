@@ -9,6 +9,7 @@ const DEFAULT_RECEIPT_FONT_SIZE = 14;
 const DEFAULT_RECEIPT_ACCENT_COLOR = "#ff242d";
 const DEFAULT_RECEIPT_PAPER_WIDTH = "58mm";
 const DEFAULT_RECEIPT_WATERMARK = 0.1;
+const DEFAULT_RECEIPT_FRONT_OPACITY = 1;
 
 function clampNumber(value, min, max, fallback) {
   const numericValue = Number(value);
@@ -85,6 +86,8 @@ export async function getDeviceSettings(storeId) {
     receiptHeaderText: store.receiptHeaderText,
     receiptFooterText: store.receiptFooterText,
     receiptShowLogo: store.receiptShowLogo,
+    receiptShowTopLogo: store.receiptShowTopLogo ?? store.receiptShowLogo,
+    receiptShowBottomLogo: store.receiptShowBottomLogo ?? store.receiptShowLogo,
     receiptShowSeller: store.receiptShowSeller,
     receiptShowBuyer: store.receiptShowBuyer,
     receiptShowOrderStatus: store.receiptShowOrderStatus,
@@ -92,9 +95,11 @@ export async function getDeviceSettings(storeId) {
     receiptShowQr: store.receiptShowQr,
     receiptShowSign: store.receiptShowSign,
     receiptWatermark: store.receiptWatermark ?? DEFAULT_RECEIPT_WATERMARK,
+    receiptFrontOpacity: store.receiptFrontOpacity ?? DEFAULT_RECEIPT_FRONT_OPACITY,
     previewOrder: latestOrder
       ? {
           invoiceNumber: latestOrder.invoiceNumber,
+          receiptPublicCode: latestOrder.receiptPublicCode,
           customerName: latestOrder.customerName,
           customerPhone: latestOrder.customerPhone,
           status: latestOrder.status,
@@ -114,6 +119,9 @@ export async function updateDeviceSettings(storeId, payload) {
   const receiptPaperWidth = VALID_PAPER_WIDTHS.has(payload.receiptPaperWidth) ? payload.receiptPaperWidth : DEFAULT_RECEIPT_PAPER_WIDTH;
   const receiptFontSize = clampNumber(payload.receiptFontSize, 10, 18, DEFAULT_RECEIPT_FONT_SIZE);
   const receiptWatermark = clampNumber(payload.receiptWatermark, 0, 1, DEFAULT_RECEIPT_WATERMARK);
+  const receiptFrontOpacity = clampNumber(payload.receiptFrontOpacity, 0, 1, DEFAULT_RECEIPT_FRONT_OPACITY);
+  const receiptShowTopLogo = Boolean(payload.receiptShowTopLogo);
+  const receiptShowBottomLogo = Boolean(payload.receiptShowBottomLogo);
   const printers = Array.isArray(payload.printers) ? payload.printers : [];
   const timezone = sanitizeText(payload.timezone) || DEFAULT_TIMEZONE;
 
@@ -180,14 +188,17 @@ export async function updateDeviceSettings(storeId, payload) {
         receiptPaperWidth,
         receiptHeaderText: sanitizeNullableText(payload.receiptHeaderText),
         receiptFooterText: sanitizeNullableText(payload.receiptFooterText),
-        receiptShowLogo: Boolean(payload.receiptShowLogo),
+        receiptShowLogo: receiptShowTopLogo || receiptShowBottomLogo,
+        receiptShowTopLogo,
+        receiptShowBottomLogo,
         receiptShowSeller: Boolean(payload.receiptShowSeller),
         receiptShowBuyer: Boolean(payload.receiptShowBuyer),
         receiptShowOrderStatus: Boolean(payload.receiptShowOrderStatus),
         receiptShowItemNotes: Boolean(payload.receiptShowItemNotes),
         receiptShowQr: Boolean(payload.receiptShowQr),
         receiptShowSign: Boolean(payload.receiptShowSign),
-        receiptWatermark
+        receiptWatermark,
+        receiptFrontOpacity
       }
     });
   });

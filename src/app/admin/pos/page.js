@@ -36,6 +36,7 @@ export default async function PosPage() {
             location: true,
             vatNumber: true,
             vatPercentage: true,
+            timezone: true,
             receiptPaperWidth: true,
             receiptTheme: true,
             receiptFontSize: true,
@@ -43,6 +44,8 @@ export default async function PosPage() {
             receiptHeaderText: true,
             receiptFooterText: true,
             receiptShowLogo: true,
+            receiptShowTopLogo: true,
+            receiptShowBottomLogo: true,
             receiptShowSeller: true,
             receiptShowBuyer: true,
             receiptShowOrderStatus: true,
@@ -50,6 +53,7 @@ export default async function PosPage() {
             receiptShowQr: true,
             receiptShowSign: true,
             receiptWatermark: true,
+            receiptFrontOpacity: true,
             terminals: true
           }
         })
