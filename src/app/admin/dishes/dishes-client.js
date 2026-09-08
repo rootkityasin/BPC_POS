@@ -7,11 +7,12 @@ import { formatCurrency } from "@/lib/utils";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { DishModal } from "@/components/dishes/dish-modal";
+import { SearchBar } from "@/components/ui/search-bar";
 import { Search, Plus, Image as ImageIcon, Menu } from "lucide-react";
 
 export function DishesClient({ dishes, categories, stockItems, canManage, userEmail, showStoreColumn = false }) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,6 +37,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
     return dishes.filter(
       (dish) =>
         dish.nameEn?.toLowerCase().includes(q) ||
+        dish.nameBn?.toLowerCase().includes(q) ||
         dish.createdBy?.toLowerCase().includes(q) ||
         dish.category?.nameEn?.toLowerCase().includes(q) ||
         dish.subCategory?.nameEn?.toLowerCase().includes(q)
@@ -50,6 +52,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
       const fd = new FormData();
       fd.append("id", dishId);
       fd.append("nameEn", formData.nameEn);
+      fd.append("nameBn", formData.nameBn || "");
       fd.append("categoryId", formData.categoryId);
       fd.append("subCategoryId", formData.subCategoryId);
       fd.append("ingredientStockItemIds", JSON.stringify(formData.ingredientStockItemIds));
@@ -75,6 +78,7 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
     } else {
       const fd = new FormData();
       fd.append("nameEn", formData.nameEn);
+      fd.append("nameBn", formData.nameBn || "");
       fd.append("categoryId", formData.categoryId);
       fd.append("subCategoryId", formData.subCategoryId);
       fd.append("ingredientStockItemIds", JSON.stringify(formData.ingredientStockItemIds));
@@ -162,33 +166,31 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-black text-slate-900">{t("dishes.title")}</h2>
-          <p className="text-sm text-slate-500">{t("dishes.subtitle")}</p>
+          <h2 className="text-[26px] font-bold text-slate-900">{t("dishes.title")}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t("dishes.subtitle")}</p>
         </div>
-        {canManage && (
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="flex items-center gap-2 rounded-2xl bg-[#2771cb] px-5 py-3 font-semibold text-white hover:bg-[#13508b]"
-          >
-            <Plus className="h-4 w-4" />
-            {t("dishes.createDish")}
-          </button>
-        )}
-      </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("dishes.searchDishes")}
-          className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 outline-none focus:border-[#2771cb]"
-        />
+        <div className="flex w-full max-w-[620px] items-center gap-3">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={(val) => setSearchQuery(val)}
+              placeholder={t("dishes.searchDishes")}
+            />
+          </div>
+          {canManage && (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="flex h-14 shrink-0 items-center gap-2 rounded-2xl bg-[#2771cb] px-6 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b]"
+            >
+              <Plus className="h-4 w-4" />
+              <span>{t("dishes.createDish")}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Dishes Table */}
@@ -229,12 +231,12 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{translateContent(dish.nameEn)}</div>
+                      <div className="font-semibold text-slate-900">{i18n.language === "bn" && dish.nameBn?.trim() ? dish.nameBn : translateContent(dish.nameEn)}</div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {dish.ingredients.length > 0 ? (
                           dish.ingredients.slice(0, 3).map((ing) => (
                             <span key={ing.id} className="rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#2771cb]">
-                              {translateContent(ing.stockItem?.name || "Item")}
+                              {i18n.language === "bn" && ing.stockItem?.nameBn?.trim() ? ing.stockItem.nameBn : translateContent(ing.stockItem?.name || "Item")}
                             </span>
                           ))
                         ) : (
@@ -246,9 +248,9 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      <div>{translateContent(dish.category?.nameEn || "")}</div>
+                      <div>{i18n.language === "bn" && dish.category?.nameBn?.trim() ? dish.category.nameBn : translateContent(dish.category?.nameEn || "")}</div>
                       {dish.subCategory && (
-                        <div className="text-xs text-slate-400">{translateContent(dish.subCategory.nameEn)}</div>
+                        <div className="text-xs text-slate-400">{i18n.language === "bn" && dish.subCategory?.nameBn?.trim() ? dish.subCategory.nameBn : translateContent(dish.subCategory.nameEn)}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{dish.createdBy || "—"}</td>

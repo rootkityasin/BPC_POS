@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Pencil, Printer, Search, RotateCcw, X } from "lucide-react";
+import { Download, Pencil, Printer, RotateCcw, X, Lock, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { formatOrderId } from "@/lib/order-id";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
@@ -13,6 +12,7 @@ import { openPrintPreview } from "@/modules/receipts/print-preview";
 import { buildReportHtml, buildTableSectionHtml, downloadCsv, openPrintWindow } from "@/modules/reports/report-export";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { SearchBar } from "@/components/ui/search-bar";
 
 const ORDER_STATUS_OPTIONS = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"];
 function getAggregatePrintStatus(items) {
@@ -116,7 +116,9 @@ function printHtmlDirect(html) {
 }
 
 
-function OrderRefundModal({ order, onClose, onSave, t, translateContent }) {
+function OrderRefundModal({ order, onClose, onSave, t, translateContent, canManage = false }) {
+  const [managerEmail, setManagerEmail] = useState("");
+  const [managerPassword, setManagerPassword] = useState("");
   const [refundData, setRefundData] = useState({});
   const [removedItems, setRemovedItems] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -185,10 +187,27 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent }) {
           };
         });
 
+      const payload = {
+        orderId: order.id,
+        refundItems: itemsToRefund
+      };
+
+      if (!canManage) {
+        if (!managerEmail.trim() || !managerPassword) {
+          setError("Manager or Admin authorization is required. Please enter manager credentials.");
+          setIsProcessing(false);
+          return;
+        }
+        payload.managerAuth = {
+          email: managerEmail.trim(),
+          password: managerPassword
+        };
+      }
+
       const response = await fetch("/api/v1/orders/refund", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: order.id, refundItems: itemsToRefund })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json().catch(() => ({}));
@@ -287,6 +306,41 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent }) {
             </div>
           )}
 
+          {!canManage ? (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50/80 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                <Lock className="h-4 w-4 text-amber-700" />
+                <span>Manager or Admin Authorization Required</span>
+              </div>
+              <p className="text-xs text-amber-800">
+                To confirm this item return, enter credentials of an authorized Store Manager or Super Admin:
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  type="email"
+                  placeholder="Manager / Admin Email"
+                  value={managerEmail}
+                  onChange={(e) => setManagerEmail(e.target.value)}
+                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#2771cb]"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={managerPassword}
+                  onChange={(e) => setManagerPassword(e.target.value)}
+                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#2771cb]"
+                  required
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-700">
+              <ShieldCheck className="h-4 w-4 text-slate-500" />
+              <span>Authorized: Manager / Super Admin Direct Permission</span>
+            </div>
+          )}
+
           {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
 
           <div className="flex justify-end gap-3 pt-2">
@@ -296,7 +350,7 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent }) {
             <button
               type="submit"
               disabled={isProcessing || !hasSelection}
-              className="rounded-2xl bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+              className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white hover:bg-black transition disabled:opacity-50"
             >
               {isProcessing ? t("common.processing", { defaultValue: "Processing..." }) : t("orders.processRefund", { defaultValue: "Process Refund" })}
             </button>
@@ -394,7 +448,7 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
 
 export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn = false }) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -402,14 +456,20 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const rawInvoice = order.invoiceNumber || "";
-        const formattedInvoice = formatOrderId(order.invoiceNumber) || "";
-        return rawInvoice.toLowerCase().includes(query) || formattedInvoice.toLowerCase().includes(query);
-      }
-      return true;
+    return orders.filter((order) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.trim().toLowerCase();
+      const rawInvoice = (order.invoiceNumber || "").toLowerCase();
+      const formattedInvoice = (formatOrderId(order.invoiceNumber) || "").toLowerCase();
+      const customerName = (order.customerName || "").toLowerCase();
+      const customerPhone = (order.customerPhone || "").toLowerCase();
+
+      return (
+        rawInvoice.includes(query) ||
+        formattedInvoice.includes(query) ||
+        customerName.includes(query) ||
+        customerPhone.includes(query)
+      );
     });
   }, [orders, searchQuery]);
   const [form, setForm] = useState({ customerName: "", customerPhone: "", status: "PENDING" });
@@ -646,20 +706,36 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-black text-slate-900">{t("orders.title")}</h2>
-          <p className="text-sm text-slate-500">{t("orders.subtitle")}</p>
+          <h2 className="text-[26px] font-bold text-slate-900">{t("orders.title")}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t("orders.subtitle")}</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Button type="button" variant="outline" className="rounded-2xl" onClick={handleExportCsv}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button type="button" className="rounded-2xl" onClick={handleExportPdf}>
-            <Download className="mr-2 h-4 w-4" />
-            Export PDF
-          </Button>
+
+        <div className="flex w-full max-w-[620px] items-center gap-3">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={(val) => setSearchQuery(val)}
+              placeholder={i18n?.language === "bn" ? "ইনভয়েস বা কাস্টমার দিয়ে খুঁজুন..." : "Search by invoice or customer..."}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex h-14 shrink-0 items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            <Download className="h-4 w-4 text-slate-500" />
+            <span>CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            className="inline-flex h-14 shrink-0 items-center gap-2 rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-black"
+          >
+            <Printer className="h-4 w-4" />
+            <span>PDF</span>
+          </button>
         </div>
       </div>
 
@@ -676,13 +752,13 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                 <th className="px-5 py-3">{t("orders.total")}</th>
                 <th className="px-5 py-3">{t("orders.items")}</th>
                 <th className="px-5 py-3">{t("orders.printReceipt")}</th>
-                {canManage ? <th className="px-5 py-3 text-right">{t("common.action")}</th> : null}
+                <th className="px-5 py-3 text-right">{t("common.action")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={(showStoreColumn ? 9 : 8) - (canManage ? 0 : 1)} className="px-5 py-10 text-center text-slate-500">{t("orders.noOrdersYet")}</td>
+                  <td colSpan={showStoreColumn ? 9 : 8} className="px-5 py-10 text-center text-slate-500">{searchQuery ? t("orders.noSearchResults") : t("orders.noOrdersYet")}</td>
                 </tr>
               ) : (
                 filteredOrders.map((order) => {
@@ -725,30 +801,31 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                           {printingOrderId === order.id ? t("common.processing") : t("orders.printReceipt")}
                         </button>
                       </td>
-                      {canManage ? (
-                        <td className="px-5 py-4 text-right text-slate-500">
-                          <div className="flex items-center justify-end gap-2">
+                      <td className="px-5 py-4 text-right text-slate-500">
+                        <div className="flex items-center justify-end gap-2">
+                          {canManage ? (
                             <button
-                            type="button"
-                            onClick={() => openEditModal(order)}
-                            className="inline-flex items-center gap-2 rounded-2xl bg-[#2771cb] px-4 py-2 font-semibold text-white hover:bg-[#13508b]"
-                          >
-                            <Pencil className="h-4 w-4" />
-                            {t("common.edit")}
+                              type="button"
+                              onClick={() => openEditModal(order)}
+                              className="inline-flex items-center gap-2 rounded-2xl bg-[#2771cb] px-4 py-2 font-semibold text-white hover:bg-[#13508b]"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {t("common.edit")}
                             </button>
-                            {order.status !== "CANCELLED" ? (
-                              <button
-                                type="button"
-                                onClick={() => setRefundOrder(order)}
-                                className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 font-semibold text-orange-700 hover:bg-orange-100"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                                {t("orders.refund", { defaultValue: "Refund" })}
-                              </button>
-                            ) : null}
-                          </div>
-                        </td>
-                      ) : null}
+                          ) : null}
+                          {order.status !== "CANCELLED" ? (
+                            <button
+                              type="button"
+                              onClick={() => setRefundOrder(order)}
+                              className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 font-semibold text-orange-700 hover:bg-orange-100"
+                              title={canManage ? "Refund / Return item" : "Refund (Requires Manager Authorization)"}
+                            >
+                              {canManage ? <RotateCcw className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-600" />}
+                              {t("orders.refund", { defaultValue: "Refund" })}
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })
@@ -771,6 +848,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
       />
       <OrderRefundModal
         order={refundOrder}
+        canManage={canManage}
         onClose={() => setRefundOrder(null)}
         onSave={(updatedOrder) => {
           syncOrder(updatedOrder);

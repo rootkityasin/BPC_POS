@@ -12,15 +12,24 @@ export default async function StockPage() {
   const canManageStoreScope = user.role !== "SUPER_ADMIN" || Boolean(storeId);
   const canCreate = canManageStock && canManageStoreScope;
 
-  const stockItems = await prisma.stockItem.findMany({
-    where,
-    include: { dish: true, store: true },
-    orderBy: { createdAt: "desc" }
-  });
+  const [stockItems, stockReturns] = await Promise.all([
+    prisma.stockItem.findMany({
+      where,
+      include: { dish: true, store: true },
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.stockReturn.findMany({
+      where,
+      include: { stockItem: true, store: true },
+      orderBy: { createdAt: "desc" },
+      take: 100
+    })
+  ]);
 
   return (
     <StockClient
       stockItems={stockItems}
+      stockReturns={stockReturns}
       canCreate={canCreate}
       canManage={canManageStock}
       showStoreColumn={user.role === "SUPER_ADMIN" && !storeId}

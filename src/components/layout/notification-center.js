@@ -22,11 +22,16 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
   const rootRef = useRef(null);
 
   async function refreshNotifications() {
-    const response = await fetch("/api/v1/notifications", { cache: "no-store" });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload?.success) return;
-    setItems(payload.data || []);
-    setUnreadCount(payload.meta?.unreadCount || 0);
+    try {
+      const response = await fetch("/api/v1/notifications", { cache: "no-store" });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => null);
+      if (!payload?.success) return;
+      setItems(payload.data || []);
+      setUnreadCount(payload.meta?.unreadCount || 0);
+    } catch {
+      // Ignore network errors or server restarts during polling
+    }
   }
 
   async function markAllRead() {
@@ -37,11 +42,14 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true })
       });
+      if (!response.ok) return;
       const payload = await response.json().catch(() => null);
-      if (response.ok && payload?.success) {
+      if (payload?.success) {
         setItems(payload.data || []);
         setUnreadCount(payload.meta?.unreadCount || 0);
       }
+    } catch {
+      // Ignore network errors
     } finally {
       setIsLoading(false);
     }
@@ -51,15 +59,20 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
     const target = items.find((item) => item.id === notificationId);
     if (!target || target.read) return;
 
-    const response = await fetch("/api/v1/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notificationId })
-    });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok || !payload?.success) return;
-    setItems(payload.data || []);
-    setUnreadCount(payload.meta?.unreadCount || 0);
+    try {
+      const response = await fetch("/api/v1/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId })
+      });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => null);
+      if (!payload?.success) return;
+      setItems(payload.data || []);
+      setUnreadCount(payload.meta?.unreadCount || 0);
+    } catch {
+      // Ignore network errors
+    }
   }
 
   useEffect(() => {
@@ -74,9 +87,27 @@ export function NotificationCenter({ initialItems = [], initialUnreadCount = 0 }
   }, []);
 
   useEffect(() => {
-    refreshNotifications();
-    const interval = window.setInterval(refreshNotifications, 15000);
-    return () => window.clearInterval(interval);
+    let isMounted = true;
+
+    async function poll() {
+      try {
+        const response = await fetch("/api/v1/notifications", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json().catch(() => null);
+        if (!isMounted || !payload?.success) return;
+        setItems(payload.data || []);
+        setUnreadCount(payload.meta?.unreadCount || 0);
+      } catch {
+        // Ignore network errors during polling
+      }
+    }
+
+    poll();
+    const interval = window.setInterval(poll, 15000);
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+    };
   }, []);
 
   return (

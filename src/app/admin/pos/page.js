@@ -66,5 +66,19 @@ export default async function PosPage() {
       : Promise.resolve([])
   ]);
 
-  return <PosClient categories={categories} products={products} storeId={storeId} userEmail={sessionUser.email} store={store} stores={stores} activeStoreId={storeId} />;
+  const isManagerOrAdmin = sessionUser.role === "SUPER_ADMIN" || sessionUser.role === "MANAGER";
+
+  return (
+    <PosClient
+      categories={categories}
+      products={products}
+      storeId={storeId}
+      userEmail={sessionUser.email}
+      userRole={sessionUser.role}
+      isManagerOrAdmin={isManagerOrAdmin}
+      store={store}
+      stores={stores}
+      activeStoreId={storeId}
+    />
+  );
 }

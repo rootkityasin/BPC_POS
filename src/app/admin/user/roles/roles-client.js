@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronDown, CircleAlert, KeyRound, Search, ShieldCheck, 
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/ui/search-bar";
 import { I18nText } from "@/components/i18n/i18n-text";
 import { deleteManager, resetManagerPassword, saveManagerOverrides, toggleManagerActive } from "./actions";
 
@@ -286,22 +287,18 @@ export function RolesClient({ managers, permissionSections, stats }) {
 
         <Card className="p-5">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_180px]">
-            <label className="relative block">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by manager, email, or store"
-                className="w-full rounded-2xl border border-slate-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-400"
-              />
-            </label>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400">
+            <SearchBar
+              value={query}
+              onChange={(val) => setQuery(val)}
+              placeholder="Search by manager, email, or store..."
+              className="h-12 rounded-2xl"
+            />
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-400">
               <option value="all">All statuses</option>
               <option value="active">Active only</option>
               <option value="inactive">Inactive only</option>
             </select>
-            <select value={assignmentFilter} onChange={(event) => setAssignmentFilter(event.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400">
+            <select value={assignmentFilter} onChange={(event) => setAssignmentFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-400">
               <option value="all">All assignments</option>
               <option value="assigned">Assigned only</option>
               <option value="unassigned">Unassigned only</option>

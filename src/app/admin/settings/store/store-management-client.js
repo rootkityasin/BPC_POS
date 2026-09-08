@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { SearchBar } from "@/components/ui/search-bar";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { assignStoreManager, createStoreManager, saveStoreDetails, unassignStoreManager } from "./actions";
 
@@ -509,18 +510,18 @@ export function StoreManagementClient({
 
         {showStoreList ? (
           <Card className="p-5">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
-              <label className="relative block">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full max-w-[480px]">
+                <SearchBar
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(val) => setQuery(val)}
                   placeholder={t("storeManagement.searchStoresPlaceholder")}
-                  className="w-full rounded-2xl border border-slate-200 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-400"
+                  className="h-12 rounded-2xl"
                 />
-              </label>
-              <div className="flex items-center justify-end text-sm text-slate-500">{t("storeManagement.showingStores", { visible: filteredStores.length, total: stores.length })}</div>
+              </div>
+              <div className="flex items-center text-sm font-medium text-slate-500">
+                {t("storeManagement.showingStores", { visible: filteredStores.length, total: stores.length })}
+              </div>
             </div>
           </Card>
         ) : null}

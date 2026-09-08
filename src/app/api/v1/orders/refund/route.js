@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { FEATURE_KEYS, canManage } from "@/core/policies/permission-policy";
 import { getSessionUser } from "@/modules/auth/session-service";
 import { getActiveStoreId } from "@/modules/auth/active-store";
+import { verifyManagerOrAdminAuthorization } from "@/modules/auth/auth-service";
 
 function buildOrderScope(user, storeId) {
   if (user.role !== "SUPER_ADMIN") {
@@ -58,10 +59,6 @@ export async function POST(request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (user.role !== "SUPER_ADMIN" && !canManage(user.permissions, FEATURE_KEYS.ORDERS)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const body = await request.json();
     const orderId = body?.orderId;
     const refundItems = Array.isArray(body?.refundItems)
@@ -72,6 +69,28 @@ export async function POST(request) {
 
     if (!orderId || !Array.isArray(refundItems) || refundItems.length === 0) {
       return NextResponse.json({ error: "Order ID and refund items are required" }, { status: 400 });
+    }
+
+    const isDirectlyAuthorized = user.role === "SUPER_ADMIN" || canManage(user.permissions, FEATURE_KEYS.ORDERS);
+    let authorizerName = user.name || user.email;
+
+    if (!isDirectlyAuthorized) {
+      // Must provide manager/admin authorization credentials
+      const managerAuth = body?.managerAuth;
+      if (!managerAuth?.email || !managerAuth?.password) {
+        return NextResponse.json({
+          error: "Item return requires Manager or Super Admin permission. Please provide authorized manager credentials."
+        }, { status: 403 });
+      }
+
+      const authResult = await verifyManagerOrAdminAuthorization(managerAuth.email, managerAuth.password);
+      if (!authResult.success) {
+        return NextResponse.json({
+          error: authResult.error || "Manager or Admin authorization failed."
+        }, { status: 403 });
+      }
+
+      authorizerName = authResult.authorizedBy;
     }
 
     const activeStoreId = await getActiveStoreId(user);
@@ -190,7 +209,7 @@ export async function POST(request) {
       include: includeOrderRelations()
     });
 
-    return NextResponse.json({ order: updatedOrder });
+    return NextResponse.json({ order: updatedOrder, authorizedBy: authorizerName });
   } catch (error) {
     console.error("[ORDERS_REFUND]", error);
     return NextResponse.json({ error: "Failed to process refund" }, { status: 500 });

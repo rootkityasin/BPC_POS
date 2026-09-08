@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { AlertCircle, ChevronDown, Clock3, Heart, PencilLine, Store, Trash2, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, ChevronDown, Clock3, Heart, PencilLine, ShoppingCart, Store, Trash2, Wallet } from "lucide-react";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { usePosStore } from "@/modules/pos/pos-store";
 import { createOrder } from "@/modules/pos/pos-actions";
@@ -11,6 +12,10 @@ import { calculateVatInclusiveTotals } from "@/modules/pos/vat";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { formatOrderId } from "@/lib/order-id";
 import { useTranslation } from "react-i18next";
+import { SetTimeModal } from "@/components/pos/set-time-modal";
+import { SearchBar } from "@/components/ui/search-bar";
+import { ReturnItemModal } from "@/components/pos/return-item-modal";
+import { QuickRestockModal } from "@/components/pos/quick-restock-modal";
 
 const NOOP = () => {};
 const PAYMENT_METHODS = [
@@ -285,41 +290,47 @@ function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
 function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName, storeLabel }) {
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState(item.note || "");
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
 
+  const displayName = i18n.language === "bn" && (item.nameBn?.trim() || item.name?.trim())
+    ? (item.nameBn?.trim() || item.name)
+    : translateContent(item.nameEn || item.name);
+
   return (
-    <div className="border-b border-slate-200 pb-5 last:border-b-0 last:pb-0">
+    <div className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
       <div className="flex items-start gap-3">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-slate-100 text-2xl">{item.name?.charAt(0) || "?"}</div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-base font-bold text-slate-600">
+          {(displayName || "?").charAt(0)}
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h4 className="text-sm font-medium text-slate-800">{translateContent(item.name)}</h4>
-              {showStoreName ? <div data-no-translate="true" className="mt-1 text-xs text-slate-400">{storeLabel}</div> : null}
-              {item.note ? <p className="mt-1 text-xs leading-5 text-slate-500">{t("pos.note", { note: item.note })}</p> : null}
+              <h4 className="text-[13px] font-semibold text-slate-800">{displayName}</h4>
+              {showStoreName ? <div data-no-translate="true" className="mt-0.5 text-[11px] text-slate-400">{storeLabel}</div> : null}
+              {item.note ? <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{t("pos.note", { note: item.note })}</p> : null}
             </div>
-            <div className="flex items-center gap-2 text-[#2771cb]">
-              <button type="button" onClick={() => setShowNote(!showNote)} className="hover:opacity-70"><PencilLine className="h-3.5 w-3.5" /></button>
-              <button type="button" onClick={() => onRemove(item.id)} className="hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <button type="button" onClick={() => setShowNote(!showNote)} className="p-1 hover:text-[#2771cb] transition-colors"><PencilLine className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => onRemove(item.id)} className="p-1 hover:text-red-500 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           </div>
 
           {showNote ? (
             <div className="mt-2 flex gap-2">
-              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("pos.addNote")} className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs" />
-              <button type="button" onClick={() => { onEditNote(item.id, note); setShowNote(false); }} className="rounded-lg bg-slate-900 px-2 py-1 text-xs text-white">
+              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("pos.addNote")} className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-slate-400" />
+              <button type="button" onClick={() => { onEditNote(item.id, note); setShowNote(false); }} className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs text-white hover:bg-black transition-colors">
                 {t("pos.saveNote")}
               </button>
             </div>
           ) : null}
 
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[29px] font-black leading-none text-[#2771cb]">{formatCurrency(item.price * item.quantity)}</span>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-500 hover:bg-slate-300">-</button>
-              <span className="w-6 text-center font-semibold">{item.quantity}</span>
-              <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white hover:bg-slate-700">+</button>
+          <div className="mt-2.5 flex items-center justify-between">
+            <span className="text-[18px] font-bold leading-none text-[#2771cb]">{formatCurrency(item.price * item.quantity)}</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-300 transition-colors">-</button>
+              <span className="w-6 text-center font-bold text-xs text-slate-800">{item.quantity}</span>
+              <button type="button" onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white hover:bg-slate-700 transition-colors">+</button>
             </div>
           </div>
         </div>
@@ -454,9 +465,10 @@ function PaymentDetailsModal({
   );
 }
 
-export function PosClient({ categories, products, storeId, userEmail, store: storeDetails, stores = [], activeStoreId = null }) {
+export function PosClient({ categories, products, storeId, userEmail, userRole, isManagerOrAdmin, store: storeDetails, stores = [], activeStoreId = null }) {
+  const router = useRouter();
   const store = usePosStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const defaultCategoryScopeRef = useRef(null);
 
@@ -486,6 +498,9 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [selectedStoreFilter, setSelectedStoreFilter] = useState(activeStoreId || "all");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [isSetTimeOpen, setIsSetTimeOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [splitCount, setSplitCount] = useState(1);
   const [amountPaid, setAmountPaid] = useState("0");
@@ -762,32 +777,71 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
         onConfirm={handleCheckoutConfirm}
       />
 
+      <QuickRestockModal
+        isOpen={isRestockModalOpen}
+        onClose={() => setIsRestockModalOpen(false)}
+        lowStockItems={lowStockItems}
+        storeId={storeId}
+        isManagerOrAdmin={isManagerOrAdmin}
+        onSuccess={() => {
+          showToast(
+            i18n.language === "bn" ? "স্টক সফলভাবে বৃদ্ধি করা হয়েছে!" : "Stock updated successfully!",
+            "success"
+          );
+          router.refresh();
+        }}
+      />
+
+      <ReturnItemModal
+        isOpen={isReturnModalOpen}
+        onClose={() => setIsReturnModalOpen(false)}
+        isManagerOrAdmin={isManagerOrAdmin}
+        currentUserEmail={userEmail}
+        onReturnSuccess={(updatedOrder, authorizer) => {
+          showToast(
+            i18n.language === "bn"
+              ? `আইটেম সফলভাবে ফেরত নেওয়া হয়েছে!\nঅনুমোদনকারী: ${authorizer}`
+              : `Item returned successfully!\nAuthorized by: ${authorizer}`,
+            "success"
+          );
+        }}
+      />
+
+      <SetTimeModal
+        isOpen={isSetTimeOpen}
+        onClose={() => setIsSetTimeOpen(false)}
+        onSavePeriods={() => {
+          showToast(
+            i18n.language === "bn" ? "খাবারের সময়সূচি সফলভাবে সংরক্ষিত হয়েছে!" : "Meal period times updated successfully!",
+            "success"
+          );
+        }}
+      />
+
       <div className="space-y-6">
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
           <section className="space-y-5 rounded-[30px] bg-[#f8f8f8] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="text-[26px] font-bold text-slate-900">{t("pos.title")}</div>
-                <div data-no-translate="true" className="mt-1 text-sm text-slate-500">{pageStoreName}</div>
+                <div data-no-translate="true" className="text-[26px] font-bold text-slate-900">{pageStoreName}</div>
               </div>
-              <div className="relative z-40 flex w-full max-w-[620px] items-center gap-3 xl:mr-[390px]">
-                <div className="flex h-14 flex-1 items-center rounded-2xl bg-white px-5 shadow-sm">
-                  <input
-                    type="text"
-                    placeholder={t("common.searchMenusOrders")}
+              <div className="relative z-40 flex w-full max-w-[620px] items-center gap-3">
+                <div className="flex-1">
+                  <SearchBar
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(val) => setSearchQuery(val)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         setSubmittedSearch(searchQuery);
                       }
                     }}
-                    className="w-full border-0 bg-transparent text-[15px] text-slate-700 outline-none placeholder:text-slate-400"
+                    onSubmit={(val) => setSubmittedSearch(val)}
+                    placeholder={t("common.searchMenusOrders")}
                   />
                 </div>
 
                 {showStoreNames ? (
-                  <div data-no-translate="true" className="flex h-14 items-center rounded-2xl bg-white px-4 shadow-sm">
+                  <div data-no-translate="true" className="flex h-14 items-center rounded-2xl border border-slate-200/80 bg-white px-4 shadow-sm">
                     <Store className="mr-2 h-4 w-4 text-slate-400" />
                     <select value={selectedStoreFilter} onChange={(event) => setSelectedStoreFilter(event.target.value)} className="bg-transparent text-sm text-slate-700 outline-none">
                       <option value="all">{t("header.allStores")}</option>
@@ -798,7 +852,7 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
                   </div>
                 ) : null}
 
-                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="shrink-0 rounded-2xl bg-[#2771cb] px-6 py-4 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b]">
+                <button type="button" onClick={() => setSubmittedSearch(searchQuery)} className="h-14 shrink-0 rounded-2xl bg-[#2771cb] px-6 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b]">
                   Search
                 </button>
 
@@ -840,12 +894,18 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             </div>
 
             {lowStockItems.length > 0 ? (
-              <div className="flex items-center justify-between rounded-2xl border border-[#e5f1ff] bg-[#e5f1ff] px-4 py-3 text-sm text-[#13508b]">
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-700 shadow-2xs">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{t("pos.productsRunningLow", { count: lowStockItems.length })}</span>
+                  <AlertCircle className="h-4 w-4 text-slate-500 shrink-0" />
+                  <span className="font-medium text-slate-700">{t("pos.productsRunningLow", { count: lowStockItems.length })}</span>
                 </div>
-                <button type="button" className="font-semibold underline">{t("pos.addStock")}</button>
+                <button
+                  type="button"
+                  onClick={() => setIsRestockModalOpen(true)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition shadow-2xs active:scale-[0.98]"
+                >
+                  {t("pos.addStock")}
+                </button>
               </div>
             ) : null}
 
@@ -855,41 +915,51 @@ export function PosClient({ categories, products, storeId, userEmail, store: sto
             </div>
           </section>
 
-          <aside className="sticky top-6 flex h-[calc(100vh-3rem)] flex-col rounded-[26px] bg-white p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+          <aside className="sticky top-4 flex h-[calc(100vh-10.5rem)] min-h-[520px] flex-col rounded-[26px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[28px] font-black leading-none text-[#2771cb]">{t("pos.customerOrder")}</div>
-                {cartStoreName ? <div data-no-translate="true" className="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
+                <div className="text-xl font-bold text-[#2771cb]">{t("pos.customerOrder")}</div>
+                {cartStoreName ? <div data-no-translate="true" className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400">Cart store {cartStoreName}</div> : null}
               </div>
+              {cart.length > 0 && (
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-[#2771cb]">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              )}
             </div>
 
-            {cartNotice ? <div className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">{cartNotice}</div> : null}
+            {cartNotice ? <div className="mb-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs text-amber-700">{cartNotice}</div> : null}
 
-            <div className="flex-1 space-y-5 overflow-y-auto border-t border-slate-100 pt-4">
+            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto border-t border-slate-100 pt-3.5 pr-1">
               {cart.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">{t("pos.noItemsInCart")}</div>
+                <div className="flex h-full flex-col items-center justify-center py-10 text-center">
+                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <ShoppingCart className="h-6 w-6 stroke-[1.5]" />
+                  </div>
+                  <div className="text-sm font-medium text-slate-400">{t("pos.noItemsInCart")}</div>
+                </div>
               ) : (
                 cart.map((item) => <CartItem key={item.id} item={item} onUpdateQuantity={updateQuantity} onRemove={removeFromCart} onEditNote={updateItemNote} showStoreName={showStoreNames} storeLabel={getStoreLabel(item.storeName, item.storeNameBn)} />)
               )}
             </div>
 
-            <div className="mt-5 space-y-3 border-t border-slate-200 pt-4 text-sm text-slate-600">
+            <div className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-xs text-slate-600">
               <div className="flex items-center justify-between"><span>Items Total</span><span className="font-medium text-slate-800">{formatCurrency(vatBreakdown.grossAmount)}</span></div>
               <div className="flex items-center justify-between"><span>Less Included VAT</span><span className="font-medium text-slate-800">-{formatCurrency(vatBreakdown.vatAmount)}</span></div>
               <div className="flex items-center justify-between"><span>{t("pos.subtotal")}</span><span className="font-medium text-slate-800">{formatCurrency(getSubtotal())}</span></div>
               <div className="flex items-center justify-between"><span>{`VAT (${Number(cartVatPercentage || 0).toFixed(2)}%)`}</span><span className="font-medium text-slate-800">{formatCurrency(getTax())}</span></div>
-              <div className="flex items-center justify-between pt-2 text-[18px] font-black text-slate-900"><span>{t("pos.total")}</span><span>{formatCurrency(getTotal())}</span></div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-lg font-black text-slate-900"><span>{t("pos.total")}</span><span>{formatCurrency(getTotal())}</span></div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => setIsCheckoutOpen(true)} disabled={cart.length === 0 || isProcessing} className="rounded-2xl bg-[#2771cb] px-4 py-4 text-sm font-semibold text-white hover:bg-[#13508b] disabled:cursor-not-allowed disabled:opacity-50">
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              <button type="button" onClick={() => setIsCheckoutOpen(true)} disabled={cart.length === 0 || isProcessing} className="h-11 rounded-xl bg-[#2771cb] px-3 text-xs font-bold text-white hover:bg-[#13508b] transition disabled:cursor-not-allowed disabled:opacity-50">
                 {isProcessing ? t("common.processing") : t("pos.checkout")}
               </button>
-              <button type="button" onClick={handleReset} disabled={cart.length === 0} className="rounded-2xl border border-[#2771cb] bg-white px-4 py-4 text-sm font-semibold text-[#2771cb] hover:bg-[#e5f1ff] disabled:opacity-50">
+              <button type="button" onClick={handleReset} disabled={cart.length === 0} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50">
                 {t("pos.reset")}
               </button>
             </div>
-            <button type="button" onClick={handlePrintSlip} disabled={cart.length === 0} className="mt-3 w-full rounded-2xl bg-slate-900 px-4 py-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
+            <button type="button" onClick={handlePrintSlip} disabled={cart.length === 0} className="mt-2.5 h-11 w-full rounded-xl bg-slate-900 px-3 text-xs font-bold text-white hover:bg-slate-800 transition disabled:opacity-50">
               {t("pos.printOrderSlip")}
             </button>
           </aside>

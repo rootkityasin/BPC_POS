@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { SearchBar } from "@/components/ui/search-bar";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -16,7 +17,7 @@ function formatCurrency(value) {
 
 export function StockClient({ stockItems, canCreate = true, canManage = true, showStoreColumn = false }) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,28 +155,29 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
 
   return (
     <div className="flex flex-col bg-[#fdfdfd]">
-      <div className="mb-4 mt-8">
-        <h2 className="text-[26px] font-bold text-[#2771cb]">{t("stock.title")}</h2>
-      </div>
-
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex h-12 w-80 items-center rounded-xl border border-[#e5f1ff] bg-white px-4 text-sm text-[#2771cb] shadow-sm">
-          <input
-            type="text"
-            placeholder={t("common.searchInput")}
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            className="w-full bg-transparent outline-none placeholder:text-[#2771cb]/50"
-          />
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-[26px] font-bold text-slate-900">{t("stock.title")}</h2>
         </div>
-        <button
-          type="button"
-          onClick={openAddModal}
-          disabled={!canCreate}
-          className="text-[15px] font-bold text-[#2771cb] transition-colors hover:text-[#13508b]"
-        >
-          {canCreate ? t("common.addItem") : "Select a store to add items"}
-        </button>
+
+        <div className="flex w-full max-w-[620px] items-center gap-3">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={(val) => setSearchQuery(val)}
+              placeholder={i18n.language === "bn" ? "স্টক আইটেম বা ডিশ অনুসন্ধান করুন..." : "Search stock items or dishes..."}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={openAddModal}
+            disabled={!canCreate}
+            className="flex h-14 shrink-0 items-center gap-2 rounded-2xl bg-[#2771cb] px-6 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{canCreate ? t("common.addItem") : "Select store"}</span>
+          </button>
+        </div>
       </div>
 
       <div className="relative z-10 flex min-h-[600px] flex-col overflow-visible rounded-3xl border border-slate-100 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.03)]">

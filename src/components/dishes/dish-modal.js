@@ -9,6 +9,7 @@ import { ModalShell } from "@/components/ui/modal-shell";
 
 const INITIAL_FORM = {
   nameEn: "",
+  nameBn: "",
   categoryId: "",
   subCategoryId: "",
   ingredientStockItemIds: [],
@@ -37,6 +38,7 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
       if (dish) {
         setForm({
           nameEn: dish.nameEn || "",
+          nameBn: dish.nameBn || "",
           categoryId: dish.categoryId || categories[0]?.id || "",
           subCategoryId: dish.subCategoryId || "",
           ingredientStockItemIds: dish.ingredients?.map((i) => i.stockItemId) || [],
@@ -142,8 +144,12 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
       <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 lg:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameEnglish")}</label>
-              <input type="text" value={form.nameEn} onChange={(e) => setForm((c) => ({ ...c, nameEn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.dishNamePlaceholder")} />
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameEnglish", "Dish Name (English)")} *</label>
+              <input type="text" value={form.nameEn} onChange={(e) => setForm((c) => ({ ...c, nameEn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.dishNamePlaceholder", "e.g. Chicken Biryani")} required />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameBangla", "Dish Name (বাংলা)")} <span className="text-xs text-slate-400 font-normal">({t("common.optional", "Optional")})</span></label>
+              <input type="text" value={form.nameBn} onChange={(e) => setForm((c) => ({ ...c, nameBn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder="যেমন: চিকেন বিরিয়ানি" />
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.category")}</label>

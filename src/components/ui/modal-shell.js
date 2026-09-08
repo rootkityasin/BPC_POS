@@ -25,9 +25,9 @@ export function ModalShell({ isOpen, children, maxWidthClass = "max-w-md", onBac
           type="button"
           onClick={onBackdropClick}
           aria-label="Close popup"
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
+          className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
         {children}
       </div>

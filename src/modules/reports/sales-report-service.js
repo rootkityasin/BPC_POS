@@ -96,15 +96,20 @@ function getCustomerKey(order) {
 function summarizeOrders(orders, firstOrderByCustomer = new Map(), orderCountByCustomer = new Map(), rangeStart = null, rangeEnd = null) {
   const summary = {
     totalSales: 0,
+    netSales: 0,
     totalRefunds: 0,
     totalOrders: orders.length,
     productsSold: 0,
-    newCustomers: 0
+    newCustomers: 0,
+    totalVat: 0,
+    averageOrderValue: 0
   };
   const seenNewCustomers = new Set();
 
   for (const order of orders) {
     summary.totalSales += Number(order.totalAmount || 0);
+    summary.totalVat += Number(order.vatAmount || 0);
+
     for (const item of order.items || []) {
       summary.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
       summary.totalRefunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
@@ -122,20 +127,26 @@ function summarizeOrders(orders, firstOrderByCustomer = new Map(), orderCountByC
 
   summary.totalSales = clampCurrency(summary.totalSales);
   summary.totalRefunds = clampCurrency(summary.totalRefunds);
+  summary.totalVat = clampCurrency(summary.totalVat);
+  summary.netSales = clampCurrency(Math.max(0, summary.totalSales - summary.totalRefunds));
+  summary.averageOrderValue = summary.totalOrders > 0
+    ? clampCurrency(summary.totalSales / summary.totalOrders)
+    : 0;
+
   return summary;
 }
 
 function buildDelta(current, previous) {
-  if (!previous) return { value: 0, label: "No previous data" };
+  if (previous === null || previous === undefined) return { value: 0, label: "No previous data" };
   if (previous === 0) {
-    return { value: current > 0 ? 100 : 0, label: current > 0 ? "+100% from previous period" : "No change" };
+    return { value: current > 0 ? 100 : 0, label: current > 0 ? "+100% vs prev" : "No change" };
   }
 
   const delta = ((current - previous) / previous) * 100;
   const rounded = Math.round(delta * 10) / 10;
   return {
     value: rounded,
-    label: `${rounded >= 0 ? "+" : ""}${rounded}% from previous period`
+    label: `${rounded >= 0 ? "+" : ""}${rounded}% vs prev`
   };
 }
 
@@ -147,30 +158,38 @@ function getShiftLabel(hour) {
 
 function buildShiftBreakdown(orders) {
   const shiftOrder = ["12 AM - 08 AM", "08 AM - 04 PM", "04 PM - 12 AM"];
-  const totals = new Map(shiftOrder.map((label) => [label, 0]));
+  const totals = new Map(shiftOrder.map((label) => [label, { revenue: 0, orders: 0 }]));
 
   for (const order of orders) {
     const label = getShiftLabel(new Date(order.createdAt).getHours());
-    totals.set(label, (totals.get(label) || 0) + getOrderTotal(order));
+    const curr = totals.get(label) || { revenue: 0, orders: 0 };
+    curr.revenue += getOrderTotal(order);
+    curr.orders += 1;
+    totals.set(label, curr);
   }
 
   return {
     labels: shiftOrder,
-    values: shiftOrder.map((label) => clampCurrency(totals.get(label) || 0))
+    values: shiftOrder.map((label) => clampCurrency(totals.get(label)?.revenue || 0)),
+    orderCounts: shiftOrder.map((label) => totals.get(label)?.orders || 0)
   };
 }
 
-function buildHourlyBreakdown(orders) {
-  const totals = new Map(Array.from({ length: 24 }, (_, hour) => [hour, 0]));
+export function buildHourlyBreakdown(orders) {
+  const totals = new Map(Array.from({ length: 24 }, (_, hour) => [hour, { revenue: 0, orders: 0 }]));
 
   for (const order of orders) {
     const hour = new Date(order.createdAt).getHours();
-    totals.set(hour, (totals.get(hour) || 0) + getOrderTotal(order));
+    const curr = totals.get(hour) || { revenue: 0, orders: 0 };
+    curr.revenue += getOrderTotal(order);
+    curr.orders += 1;
+    totals.set(hour, curr);
   }
 
   return {
-    labels: Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, "0")}h`),
-    values: Array.from({ length: 24 }, (_, hour) => clampCurrency(totals.get(hour) || 0))
+    labels: Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, "0")}:00`),
+    values: Array.from({ length: 24 }, (_, hour) => clampCurrency(totals.get(hour)?.revenue || 0)),
+    orderCounts: Array.from({ length: 24 }, (_, hour) => totals.get(hour)?.orders || 0)
   };
 }
 
@@ -179,18 +198,21 @@ function buildWeeklyBreakdown(orders) {
 
   for (let offset = 6; offset >= 0; offset -= 1) {
     const day = startOfDay(subDays(new Date(), offset));
-    buckets.set(day.toISOString().slice(0, 10), { label: format(day, "EEE"), value: 0 });
+    buckets.set(day.toISOString().slice(0, 10), { label: format(day, "EEE"), revenue: 0, orders: 0 });
   }
 
   for (const order of orders) {
     const dayKey = startOfDay(new Date(order.createdAt)).toISOString().slice(0, 10);
     if (!buckets.has(dayKey)) continue;
-    buckets.get(dayKey).value += getOrderTotal(order);
+    const b = buckets.get(dayKey);
+    b.revenue += getOrderTotal(order);
+    b.orders += 1;
   }
 
   return {
     labels: [...buckets.values()].map((bucket) => bucket.label),
-    values: [...buckets.values()].map((bucket) => clampCurrency(bucket.value))
+    values: [...buckets.values()].map((bucket) => clampCurrency(bucket.revenue)),
+    orderCounts: [...buckets.values()].map((bucket) => bucket.orders)
   };
 }
 
@@ -259,12 +281,18 @@ function buildBreakdown(orders, scopeMode, breakdown) {
   if (breakdown === "day") {
     for (const order of orders) {
       const label = format(new Date(order.createdAt), "dd MMM");
-      totals.set(label, (totals.get(label) || 0) + Number(order.totalAmount || 0));
+      const curr = totals.get(label) || { revenue: 0, orders: 0 };
+      curr.revenue += Number(order.totalAmount || 0);
+      curr.orders += 1;
+      totals.set(label, curr);
     }
   } else if (scopeMode === "all-stores") {
     for (const order of orders) {
       const label = order.store?.nameEn || "Unknown store";
-      totals.set(label, (totals.get(label) || 0) + Number(order.totalAmount || 0));
+      const curr = totals.get(label) || { revenue: 0, orders: 0 };
+      curr.revenue += Number(order.totalAmount || 0);
+      curr.orders += 1;
+      totals.set(label, curr);
     }
   } else {
     for (const order of orders) {
@@ -272,26 +300,33 @@ function buildBreakdown(orders, scopeMode, breakdown) {
         if (breakdown === "others") {
           if (item.dish) continue;
           const label = item.stockItem?.name || item.itemName || "Others Sell";
-          totals.set(label, (totals.get(label) || 0) + (Number(item.unitPrice || 0) * Number(item.quantity || 0)));
+          const curr = totals.get(label) || { revenue: 0, orders: 0 };
+          curr.revenue += (Number(item.unitPrice || 0) * Number(item.quantity || 0));
+          curr.orders += Number(item.quantity || 0);
+          totals.set(label, curr);
           continue;
         }
 
         const label = breakdown === "subcategory"
           ? item.dish?.subCategory?.nameEn || item.dish?.category?.nameEn || item.stockItem?.name || item.itemName || "Uncategorized"
           : item.dish?.category?.nameEn || item.stockItem?.name || item.itemName || "Uncategorized";
-        totals.set(label, (totals.get(label) || 0) + (Number(item.unitPrice || 0) * Number(item.quantity || 0)));
+        const curr = totals.get(label) || { revenue: 0, orders: 0 };
+        curr.revenue += (Number(item.unitPrice || 0) * Number(item.quantity || 0));
+        curr.orders += Number(item.quantity || 0);
+        totals.set(label, curr);
       }
     }
   }
 
   const entries = [...totals.entries()]
-    .map(([label, value]) => ({ label, value: clampCurrency(value) }))
+    .map(([label, val]) => ({ label, value: clampCurrency(val.revenue), orders: val.orders }))
     .sort((left, right) => right.value - left.value)
     .slice(0, 8);
 
   return {
     labels: entries.map((entry) => entry.label),
-    values: entries.map((entry) => entry.value)
+    values: entries.map((entry) => entry.value),
+    orderCounts: entries.map((entry) => entry.orders)
   };
 }
 
@@ -300,6 +335,145 @@ function buildSalesBreakdown(orders, scopeMode, view, breakdown) {
   if (view === "weekly") return buildWeeklyBreakdown(orders);
   if (view === "daily") return buildHourlyBreakdown(orders);
   return buildBreakdown(orders, scopeMode, breakdown);
+}
+
+export function buildMealPeriodBreakdown(orders) {
+  const periods = [
+    { key: "breakfast", labelEn: "Breakfast", labelBn: "সকালের নাস্তা", timeWindow: "05:00 AM - 11:00 AM", revenue: 0, orders: 0, color: "#f59e0b" },
+    { key: "lunch", labelEn: "Lunch", labelBn: "দুপুরের খাবার", timeWindow: "11:00 AM - 03:00 PM", revenue: 0, orders: 0, color: "#2771cb" },
+    { key: "snacks", labelEn: "Snacks & Tea", labelBn: "বিকালের নাস্তা", timeWindow: "03:00 PM - 06:00 PM", revenue: 0, orders: 0, color: "#8b5cf6" },
+    { key: "dinner", labelEn: "Dinner", labelBn: "রাতের খাবার", timeWindow: "06:00 PM - 05:00 AM", revenue: 0, orders: 0, color: "#10b981" }
+  ];
+
+  let totalPeriodRevenue = 0;
+
+  for (const order of orders) {
+    const hour = new Date(order.createdAt).getHours();
+    const amount = getOrderTotal(order);
+    totalPeriodRevenue += amount;
+
+    let targetKey = "dinner";
+    if (hour >= 5 && hour < 11) targetKey = "breakfast";
+    else if (hour >= 11 && hour < 15) targetKey = "lunch";
+    else if (hour >= 15 && hour < 18) targetKey = "snacks";
+
+    const p = periods.find((item) => item.key === targetKey);
+    if (p) {
+      p.revenue += amount;
+      p.orders += 1;
+    }
+  }
+
+  return periods.map((p) => ({
+    ...p,
+    revenue: clampCurrency(p.revenue),
+    sharePct: totalPeriodRevenue > 0 ? Math.round((p.revenue / totalPeriodRevenue) * 100) : 0
+  }));
+}
+
+export function findPeakHour(orders) {
+  if (!orders.length) return null;
+  const hourMap = new Map();
+  for (const order of orders) {
+    const hour = new Date(order.createdAt).getHours();
+    const curr = hourMap.get(hour) || { hour, revenue: 0, orders: 0 };
+    curr.revenue += getOrderTotal(order);
+    curr.orders += 1;
+    hourMap.set(hour, curr);
+  }
+
+  const sorted = [...hourMap.values()].sort((a, b) => b.revenue - a.revenue);
+  if (!sorted.length || sorted[0].revenue === 0) return null;
+
+  const peak = sorted[0];
+  const startHour = peak.hour;
+  const endHour = (startHour + 1) % 24;
+  const formatHour = (h) => {
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:00 ${ampm}`;
+  };
+
+  return {
+    hour: peak.hour,
+    windowLabel: `${formatHour(startHour)} - ${formatHour(endHour)}`,
+    revenue: clampCurrency(peak.revenue),
+    orders: peak.orders
+  };
+}
+
+export function buildCategoryDistribution(orders) {
+  const categories = new Map();
+  let totalCategorySales = 0;
+
+  for (const order of orders) {
+    for (const item of order.items || []) {
+      const catName = item.dish?.category?.nameEn || (item.stockItem ? "Inventory Stock" : "Other");
+      const catNameBn = item.dish?.category?.nameBn || null;
+      const sales = Number(item.unitPrice || 0) * Number(item.quantity || 0);
+      const units = Number(item.quantity || 0);
+
+      const existing = categories.get(catName) || { nameEn: catName, nameBn: catNameBn, revenue: 0, units: 0 };
+      existing.revenue += sales;
+      existing.units += units;
+      categories.set(catName, existing);
+      totalCategorySales += sales;
+    }
+  }
+
+  const palette = ["#2771cb", "#10b981", "#8b5cf6", "#f59e0b", "#06b6d4", "#ec4899", "#64748b"];
+
+  return [...categories.values()]
+    .map((cat, i) => ({
+      ...cat,
+      revenue: clampCurrency(cat.revenue),
+      color: palette[i % palette.length],
+      sharePct: totalCategorySales > 0 ? Math.round((cat.revenue / totalCategorySales) * 100) : 0
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+}
+
+export function buildRecentOrders(orders) {
+  return orders
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 10)
+    .map((o) => ({
+      id: o.id,
+      invoiceNumber: o.invoiceNumber,
+      customerName: o.customerName || "Walk-in Guest",
+      customerPhone: o.customerPhone || null,
+      status: o.status,
+      totalAmount: clampCurrency(o.totalAmount),
+      itemsCount: (o.items || []).reduce((acc, it) => acc + (it.quantity || 0), 0),
+      firstItemName: o.items?.[0]?.itemName || "Item",
+      createdAt: o.createdAt.toISOString(),
+      storeName: o.store?.nameEn || ""
+    }));
+}
+
+export function buildStoreLeaderboard(orders) {
+  const storeMap = new Map();
+  let grandTotal = 0;
+
+  for (const order of orders) {
+    const storeName = order.store?.nameEn || "Unknown store";
+    const amount = getOrderTotal(order);
+    grandTotal += amount;
+
+    const curr = storeMap.get(storeName) || { storeName, revenue: 0, orders: 0 };
+    curr.revenue += amount;
+    curr.orders += 1;
+    storeMap.set(storeName, curr);
+  }
+
+  return [...storeMap.values()]
+    .map((st) => ({
+      ...st,
+      revenue: clampCurrency(st.revenue),
+      sharePct: grandTotal > 0 ? Math.round((st.revenue / grandTotal) * 100) : 0
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
 }
 
 function buildReportTitle(view, scopeMode) {
@@ -312,7 +486,7 @@ function buildReportTitle(view, scopeMode) {
 function buildReportSubtitle(view, scopeMode) {
   if (view === "accumulated") {
     return scopeMode === "all-stores"
-      ? "All-time sales across the selected scope."
+      ? "All-time sales across all stores."
       : "All-time sales for the active store scope.";
   }
 
@@ -341,7 +515,8 @@ function buildTopProducts(orders) {
   for (const order of orders) {
     for (const item of order.items || []) {
       const name = item.dish?.nameEn || item.stockItem?.name || item.itemName || "Item";
-      const current = totals.get(name) || { quantity: 0, sales: 0 };
+      const nameBn = item.dish?.nameBn || item.stockItem?.nameBn || null;
+      const current = totals.get(name) || { name, nameBn, quantity: 0, sales: 0 };
       current.quantity += Number(item.quantity || 0);
       current.sales += Number(item.unitPrice || 0) * Number(item.quantity || 0);
       totals.set(name, current);
@@ -350,21 +525,19 @@ function buildTopProducts(orders) {
     }
   }
 
-  const colors = ["#3b82f6", "#22c55e", "#8b5cf6", "#f59e0b", "#ef4444"];
+  const colors = ["#2771cb", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899"];
 
-  return [...totals.entries()]
-    .map(([name, value], index) => ({
-      rank: index + 1,
-      name,
-      quantity: value.quantity,
-      sales: clampCurrency(value.sales),
-      popularityPct: quantityTotal ? Math.round((value.quantity / quantityTotal) * 100) : 0,
-      salesPct: salesTotal ? Math.round((value.sales / salesTotal) * 100) : 0,
-      color: colors[index % colors.length]
-    }))
+  return [...totals.values()]
     .sort((left, right) => right.sales - left.sales)
-    .slice(0, 4)
-    .map((item, index) => ({ ...item, rank: index + 1, color: colors[index % colors.length] }));
+    .slice(0, 5)
+    .map((item, index) => ({
+      ...item,
+      rank: index + 1,
+      sales: clampCurrency(item.sales),
+      popularityPct: quantityTotal ? Math.round((item.quantity / quantityTotal) * 100) : 0,
+      salesPct: salesTotal ? Math.round((item.sales / salesTotal) * 100) : 0,
+      color: colors[index % colors.length]
+    }));
 }
 
 export async function getSalesReportDashboard(user, activeStoreId, filters = {}) {
@@ -411,7 +584,7 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
             }
           },
           include: {
-            items: { select: { quantity: true, unitPrice: true } }
+            items: { select: { quantity: true, unitPrice: true, refundedQuantity: true } }
           }
         })
       : Promise.resolve([]),
@@ -457,16 +630,22 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
     },
     summary: {
       totalSales: summary.totalSales,
+      netSales: summary.netSales,
       totalRefunds: summary.totalRefunds,
       totalOrders: summary.totalOrders,
       productsSold: summary.productsSold,
       newCustomers: summary.newCustomers,
+      totalVat: summary.totalVat,
+      averageOrderValue: summary.averageOrderValue,
+      repeatCustomerRate: summary.totalOrders > 0 ? Math.round(Math.max(0, (summary.totalOrders - summary.newCustomers) / summary.totalOrders) * 100) : 0,
       deltas: {
         totalSales: buildDelta(summary.totalSales, previousSummary?.totalSales),
+        netSales: buildDelta(summary.netSales, previousSummary?.netSales),
         totalRefunds: buildDelta(summary.totalRefunds, previousSummary?.totalRefunds),
         totalOrders: buildDelta(summary.totalOrders, previousSummary?.totalOrders),
         productsSold: buildDelta(summary.productsSold, previousSummary?.productsSold),
-        newCustomers: buildDelta(summary.newCustomers, previousSummary?.newCustomers)
+        newCustomers: buildDelta(summary.newCustomers, previousSummary?.newCustomers),
+        averageOrderValue: buildDelta(summary.averageOrderValue, previousSummary?.averageOrderValue)
       }
     },
     visitorInsights: buildVisitorInsights(
@@ -477,6 +656,12 @@ export async function getSalesReportDashboard(user, activeStoreId, filters = {})
       currentRange.to
     ),
     salesBreakdown: buildSalesBreakdown(orders, scopeMode, view, selectedBreakdown),
+    mealPeriods: buildMealPeriodBreakdown(orders),
+    peakHour: findPeakHour(orders),
+    hourlyActivity: buildHourlyBreakdown(orders),
+    categoryDistribution: buildCategoryDistribution(orders),
+    recentOrders: buildRecentOrders(orders),
+    storeLeaderboard: scopeMode === "all-stores" ? buildStoreLeaderboard(orders) : [],
     reportView: view,
     topProducts: buildTopProducts(orders)
   };

@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "pnpm@10.9.0",
   "scripts": {
-    "clean": "rm -rf .next",
-    "dev": "rm -rf .next && next dev",
-    "build": "rm -rf .next && next build",
+    "clean": "node -e \"try { fs.rmSync('.next', { recursive: true, force: true }); } catch {}\"",
+    "dev": "node -e \"try { fs.rmSync('.next', { recursive: true, force: true }); } catch {}\" && next dev",
+    "build": "node -e \"try { fs.rmSync('.next', { recursive: true, force: true }); } catch {}\" && next build",
     "start": "next start",
     "infra:up": "docker compose up -d valkey libretranslate",
     "infra:down": "docker compose down",

@@ -5,7 +5,7 @@ import {
   Package,
   Settings,
   ShoppingBag,
-  SquareTerminal,
+  ShoppingCart,
   User,
   Users,
   Wallet,
@@ -18,7 +18,7 @@ export const sidebarItems = [
     label: "POS",
     labelKey: "sidebar.pos",
     href: "/admin/pos",
-    icon: SquareTerminal,
+    icon: ShoppingCart,
     featureKey: FEATURE_KEYS.POS
   },
   {
@@ -54,7 +54,7 @@ export const sidebarItems = [
     featureKey: FEATURE_KEYS.DEVICE_SETTINGS,
     children: [
       { label: "Store Settings", labelKey: "sidebar.storeSettings", href: "/admin/settings/store", featureKey: FEATURE_KEYS.STORE_SETTINGS },
-      { label: "Store Manager", href: "/admin/settings/store/manage", featureKey: FEATURE_KEYS.STORE_SETTINGS },
+      { label: "Store Manager", labelKey: "sidebar.storeManager", href: "/admin/settings/store/manage", featureKey: FEATURE_KEYS.STORE_SETTINGS },
       { label: "Device Settings", labelKey: "sidebar.deviceSettings", href: "/admin/settings/device", featureKey: FEATURE_KEYS.DEVICE_SETTINGS }
     ]
   },

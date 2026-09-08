@@ -29,11 +29,12 @@ function formatDate(dateString) {
 export default async function CustomerPage({ searchParams }) {
   const user = await requireFeatureView(FEATURE_KEYS.CUSTOMERS);
   const storeId = await getActiveStoreId(user);
+  const resolvedSearchParams = await searchParams;
   const filters = {
-    invoiceSuffix: sanitizeQueryValue(searchParams?.invoiceSuffix),
-    customerName: sanitizeQueryValue(searchParams?.customerName),
-    fromDate: sanitizeQueryValue(searchParams?.fromDate),
-    toDate: sanitizeQueryValue(searchParams?.toDate)
+    invoiceSuffix: sanitizeQueryValue(resolvedSearchParams?.invoiceSuffix),
+    customerName: sanitizeQueryValue(resolvedSearchParams?.customerName),
+    fromDate: sanitizeQueryValue(resolvedSearchParams?.fromDate),
+    toDate: sanitizeQueryValue(resolvedSearchParams?.toDate)
   };
 
   const { customers, totals } = await getCustomerDashboard(user, storeId, filters);

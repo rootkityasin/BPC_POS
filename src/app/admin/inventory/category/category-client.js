@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Download, ListFilter, Pencil, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ListFilter, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
+import { SearchBar } from "@/components/ui/search-bar";
 
 const CATEGORY_FORM = { nameEn: "", color: "#2771cb" };
 
@@ -17,7 +18,7 @@ export function CategoryClient({
   showStoreColumn = false
 }) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const [activeTab, setActiveTab] = useState("categories");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,8 +37,12 @@ export function CategoryClient({
 
   const activeData = activeTab === "categories" ? categories : subCategories;
   const filteredData = activeData.filter((item) => {
-    const query = searchQuery.toLowerCase();
-    return item.nameEn.toLowerCase().includes(query);
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.trim().toLowerCase();
+    const nameEn = (item.nameEn || "").toLowerCase();
+    const nameBn = (item.nameBn || "").toLowerCase();
+    const parentCategory = (item.category?.nameEn || "").toLowerCase();
+    return nameEn.includes(query) || nameBn.includes(query) || parentCategory.includes(query);
   });
   const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -146,46 +151,53 @@ export function CategoryClient({
 
   return (
     <div className="flex min-h-screen flex-col bg-[#fdfdfd]">
-      <div className="mb-6 mt-2 flex items-center justify-between">
-        <h2 className="text-[28px] font-bold text-[#2771cb]">{t("categoryPage.title")}</h2>
-      </div>
-
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex h-[52px] w-[400px] items-center rounded-xl border border-slate-100 bg-white px-5 text-[15px] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <input
-            type="text"
-            placeholder={t("common.searchInput")}
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full bg-transparent text-[#2771cb] outline-none placeholder:text-[#2771cb]/50"
-          />
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-[26px] font-bold text-slate-900">{t("categoryPage.title")}</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {t("categoryPage.subtitle", { defaultValue: "Manage categories and subcategories for store menu inventory." })}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={openAddModal}
-          disabled={!canCreate || !currentTabCanManage}
-          className="text-[17px] font-bold text-[#2771cb] transition-colors hover:text-[#13508b]"
-        >
-          {canCreate && currentTabCanManage ? addButtonLabel : "Select a store to add items"}
-        </button>
-      </div>
 
+        <div className="flex w-full max-w-[620px] items-center gap-3">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={(val) => {
+                setSearchQuery(val);
+                setCurrentPage(1);
+              }}
+              placeholder={
+                i18n?.language === "bn"
+                  ? "ক্যাটাগরি বা সাব-ক্যাটাগরি খুঁজুন..."
+                  : "Search categories or subcategories..."
+              }
+            />
+          </div>
+          <button
+            type="button"
+            onClick={openAddModal}
+            disabled={!canCreate || !currentTabCanManage}
+            className="flex h-14 shrink-0 items-center gap-2 rounded-2xl bg-[#2771cb] px-6 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{canCreate && currentTabCanManage ? addButtonLabel : "Select store"}</span>
+          </button>
+        </div>
+      </div>
       <div className="rounded-[24px] border border-slate-50 bg-white p-8 shadow-[0_15px_40px_rgba(0,0,0,0.03)]">
         <div className="mb-10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1 shadow-2xs">
             <button
               type="button"
               onClick={() => {
                 setActiveTab("categories");
                 setCurrentPage(1);
               }}
-              className={`rounded-full px-6 py-2.5 text-[14px] font-bold transition-colors ${
+              className={`rounded-xl px-5 py-2 text-xs font-semibold transition-all ${
                 activeTab === "categories"
-                  ? "bg-[#2771cb] text-white"
-                  : "bg-[#e5f1ff] text-[#13508b] hover:bg-[#d6e8ff]"
+                  ? "bg-white text-slate-900 font-bold shadow-xs"
+                  : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
               }`}
             >
               {t("categoryPage.categories")}
@@ -196,10 +208,10 @@ export function CategoryClient({
                 setActiveTab("subCategories");
                 setCurrentPage(1);
               }}
-              className={`rounded-full px-6 py-2.5 text-[14px] font-bold transition-colors ${
+              className={`rounded-xl px-5 py-2 text-xs font-semibold transition-all ${
                 activeTab === "subCategories"
-                  ? "bg-[#2771cb] text-white"
-                  : "bg-[#e5f1ff] text-[#13508b] hover:bg-[#d6e8ff]"
+                  ? "bg-white text-slate-900 font-bold shadow-xs"
+                  : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
               }`}
             >
               {t("categoryPage.subCategory")}
@@ -298,7 +310,7 @@ export function CategoryClient({
 
           {paginatedData.length === 0 && (
             <div className="py-12 text-center font-medium text-slate-500">
-              {activeTab === "categories" ? t("categoryPage.noCategories") : t("categoryPage.noSubCategories")}
+              {searchQuery ? (i18n?.language === "bn" ? "কোনো ক্যাটাগরি বা সাব-ক্যাটাগরি পাওয়া যায়নি।" : "No categories or subcategories match your search.") : (activeTab === "categories" ? t("categoryPage.noCategories") : t("categoryPage.noSubCategories"))}
             </div>
           )}
         </div>

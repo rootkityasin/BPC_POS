@@ -8,9 +8,13 @@ export default async function LoginPage({ searchParams }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
       <Card className="w-full max-w-md p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-black text-slate-900">Login</h1>
-          <p className="mt-2 text-sm text-slate-500">Use `admin@bpc.local` or `manager@bpc.local` with `password123` after seeding.</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <img
+            src="/images/bpc-logo.png"
+            alt="BPC Logo"
+            className="mb-3 h-14 w-auto object-contain"
+          />
+          <h1 className="text-2xl font-black text-slate-900">BPC POS Login</h1>
         </div>
         {error ? (
           <div className="mb-4 rounded-xl border border-[#e5f1ff] bg-[#e5f1ff] px-4 py-3 text-sm text-[#13508b]">

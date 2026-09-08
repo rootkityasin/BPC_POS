@@ -47,6 +47,7 @@ export async function POST(request) {
   }
 
   const name = String(body.name || "").trim();
+  const nameBn = String(body.nameBn || "").trim() || null;
 
   if (!name) {
     return NextResponse.json({ error: "Stock item name is required" }, { status: 400 });
@@ -56,7 +57,9 @@ export async function POST(request) {
     data: {
       storeId,
       name,
+      nameBn,
       quantity: Number(body.quantity || 0),
+      buyingPrice: body.buyingPrice === null || body.buyingPrice === undefined || body.buyingPrice === "" ? null : Number(body.buyingPrice),
       price: body.price === null || body.price === undefined || body.price === "" ? null : Number(body.price),
       supplier: String(body.supplier || "Local Vendor").trim() || "Local Vendor",
       createdBy: String(body.createdBy || user.name || "System User").trim() || user.name || "System User"
@@ -91,13 +94,16 @@ export async function PATCH(request) {
   }
 
   const name = String(body.name || existingItem.name || "").trim();
+  const nameBn = body.nameBn !== undefined ? (String(body.nameBn || "").trim() || null) : existingItem.nameBn;
   const updatedItem = await prisma.stockItem.update({
     where: { id },
     data: {
       name,
+      nameBn,
       quantity: Number(body.quantity ?? existingItem.quantity ?? 0),
       supplier: String(body.supplier ?? existingItem.supplier ?? "Local Vendor").trim() || "Local Vendor",
       createdBy: String(body.createdBy ?? existingItem.createdBy ?? user.name ?? "System User").trim() || user.name || "System User",
+      buyingPrice: body.buyingPrice === undefined ? existingItem.buyingPrice : (body.buyingPrice === null || body.buyingPrice === "" ? null : Number(body.buyingPrice)),
       price: body.price === null || body.price === undefined || body.price === "" ? null : Number(body.price)
     }
   });

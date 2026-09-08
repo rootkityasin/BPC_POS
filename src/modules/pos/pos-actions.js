@@ -33,7 +33,8 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
 
   if (searchQuery) {
     dishWhere.OR = [
-      { nameEn: { contains: searchQuery, mode: "insensitive" } }
+      { nameEn: { contains: searchQuery, mode: "insensitive" } },
+      { nameBn: { contains: searchQuery, mode: "insensitive" } }
     ];
   }
 
@@ -44,7 +45,10 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
   };
 
   if (searchQuery) {
-    inventoryWhere.name = { contains: searchQuery, mode: "insensitive" };
+    inventoryWhere.OR = [
+      { name: { contains: searchQuery, mode: "insensitive" } },
+      { nameBn: { contains: searchQuery, mode: "insensitive" } }
+    ];
   }
 
   const [dishes, stockMap, pricedInventoryItems] = await Promise.all([
@@ -89,7 +93,10 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
       id: `dish-${dish.id}`,
       productId: dish.id,
       productType: "dish",
+      stockItemId: stock?.id || null,
+      stockItemId: stock?.id || null,
       nameEn: dish.nameEn,
+      nameBn: dish.nameBn || "",
       price: Number(dish.price),
       storeId: dish.storeId,
       storeName: dish.store?.nameEn || "Unknown store",
@@ -106,7 +113,10 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
     id: `stock-${item.id}`,
     productId: item.id,
     productType: "stock",
+    stockItemId: item.id,
+    stockItemId: item.id,
     nameEn: item.name || "Unnamed item",
+    nameBn: item.nameBn || "",
     price: Number(item.price || 0),
     storeId: item.storeId,
     storeName: item.store?.nameEn || "Unknown store",
@@ -116,7 +126,7 @@ export async function getPosProducts(storeId, categoryId = null, searchQuery = n
     lowStockLevel: item.lowStockLevel,
     isLowStock: item.quantity <= item.lowStockLevel,
     categoryId: "__inventory__",
-    category: { id: "__inventory__", nameEn: "Inventory", icon: "📦" },
+    category: { id: "__inventory__", nameEn: "Inventory", nameBn: "ইনভেন্টরি", icon: "📦" },
     subCategory: null,
     supplier: item.supplier
   }));

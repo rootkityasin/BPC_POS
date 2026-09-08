@@ -58,3 +58,52 @@ export async function loginWithPassword(email, password) {
   const tokens = await createSessionForUser(user);
   return { success: true, user, tokens };
 }
+
+export async function verifyManagerOrAdminAuthorization(email, password) {
+  if (!email || !password) {
+    return { success: false, error: "Manager/Admin email and password are required" };
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: {
+      email: {
+        equals: normalizedEmail,
+        mode: "insensitive"
+      }
+    },
+    include: {
+      role: true,
+      permissionOverrides: true
+    }
+  });
+
+  if (!user) {
+    return { success: false, error: "Manager or Admin account not found" };
+  }
+
+  if (!user.isActive) {
+    return { success: false, error: "Manager/Admin account is inactive" };
+  }
+
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    return { success: false, error: "Manager/Admin account is temporarily locked" };
+  }
+
+  const roleCode = user.role?.code;
+  if (roleCode !== "SUPER_ADMIN" && roleCode !== "MANAGER") {
+    return { success: false, error: "Authorization failed: account is not a Manager or Super Admin" };
+  }
+
+  const isValid = await verifyPassword(password, user.passwordHash);
+  if (!isValid) {
+    return { success: false, error: "Invalid password for authorizing manager/admin" };
+  }
+
+  return {
+    success: true,
+    authorizedBy: user.name || user.email,
+    authorizerId: user.id,
+    role: roleCode
+  };
+}

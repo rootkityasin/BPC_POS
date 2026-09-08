@@ -44,7 +44,7 @@ export async function GET(request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (user.role !== "SUPER_ADMIN" && !canView(user.permissions, FEATURE_KEYS.ORDERS)) {
+    if (user.role !== "SUPER_ADMIN" && !canView(user.permissions, FEATURE_KEYS.ORDERS) && !canView(user.permissions, FEATURE_KEYS.POS)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

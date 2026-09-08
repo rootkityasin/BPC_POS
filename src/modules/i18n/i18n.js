@@ -2,24 +2,31 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { resources } from "@/modules/i18n/resources";
 
-const DEFAULT_LANGUAGE = "en";
+import { LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE } from "@/modules/i18n/constants";
 const RESOURCE_CACHE_KEY = "bpc-admin-i18n-resources";
-const RESOURCE_CACHE_VERSION = "v2";
-export const LANGUAGE_STORAGE_KEY = "bpc-admin-language";
+const RESOURCE_CACHE_VERSION = "v5";
+export { LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE };
+
+function deepMerge(base, override) {
+  if (!override || typeof override !== "object") return { ...base };
+  const result = { ...base };
+  for (const key of Object.keys(override)) {
+    if (override[key] && typeof override[key] === "object" && !Array.isArray(override[key])) {
+      result[key] = deepMerge(base[key] || {}, override[key]);
+    } else if (override[key] !== undefined) {
+      result[key] = override[key];
+    }
+  }
+  return result;
+}
 
 function mergeResources(cachedResources) {
   return {
     en: {
-      translation: {
-        ...resources.en.translation,
-        ...(cachedResources?.en?.translation || {})
-      }
+      translation: deepMerge(resources.en.translation, cachedResources?.en?.translation)
     },
     bn: {
-      translation: {
-        ...resources.bn.translation,
-        ...(cachedResources?.bn?.translation || {})
-      }
+      translation: deepMerge(resources.bn.translation, cachedResources?.bn?.translation)
     }
   };
 }
@@ -32,7 +39,10 @@ function getCachedResources() {
     if (!rawCache) return resources;
 
     const parsedCache = JSON.parse(rawCache);
-    if (parsedCache.version !== RESOURCE_CACHE_VERSION) return resources;
+    if (parsedCache.version !== RESOURCE_CACHE_VERSION) {
+      window.localStorage.removeItem(RESOURCE_CACHE_KEY);
+      return resources;
+    }
 
     return mergeResources(parsedCache.resources);
   } catch {
@@ -54,9 +64,7 @@ function cacheResources(resourceMap) {
 }
 
 function getInitialLanguage() {
-  if (typeof window === "undefined") return DEFAULT_LANGUAGE;
-  const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return storedLanguage === "bn" || storedLanguage === "en" ? storedLanguage : DEFAULT_LANGUAGE;
+  return DEFAULT_LANGUAGE;
 }
 
 if (!i18n.isInitialized) {

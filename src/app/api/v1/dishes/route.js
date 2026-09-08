@@ -26,6 +26,7 @@ export async function POST(request) {
   const contentType = request.headers.get("content-type") || "";
 
   let nameEn = "";
+  let nameBn = "";
   let categoryId = "";
   let subCategoryId = "";
   let ingredientStockItemIds = [];
@@ -37,6 +38,7 @@ export async function POST(request) {
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
     nameEn = String(formData.get("nameEn") || "").trim();
+    nameBn = String(formData.get("nameBn") || "").trim();
     categoryId = String(formData.get("categoryId") || "").trim();
     subCategoryId = String(formData.get("subCategoryId") || "").trim();
     const ingredientIdsRaw = formData.get("ingredientStockItemIds");
@@ -63,6 +65,7 @@ export async function POST(request) {
   } else {
     const body = await request.json();
     nameEn = String(body.nameEn || "").trim();
+    nameBn = String(body.nameBn || "").trim();
     categoryId = String(body.categoryId || "").trim();
     subCategoryId = String(body.subCategoryId || "").trim();
     ingredientStockItemIds = Array.isArray(body.ingredientStockItemIds) ? body.ingredientStockItemIds : [];
@@ -83,7 +86,7 @@ export async function POST(request) {
     data: {
       storeId,
       nameEn,
-      nameBn: "",
+      nameBn: nameBn || "",
       categoryId,
       subCategoryId: subCategoryId || null,
       sku: buildSku(),
@@ -118,20 +121,39 @@ export async function PATCH(request) {
   }
 
   const contentType = request.headers.get("content-type") || "";
-  let id, nameEn, categoryId, subCategoryId, ingredientStockItemIds, price, createdBy, imageUrl, showOnList, clearImage;
+
+  let id = "";
+  let nameEn;
+  let nameBn;
+  let categoryId;
+  let subCategoryId;
+  let ingredientStockItemIds;
+  let price;
+  let showOnList;
+  let createdBy;
+  let imageUrl;
+  let clearImage = false;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
     id = String(formData.get("id") || "").trim();
-    nameEn = String(formData.get("nameEn") || "").trim();
-    categoryId = String(formData.get("categoryId") || "").trim();
-    subCategoryId = String(formData.get("subCategoryId") || "").trim();
+    if (formData.has("nameEn")) nameEn = String(formData.get("nameEn") || "").trim();
+    if (formData.has("nameBn")) nameBn = String(formData.get("nameBn") || "").trim();
+    if (formData.has("categoryId")) categoryId = String(formData.get("categoryId") || "").trim();
+    if (formData.has("subCategoryId")) subCategoryId = String(formData.get("subCategoryId") || "").trim();
+    if (formData.has("price")) price = Number(formData.get("price"));
+    if (formData.has("showOnList")) showOnList = formData.get("showOnList") === "true";
+    if (formData.has("createdBy")) createdBy = String(formData.get("createdBy") || "").trim();
+    if (formData.has("clearImage")) clearImage = formData.get("clearImage") === "true";
+
     const ingredientIdsRaw = formData.get("ingredientStockItemIds");
-    ingredientStockItemIds = ingredientIdsRaw ? JSON.parse(ingredientIdsRaw) : undefined;
-    price = formData.get("price") ? Number(formData.get("price")) : undefined;
-    showOnList = formData.has("showOnList") ? formData.get("showOnList") === "true" : undefined;
-    createdBy = String(formData.get("createdBy") || "").trim();
-    clearImage = formData.get("clearImage") === "true";
+    if (ingredientIdsRaw !== null) {
+      try {
+        ingredientStockItemIds = JSON.parse(ingredientIdsRaw);
+      } catch {
+        ingredientStockItemIds = [];
+      }
+    }
 
     const imageFile = formData.get("image");
     if (imageFile && imageFile.size > 0) {
@@ -150,8 +172,9 @@ export async function PATCH(request) {
     }
   } else {
     const body = await request.json();
-    id = body.id;
+    id = String(body.id || "").trim();
     nameEn = body.nameEn;
+    nameBn = body.nameBn;
     categoryId = body.categoryId;
     subCategoryId = body.subCategoryId;
     ingredientStockItemIds = body.ingredientStockItemIds;
@@ -159,7 +182,7 @@ export async function PATCH(request) {
     showOnList = body.showOnList;
     createdBy = body.createdBy;
     imageUrl = body.imageUrl;
-    clearImage = body.imageUrl === null;
+    clearImage = body.clearImage === true;
   }
 
   if (!id) {
@@ -175,29 +198,19 @@ export async function PATCH(request) {
   }
 
   const updateData = {};
-
-  if (showOnList !== undefined) {
-    updateData.showOnList = showOnList;
-  }
-  if (nameEn) {
-    updateData.nameEn = String(nameEn).trim();
-  }
-  if (categoryId) {
-    updateData.categoryId = String(categoryId).trim();
-  }
-  if (subCategoryId !== undefined) {
-    updateData.subCategoryId = String(subCategoryId).trim() || null;
-  }
+  if (nameEn !== undefined) updateData.nameEn = String(nameEn).trim();
+  if (nameBn !== undefined) updateData.nameBn = String(nameBn).trim();
+  if (categoryId !== undefined) updateData.categoryId = String(categoryId).trim();
+  if (subCategoryId !== undefined) updateData.subCategoryId = subCategoryId ? String(subCategoryId).trim() : null;
+  if (showOnList !== undefined) updateData.showOnList = Boolean(showOnList);
   if (price !== undefined) {
     updateData.price = Number(price);
   }
-  
   if (imageUrl !== undefined && imageUrl !== null) {
     updateData.imageUrl = imageUrl;
   } else if (clearImage) {
     updateData.imageUrl = null;
   }
-
   if (createdBy) {
     updateData.createdBy = String(createdBy).trim();
   }
@@ -221,6 +234,9 @@ export async function PATCH(request) {
     }
   });
 
+  if (updateData.nameEn) {
+    await translateTexts({ texts: [updateData.nameEn], sourceLanguage: "en", targetLanguage: "bn" });
+  }
   revalidateDishPages();
 
   return NextResponse.json(dish);

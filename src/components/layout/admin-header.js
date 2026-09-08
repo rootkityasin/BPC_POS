@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AdminLanguageSwitch } from "@/components/layout/admin-language-switch";
@@ -18,6 +19,8 @@ export function AdminHeader({ sessionUser, initialNotifications, unreadCount, st
 
     try {
       await fetch("/api/v1/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore network errors on logout
     } finally {
       router.push("/login");
       router.refresh();
@@ -26,10 +29,11 @@ export function AdminHeader({ sessionUser, initialNotifications, unreadCount, st
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-5">
+    <header className="flex h-20 items-center justify-between border-b border-slate-200 bg-white px-8">
       <div>
-        <h1 className="text-lg font-bold text-slate-900">{t("header.title")}</h1>
-        <p className="text-sm text-slate-500">{t("header.subtitle")}</p>
+        <Link href="/admin/pos" className="hover:opacity-80 transition-opacity">
+          <h1 className="text-xl font-bold text-slate-900 leading-none">{t("header.title")}</h1>
+        </Link>
       </div>
       <div className="flex items-center gap-4">
         {sessionUser.role === "SUPER_ADMIN" && stores && stores.length > 0 ? (
@@ -38,7 +42,7 @@ export function AdminHeader({ sessionUser, initialNotifications, unreadCount, st
         <NotificationCenter initialItems={initialNotifications} initialUnreadCount={unreadCount} />
         <AdminLanguageSwitch />
         <div className="text-right">
-          <div className="text-sm font-semibold text-slate-800">{sessionUser.email}</div>
+          <div className="text-sm font-semibold text-slate-800 leading-none">{sessionUser.email}</div>
         </div>
         <Button variant="outline" type="button" onClick={handleLogout} disabled={isLoggingOut}>
           {isLoggingOut ? t("header.logout") : t("header.logout")}

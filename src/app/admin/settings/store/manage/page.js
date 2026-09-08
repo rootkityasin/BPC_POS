@@ -7,8 +7,9 @@ import { StoreManagementClient } from "../store-management-client";
 export default async function MultiStoreManagementPage({ searchParams }) {
   const user = await requireFeatureView(FEATURE_KEYS.STORE_SETTINGS);
   const activeStoreId = await getActiveStoreId(user);
+  const resolvedSearchParams = await searchParams;
   const selectedStoreId = user.role === "SUPER_ADMIN"
-    ? searchParams?.storeId || activeStoreId || null
+    ? resolvedSearchParams?.storeId || activeStoreId || null
     : activeStoreId;
   const { store, assignedManagers, managers, stores } = await getStoreSetup(user, selectedStoreId, { allowUserStoreFallback: false });
 

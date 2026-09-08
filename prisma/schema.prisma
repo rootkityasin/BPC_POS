@@ -83,6 +83,7 @@ model Store {
   orders             Order[]
   expenses           Expense[]
   notifications      Notification[]
+  stockReturns       StockReturn[]
 }
 
 model User {
@@ -210,6 +211,8 @@ model StockItem {
   storeId        String
   dishId         String?
   name           String?
+  nameBn         String?
+  buyingPrice    Float?
   price          Float?
   quantity       Int @default(0)
   lowStockLevel  Int @default(5)
@@ -221,8 +224,10 @@ model StockItem {
   dish           Dish? @relation(fields: [dishId], references: [id])
   ingredientLinks DishIngredient[]
   orderItems     OrderItem[]
+  returns        StockReturn[]
 
   @@unique([storeId, dishId])
+  @@index([storeId])
 }
 
 model DishIngredient {
@@ -254,6 +259,9 @@ model Order {
   updatedAt     DateTime @updatedAt
   store         Store @relation(fields: [storeId], references: [id])
   items         OrderItem[]
+
+  @@index([storeId, createdAt])
+  @@index([status])
 }
 
 model OrderItem {
@@ -269,6 +277,10 @@ model OrderItem {
   order       Order @relation(fields: [orderId], references: [id])
   dish       Dish? @relation(fields: [dishId], references: [id])
   stockItem  StockItem? @relation(fields: [stockItemId], references: [id])
+
+  @@index([orderId])
+  @@index([dishId])
+  @@index([stockItemId])
 }
 
 model Expense {
@@ -283,6 +295,8 @@ model Expense {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   store       Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId, incurredOn])
 }
 
 model Notification {
@@ -297,6 +311,9 @@ model Notification {
   read       Boolean @default(false)
   createdAt  DateTime @default(now())
   store      Store? @relation(fields: [storeId], references: [id])
+
+  @@index([storeId, read])
+  @@index([userId, read])
 }
 
 model TranslationCache {
@@ -309,4 +326,25 @@ model TranslationCache {
   updatedAt      DateTime @updatedAt
 
   @@unique([sourceLanguage, targetLanguage, sourceText])
+}
+
+model StockReturn {
+  id           String    @id @default(cuid())
+  storeId      String
+  stockItemId  String
+  quantity     Int
+  reason       String
+  disposition  String    @default("RETURN_TO_SUPPLIER")
+  supplier     String?
+  refundAmount Float?
+  lossAmount   Float?
+  notes        String?
+  returnedBy   String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  store        Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  stockItem    StockItem @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, createdAt])
+  @@index([stockItemId])
 }

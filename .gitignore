@@ -1,4 +1,6 @@
 .next/
+.next-dev.log
+.next-dev.err.log
 node_modules/
 .turbo/
 .env

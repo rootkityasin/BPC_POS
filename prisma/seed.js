@@ -226,15 +226,15 @@ async function main() {
   }
 
   const rawInventory = [
-    { name: "Rice", quantity: 14, supplier: "Parking pizza", createdBy: "Jane Cooper", price: 40 },
-    { name: "Bread", quantity: 10, supplier: "Sushi shop", createdBy: "Jane Cooper", price: 20 },
-    { name: "Oats", quantity: 16, supplier: "Mayura", createdBy: "Jane Cooper", price: 35 },
-    { name: "Quinoa", quantity: 7, supplier: "Foc i Oli", createdBy: "Jane Cooper", price: 60 },
-    { name: "Barley", quantity: 24, supplier: "Sushi shop", createdBy: "Jane Cooper", price: null },
-    { name: "Pasta", quantity: 20, supplier: "Torpedo", createdBy: "Jane Cooper", price: 55 },
-    { name: "Corn", quantity: 28, supplier: "Como Kitchen", createdBy: "Jane Cooper", price: 30 },
-    { name: "Millet", quantity: 18, supplier: "Gresca", createdBy: "Jane Cooper", price: null },
-    { name: "Eggs", quantity: 2, supplier: "Parking pizza", createdBy: "Jane Cooper", price: 15 }
+    { name: "Rice", quantity: 14, supplier: "Parking pizza", createdBy: "Jane Cooper", buyingPrice: 30, price: 40 },
+    { name: "Bread", quantity: 10, supplier: "Sushi shop", createdBy: "Jane Cooper", buyingPrice: 15, price: 20 },
+    { name: "Oats", quantity: 16, supplier: "Mayura", createdBy: "Jane Cooper", buyingPrice: 25, price: 35 },
+    { name: "Quinoa", quantity: 7, supplier: "Foc i Oli", createdBy: "Jane Cooper", buyingPrice: 45, price: 60 },
+    { name: "Barley", quantity: 24, supplier: "Sushi shop", createdBy: "Jane Cooper", buyingPrice: 20, price: null },
+    { name: "Pasta", quantity: 20, supplier: "Torpedo", createdBy: "Jane Cooper", buyingPrice: 40, price: 55 },
+    { name: "Corn", quantity: 28, supplier: "Como Kitchen", createdBy: "Jane Cooper", buyingPrice: 20, price: 30 },
+    { name: "Millet", quantity: 18, supplier: "Gresca", createdBy: "Jane Cooper", buyingPrice: 22, price: null },
+    { name: "Eggs", quantity: 2, supplier: "Parking pizza", createdBy: "Jane Cooper", buyingPrice: 10, price: 15 }
   ];
 
   for (const item of rawInventory) {
@@ -242,6 +242,7 @@ async function main() {
       data: {
         storeId: store.id,
         name: item.name,
+        buyingPrice: item.buyingPrice,
         price: item.price,
         quantity: item.quantity,
         supplier: item.supplier,
