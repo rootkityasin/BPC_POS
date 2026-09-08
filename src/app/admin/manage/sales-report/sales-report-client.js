@@ -26,7 +26,6 @@ import {
   BarChart3,
   LineChart,
   Percent,
-  Sparkles,
   ArrowUpRight,
   ArrowDownRight
 } from "lucide-react";
@@ -433,15 +432,10 @@ export function SalesReportClient({ report }) {
     <div className="min-w-0 space-y-6">
       {/* 1. Universal Top Header & Horizon Switcher */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
+          <div>
             <h2 className="text-[26px] font-bold text-slate-900">
               {t("reports.title", { defaultValue: "Sales Report & Analytics" })}
             </h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 text-xs font-bold text-[#2771cb]">
-              <Sparkles className="h-3 w-3" />
-              Live Visuals
-            </span>
           </div>
           <p className="mt-1 text-xs text-slate-500">
             {t("reports.subtitle", { defaultValue: "Executive visual dashboard, trading heatmaps, and meal period intelligence." })}
