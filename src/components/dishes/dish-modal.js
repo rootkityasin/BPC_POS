@@ -6,6 +6,7 @@ import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { X, ImagePlus } from "lucide-react";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const INITIAL_FORM = {
   nameEn: "",
@@ -218,8 +219,12 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
               {stockItems.map((item) => {
                 const checked = form.ingredientStockItemIds.includes(item.id);
                 return (
-                  <label key={item.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors ${checked ? "border-[#2771cb] bg-[#e5f1ff]" : "border-slate-200 bg-white hover:border-slate-300"}`}>
-                    <input type="checkbox" checked={checked} onChange={() => toggleIngredient(item.id)} className="mt-1 h-4 w-4 accent-[#2771cb]" />
+                  <label key={item.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition-colors ${checked ? "border-[#2771cb]/60 bg-blue-50/40" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"}`}>
+                    <Checkbox
+                      checked={checked}
+                      onChange={() => toggleIngredient(item.id)}
+                      wrapperClassName="mt-0.5"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-slate-900">{translateContent(item.name)}</div>
                       <div className="text-sm text-slate-500">{t("dishes.qtyPrice", { quantity: item.quantity, price: item.price === null ? t("common.optional") : formatCurrency(item.price) })}</div>

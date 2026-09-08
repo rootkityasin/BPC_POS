@@ -267,18 +267,27 @@ export function DeviceSettingsClient({ settings, canEdit, storeName }) {
                 ["receiptShowItemNotes", "Show Item Notes"],
                 ["receiptShowQr", "Show QR"],
                 ["receiptShowSign", "Show Signature Area"]
-              ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3">
-                  <input
-                    name={key}
-                    type="checkbox"
-                    checked={Boolean(formState[key])}
-                    disabled={!canEdit}
-                    onChange={(event) => setFormState((current) => ({ ...current, [key]: event.target.checked }))}
-                  />
-                  <span>{label}</span>
-                </label>
-              ))}
+              ].map(([key, label]) => {
+                const isChecked = Boolean(formState[key]);
+                return (
+                  <label
+                    key={key}
+                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium text-slate-700 transition ${
+                      isChecked
+                        ? "border-[#2771cb]/50 bg-blue-50/30"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"
+                    } ${!canEdit ? "opacity-60 cursor-not-allowed" : ""}`}
+                  >
+                    <Checkbox
+                      name={key}
+                      checked={isChecked}
+                      disabled={!canEdit}
+                      onChange={(event) => setFormState((current) => ({ ...current, [key]: event.target.checked }))}
+                    />
+                    <span>{label}</span>
+                  </label>
+                );
+              })}
             </div>
           </Card>
 

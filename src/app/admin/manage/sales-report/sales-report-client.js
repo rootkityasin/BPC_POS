@@ -432,11 +432,10 @@ export function SalesReportClient({ report }) {
     <div className="min-w-0 space-y-6">
       {/* 1. Universal Top Header & Horizon Switcher */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-[26px] font-bold text-slate-900">
-              {t("reports.title", { defaultValue: "Sales Report & Analytics" })}
-            </h2>
-          </div>
+        <div>
+          <h2 className="text-[26px] font-bold text-slate-900">
+            {t("reports.title", { defaultValue: "Sales Report & Analytics" })}
+          </h2>
           <p className="mt-1 text-xs text-slate-500">
             {t("reports.subtitle", { defaultValue: "Executive visual dashboard, trading heatmaps, and meal period intelligence." })}
           </p>

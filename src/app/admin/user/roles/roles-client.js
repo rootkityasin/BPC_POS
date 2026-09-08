@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { I18nText } from "@/components/i18n/i18n-text";
 import { deleteManager, resetManagerPassword, saveManagerOverrides, toggleManagerActive } from "./actions";
 
@@ -137,12 +138,12 @@ function ManagerPermissionsForm({ manager, permissionSections, onToast, onSucces
                 <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
                   <I18nText k={row.labelKey} fallback={row.label} />
                 </div>
-                <label className="flex items-center rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-600">
-                  <input name={row.viewField} type="checkbox" defaultChecked={manager.permissionMap[row.key]?.canView} className="mr-2" />
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50/50">
+                  <Checkbox name={row.viewField} defaultChecked={manager.permissionMap[row.key]?.canView} />
                   <I18nText k="roles.view" fallback="View" />
                 </label>
-                <label className="flex items-center rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-600">
-                  <input name={row.manageField} type="checkbox" defaultChecked={manager.permissionMap[row.key]?.canManage} className="mr-2" />
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50/50">
+                  <Checkbox name={row.manageField} defaultChecked={manager.permissionMap[row.key]?.canManage} />
                   <I18nText k="roles.update" fallback="Update" />
                 </label>
               </Fragment>
