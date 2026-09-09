@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, CircleAlert, Plus, Printer, Receipt, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { buildReceiptHtml } from "@/modules/receipts/receipt-renderer";
 import { clearStoreSalesData, saveDeviceSettings } from "./actions";
 

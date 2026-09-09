@@ -293,9 +293,11 @@ export function SalesReportClient({ report }) {
 
   // Active chart data
   const chartLabels = report.salesBreakdown?.labels || [];
-  const chartValues = trendMode === "revenue"
-    ? (report.salesBreakdown?.values || [])
-    : (report.salesBreakdown?.orderCounts || []);
+  const chartValues = useMemo(() => {
+    return trendMode === "revenue"
+      ? (report.salesBreakdown?.values || [])
+      : (report.salesBreakdown?.orderCounts || []);
+  }, [trendMode, report.salesBreakdown?.values, report.salesBreakdown?.orderCounts]);
 
   const totalChartVal = chartValues.reduce((acc, v) => acc + (Number(v) || 0), 0);
   const avgChartVal = chartValues.length > 0 ? totalChartVal / chartValues.length : 0;
