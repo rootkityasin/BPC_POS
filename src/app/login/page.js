@@ -7,6 +7,11 @@ export default async function LoginPage({ searchParams }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try { localStorage.setItem("bpc-admin-language", "bn"); document.cookie = "bpc-admin-language=bn; path=/; max-age=31536000; SameSite=Lax"; } catch(e){}`
+        }}
+      />
       <Card className="w-full max-w-md p-8">
         <div className="mb-6 flex flex-col items-center text-center">
           <img

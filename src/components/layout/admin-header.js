@@ -8,6 +8,7 @@ import { AdminLanguageSwitch } from "@/components/layout/admin-language-switch";
 import { NotificationCenter } from "@/components/layout/notification-center";
 import { StoreSelector } from "@/components/layout/store-selector";
 import { useTranslation } from "react-i18next";
+import { LANGUAGE_STORAGE_KEY } from "@/modules/i18n/constants";
 
 export function AdminHeader({ sessionUser, initialNotifications, unreadCount, stores, activeStoreId }) {
   const router = useRouter();
@@ -22,6 +23,10 @@ export function AdminHeader({ sessionUser, initialNotifications, unreadCount, st
     } catch {
       // Ignore network errors on logout
     } finally {
+      try {
+        window.localStorage.setItem(LANGUAGE_STORAGE_KEY, "bn");
+        document.cookie = `${LANGUAGE_STORAGE_KEY}=bn; path=/; max-age=31536000; SameSite=Lax`;
+      } catch {}
       router.push("/login");
       router.refresh();
       setIsLoggingOut(false);

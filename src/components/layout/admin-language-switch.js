@@ -75,37 +75,7 @@ export function AdminLanguageSwitch() {
       className="inline-flex items-center gap-2 select-none"
       title={isBangla ? "Switch to English" : "বাংলা ভাষায় পরিবর্তন করুন"}
     >
-      {/* Left Label: EN */}
-      <button
-        type="button"
-        onClick={() => setLanguage("en")}
-        className={`text-xs font-black tracking-wider transition-colors duration-200 ${
-          !isBangla ? "text-slate-800" : "text-slate-400 hover:text-slate-600"
-        }`}
-      >
-        EN
-      </button>
-
-      {/* Neumorphic Inset Pill Track */}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isBangla}
-        aria-label="Language switch"
-        onClick={toggleLanguage}
-        className="relative flex h-8 w-[62px] cursor-pointer items-center rounded-full border border-slate-300/70 bg-[#e4e7ec] p-0.5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),inset_0_-1px_2px_rgba(255,255,255,0.7)] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2771cb]/30"
-      >
-        {/* Sliding Flag Knob */}
-        <div
-          className={`relative flex h-[26px] w-[26px] transform items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.15)] ring-1 ring-black/5 transition-transform duration-300 ease-out ${
-            isBangla ? "translate-x-[30px]" : "translate-x-0"
-          }`}
-        >
-          {isBangla ? <BangladeshFlagIcon /> : <UkFlagIcon />}
-        </div>
-      </button>
-
-      {/* Right Label: BN */}
+      {/* Left Label: BN (Default) */}
       <button
         type="button"
         onClick={() => setLanguage("bn")}
@@ -114,6 +84,36 @@ export function AdminLanguageSwitch() {
         }`}
       >
         BN
+      </button>
+
+      {/* Neumorphic Inset Pill Track */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={!isBangla}
+        aria-label="Language switch"
+        onClick={toggleLanguage}
+        className="relative flex h-8 w-[62px] cursor-pointer items-center rounded-full border border-slate-300/70 bg-[#e4e7ec] p-0.5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),inset_0_-1px_2px_rgba(255,255,255,0.7)] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2771cb]/30"
+      >
+        {/* Sliding Flag Knob: Left (translate-x-0) = BN (Default), Right (translate-x-[30px]) = EN */}
+        <div
+          className={`relative flex h-[26px] w-[26px] transform items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.15)] ring-1 ring-black/5 transition-transform duration-300 ease-out ${
+            isBangla ? "translate-x-0" : "translate-x-[30px]"
+          }`}
+        >
+          {isBangla ? <BangladeshFlagIcon /> : <UkFlagIcon />}
+        </div>
+      </button>
+
+      {/* Right Label: EN */}
+      <button
+        type="button"
+        onClick={() => setLanguage("en")}
+        className={`text-xs font-black tracking-wider transition-colors duration-200 ${
+          !isBangla ? "text-slate-800" : "text-slate-400 hover:text-slate-600"
+        }`}
+      >
+        EN
       </button>
     </div>
   );

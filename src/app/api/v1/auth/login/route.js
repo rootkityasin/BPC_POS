@@ -7,6 +7,7 @@ import {
   getAccessCookieOptions,
   getRefreshCookieOptions
 } from "@/modules/auth/session-service";
+import { LANGUAGE_STORAGE_KEY } from "@/modules/i18n/constants";
 
 export async function POST(request) {
   const formData = await request.formData();
@@ -21,8 +22,9 @@ export async function POST(request) {
     return response;
   }
 
-  const response = NextResponse.redirect(buildRedirectUrl(request, "/admin/pos"), 303);
+  const response = NextResponse.redirect(buildRedirectUrl(request, "/admin/pos?login=1"), 303);
   response.cookies.set(ACCESS_COOKIE, result.tokens.accessToken, getAccessCookieOptions());
   response.cookies.set(REFRESH_COOKIE, result.tokens.refreshToken, getRefreshCookieOptions());
+  response.cookies.set(LANGUAGE_STORAGE_KEY, "bn", { path: "/", maxAge: 31536000, sameSite: "lax" });
   return response;
 }
