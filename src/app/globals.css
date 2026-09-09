@@ -59,3 +59,24 @@ select {
 .popup-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #3b81d6 0%, #13508b 100%);
 }
+
+/* Premium smooth sidebar submenu accordion */
+.submenu-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  pointer-events: none;
+  transition: grid-template-rows 380ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
+              margin 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.submenu-accordion.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 0.375rem;
+  margin-bottom: 0.5rem;
+  pointer-events: auto;
+}

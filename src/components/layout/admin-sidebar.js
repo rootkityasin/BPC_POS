@@ -72,7 +72,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHovered(false);
       setHoveredMenu(null);
-    }, 180);
+    }, 220);
   }
 
   function handleMenuHover(href) {
@@ -89,7 +89,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
     }
     menuHoverTimeoutRef.current = setTimeout(() => {
       setHoveredMenu(null);
-    }, 120);
+    }, 220);
   }
 
   function needsStoreSelection(href) {
@@ -135,7 +135,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200 bg-white transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] select-none will-change-[width]",
+          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200 bg-white transition-[width,box-shadow] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] select-none will-change-[width]",
           isHovered ? "w-72 shadow-2xl" : "w-20 shadow-xs"
         )}
       >
@@ -155,7 +155,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
             </div>
             <div
               className={cn(
-                "overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] whitespace-nowrap",
+                "overflow-hidden transition-all duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap",
                 isHovered
                   ? "max-w-[160px] opacity-100 translate-x-0 ml-2"
                   : "max-w-0 opacity-0 -translate-x-2 ml-0 pointer-events-none"
@@ -210,7 +210,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                     }}
                     title={!isHovered ? labelText : undefined}
                     className={cn(
-                      "group flex h-12 w-full items-center rounded-xl px-2.5 text-sm font-semibold transition-colors duration-150 outline-none select-none",
+                      "group flex h-12 w-full items-center rounded-xl px-2.5 text-sm font-semibold transition-all duration-200 ease-out outline-none select-none",
                       active
                         ? "bg-[#2771cb] text-white shadow-xs"
                         : isOpen && isHovered
@@ -232,7 +232,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                     </div>
                     <div
                       className={cn(
-                        "flex items-center justify-between min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
+                        "flex items-center justify-between min-w-0 flex-1 overflow-hidden transition-all duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
                         isHovered
                           ? "max-w-[190px] opacity-100 translate-x-0 ml-3"
                           : "max-w-0 opacity-0 -translate-x-2 ml-0 pointer-events-none"
@@ -243,7 +243,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                       </span>
                       <ChevronRight
                         className={cn(
-                          "h-4 w-4 shrink-0 transition-transform duration-200 ml-2",
+                          "h-4 w-4 shrink-0 transition-transform duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] ml-2",
                           isOpen ? "rotate-90" : "",
                           active ? "text-white" : "text-slate-400 group-hover:text-slate-600"
                         )}
@@ -256,7 +256,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                     onClick={(event) => handleProtectedNavigation(event, item.href)}
                     title={!isHovered ? labelText : undefined}
                     className={cn(
-                      "group flex h-12 w-full items-center rounded-xl px-2.5 text-sm font-semibold transition-colors duration-150 outline-none select-none",
+                      "group flex h-12 w-full items-center rounded-xl px-2.5 text-sm font-semibold transition-all duration-200 ease-out outline-none select-none",
                       active
                         ? "bg-[#2771cb] text-white shadow-xs"
                         : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
@@ -267,7 +267,7 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                     </div>
                     <div
                       className={cn(
-                        "flex items-center justify-between min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
+                        "flex items-center justify-between min-w-0 flex-1 overflow-hidden transition-all duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
                         isHovered
                           ? "max-w-[190px] opacity-100 translate-x-0 ml-3"
                           : "max-w-0 opacity-0 -translate-x-2 ml-0 pointer-events-none"
@@ -292,40 +292,45 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
                 {visibleChildren.length > 0 && (
                   <div
                     className={cn(
-                      "overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
-                      isHovered && isOpen
-                        ? "max-h-80 opacity-100 mt-1.5 mb-2"
-                        : "max-h-0 opacity-0 mt-0 mb-0 pointer-events-none"
+                      "submenu-accordion",
+                      isHovered && isOpen && "is-open"
                     )}
                   >
-                    <div className="relative ml-4 mr-1 pl-3 pr-1 py-1 space-y-1">
-                      {visibleChildren.map((child) => {
-                        const childActive = activeChild?.href === child.href;
-                        const childLabel = child.labelKey ? t(child.labelKey) : child.label;
-                        return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            onClick={(event) => handleProtectedNavigation(event, child.href)}
-                            className={cn(
-                              "group/sub relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] transition-all duration-150 select-none",
-                              childActive
-                                ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/80"
-                                : "text-slate-600 font-medium hover:text-slate-950 hover:bg-slate-100/60"
-                            )}
-                          >
-                            <span
+                    <div className="overflow-hidden">
+                      <div
+                        className={cn(
+                          "relative ml-4 mr-1 pl-3 pr-1 py-1 space-y-1 transition-transform duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                          isHovered && isOpen ? "translate-y-0" : "-translate-y-1"
+                        )}
+                      >
+                        {visibleChildren.map((child) => {
+                          const childActive = activeChild?.href === child.href;
+                          const childLabel = child.labelKey ? t(child.labelKey) : child.label;
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={(event) => handleProtectedNavigation(event, child.href)}
                               className={cn(
-                                "h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-150",
+                                "group/sub relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] transition-all duration-200 ease-out select-none",
                                 childActive
-                                  ? "bg-slate-900 ring-2 ring-slate-200"
-                                  : "bg-slate-300 group-hover/sub:bg-slate-500"
+                                  ? "bg-white text-slate-900 font-bold shadow-xs border border-slate-200/80"
+                                  : "text-slate-600 font-medium hover:text-slate-950 hover:bg-slate-100/60"
                               )}
-                            />
-                            <span className="truncate">{childLabel}</span>
-                          </Link>
-                        );
-                      })}
+                            >
+                              <span
+                                className={cn(
+                                  "h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-200",
+                                  childActive
+                                    ? "bg-slate-900 ring-2 ring-slate-200"
+                                    : "bg-slate-300 group-hover/sub:bg-slate-500"
+                                )}
+                              />
+                              <span className="truncate">{childLabel}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
