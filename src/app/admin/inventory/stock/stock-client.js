@@ -156,7 +156,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   return (
     <div className="flex flex-col bg-[#fdfdfd]">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
+        <div className="pl-3 pt-1 sm:pl-4">
           <h2 className="text-[26px] font-bold text-slate-900">{t("stock.title")}</h2>
         </div>
 
