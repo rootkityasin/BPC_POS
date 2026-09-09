@@ -13,6 +13,13 @@ import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { formatOrderId } from "@/lib/order-id";
 import { useTranslation } from "react-i18next";
 import { SetTimeModal } from "@/components/pos/set-time-modal";
+import {
+  DEFAULT_MEAL_PERIODS,
+  loadMealPeriodSettings,
+  saveMealPeriodSettings,
+  getActiveMealPeriodKey,
+  findMatchingCategoryId
+} from "@/modules/pos/meal-periods";
 import { SearchBar } from "@/components/ui/search-bar";
 import { Select } from "@/components/ui/select";
 import { ReturnItemModal } from "@/components/pos/return-item-modal";
@@ -504,6 +511,11 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
   const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [isSetTimeOpen, setIsSetTimeOpen] = useState(false);
+  const [mealPeriods, setMealPeriods] = useState(DEFAULT_MEAL_PERIODS);
+
+  useEffect(() => {
+    setMealPeriods(loadMealPeriodSettings(storeId));
+  }, [storeId]);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [splitCount, setSplitCount] = useState(1);
   const [amountPaid, setAmountPaid] = useState("0");
@@ -813,7 +825,10 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
       <SetTimeModal
         isOpen={isSetTimeOpen}
         onClose={() => setIsSetTimeOpen(false)}
-        onSavePeriods={() => {
+        mealPeriods={mealPeriods}
+        onSavePeriods={(updated) => {
+          saveMealPeriodSettings(updated, storeId);
+          setMealPeriods(updated);
           showToast(
             i18n.language === "bn" ? "খাবারের সময়সূচি সফলভাবে সংরক্ষিত হয়েছে!" : "Meal period times updated successfully!",
             "success"
@@ -886,18 +901,30 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-2 shadow-sm">
-              {allCategories.map((cat) => {
-                const isActive = selectedCategory === cat.id || (cat.id === null && selectedCategory === null);
-                const categoryStoreName = getStoreLabel(cat.store?.nameEn || "", cat.store?.nameBn || "");
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-2 shadow-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                {allCategories.map((cat) => {
+                  const isActive = selectedCategory === cat.id || (cat.id === null && selectedCategory === null);
+                  const categoryStoreName = getStoreLabel(cat.store?.nameEn || "", cat.store?.nameBn || "");
 
-                return (
-                  <button key={cat.id || "all"} type="button" onClick={() => setSelectedCategory(cat.id)} className={isActive ? "rounded-xl bg-[#2771cb] px-4 py-2 text-sm font-semibold text-white" : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"}>
-                    <div>{translateContent(cat.nameEn)}</div>
-                    {showStoreNames && categoryStoreName ? <div data-no-translate="true" className={`text-[10px] ${isActive ? "text-[#e5f1ff]" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
-                  </button>
-                );
-              })}
+                  return (
+                    <button key={cat.id || "all"} type="button" onClick={() => setSelectedCategory(cat.id)} className={isActive ? "rounded-xl bg-[#2771cb] px-4 py-2 text-sm font-semibold text-white" : "rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"}>
+                      <div>{translateContent(cat.nameEn)}</div>
+                      {showStoreNames && categoryStoreName ? <div data-no-translate="true" className={`text-[10px] ${isActive ? "text-[#e5f1ff]" : "text-slate-400"}`}>{categoryStoreName}</div> : null}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsSetTimeOpen(true)}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 transition active:scale-[0.98]"
+                title={i18n.language === "bn" ? "খাবারের সময়সূচি নির্ধারণ করুন" : "Set Meal Period Times"}
+              >
+                <Clock3 className="h-3.5 w-3.5 text-[#2771cb]" />
+                <span>{i18n.language === "bn" ? "সময়সূচি" : "Set Time"}</span>
+              </button>
             </div>
 
             {lowStockItems.length > 0 ? (
