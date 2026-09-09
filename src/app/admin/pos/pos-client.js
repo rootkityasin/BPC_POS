@@ -53,7 +53,7 @@ function getDefaultCategoryKeyForBangladeshTime() {
 }
 
 function formatCurrency(value) {
-  return `৳${Number(value || 0).toFixed(2)}`;
+  return `৳${Math.round(Number(value || 0)).toLocaleString("en-BD")}`;
 }
 
 function normalizeCustomerName(value) {
@@ -633,7 +633,7 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
 
   useEffect(() => {
     if (isCheckoutOpen) {
-      setAmountPaid(String(vatBreakdown.totalAmount.toFixed(2)));
+      setAmountPaid(String(Math.round(vatBreakdown.totalAmount)));
     }
   }, [isCheckoutOpen, vatBreakdown.totalAmount]);
 
@@ -981,7 +981,7 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
               <div className="flex items-center justify-between"><span>Items Total</span><span className="font-medium text-slate-800">{formatCurrency(vatBreakdown.grossAmount)}</span></div>
               <div className="flex items-center justify-between"><span>Less Included VAT</span><span className="font-medium text-slate-800">-{formatCurrency(vatBreakdown.vatAmount)}</span></div>
               <div className="flex items-center justify-between"><span>{t("pos.subtotal")}</span><span className="font-medium text-slate-800">{formatCurrency(getSubtotal())}</span></div>
-              <div className="flex items-center justify-between"><span>{`VAT (${Number(cartVatPercentage || 0).toFixed(2)}%)`}</span><span className="font-medium text-slate-800">{formatCurrency(getTax())}</span></div>
+              <div className="flex items-center justify-between"><span>{`VAT (${Number(cartVatPercentage || 0)}%)`}</span><span className="font-medium text-slate-800">{formatCurrency(getTax())}</span></div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-lg font-black text-slate-900"><span>{t("pos.total")}</span><span>{formatCurrency(getTotal())}</span></div>
             </div>
 

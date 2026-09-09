@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { formatOrderId } from "@/lib/order-id";
 
 function formatCurrency(value) {
-  return `৳${Number(value || 0).toFixed(2)}`;
+  return `৳${Math.round(Number(value || 0)).toLocaleString("en-BD")}`;
 }
 
 export function ReturnItemModal({

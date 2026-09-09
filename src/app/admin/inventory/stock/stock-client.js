@@ -12,7 +12,7 @@ const ITEMS_PER_PAGE = 10;
 
 function formatCurrency(value) {
   if (value === null || value === undefined || value === "") return "Optional";
-  return `৳${Number(value).toFixed(2)}`;
+  return `৳${Math.round(Number(value || 0)).toLocaleString("en-BD")}`;
 }
 
 export function StockClient({ stockItems, canCreate = true, canManage = true, showStoreColumn = false }) {

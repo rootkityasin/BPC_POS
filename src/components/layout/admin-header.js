@@ -46,9 +46,6 @@ export function AdminHeader({ sessionUser, initialNotifications, unreadCount, st
         ) : null}
         <NotificationCenter initialItems={initialNotifications} initialUnreadCount={unreadCount} />
         <AdminLanguageSwitch />
-        <div className="text-right">
-          <div className="text-sm font-semibold text-slate-800 leading-none">{sessionUser.email}</div>
-        </div>
         <Button variant="outline" type="button" onClick={handleLogout} disabled={isLoggingOut}>
           {isLoggingOut ? t("header.logout") : t("header.logout")}
         </Button>

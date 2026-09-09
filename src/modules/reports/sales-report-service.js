@@ -2,7 +2,7 @@ import { endOfDay, format, startOfDay, subDays } from "date-fns";
 import { prisma } from "@/lib/prisma";
 
 function clampCurrency(value) {
-  return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+  return Math.round(Number(value || 0));
 }
 
 function getOrderTotal(order) {

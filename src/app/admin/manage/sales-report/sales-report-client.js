@@ -175,7 +175,7 @@ function DonutChart({
         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate max-w-[110px]">
           {centerSubtitle}
         </span>
-        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight tabular-nums truncate max-w-[125px]">
+        <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight tabular-nums truncate max-w-[145px]">
           {centerTitle}
         </span>
       </div>

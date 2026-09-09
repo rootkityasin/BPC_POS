@@ -584,7 +584,7 @@ export function StoreManagementClient({
                         {selectedStore.location ? translateContent(selectedStore.location) : t("storeManagement.noLocation")}
                       </span>
                     </div>
-                    <div className="mt-2 text-sm text-slate-500">{t("storeManagement.vatSummary", { percentage: Number(selectedStore.vatPercentage || 0).toFixed(2) })}{selectedStore.vatNumber ? ` • ${selectedStore.vatNumber}` : ""}</div>
+                    <div className="mt-2 text-sm text-slate-500">{t("storeManagement.vatSummary", { percentage: Number(selectedStore.vatPercentage || 0) })}{selectedStore.vatNumber ? ` • ${selectedStore.vatNumber}` : ""}</div>
                     <div className="mt-3 flex flex-wrap gap-5 text-xs font-medium uppercase tracking-wide text-slate-400">
                       <span>{t("storeManagement.assignedManagerCount", { count: assignedManagers.length })}</span>
                       <span>{t("storeManagement.storeCode", { code: selectedStore.code })}</span>
