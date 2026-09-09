@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { Select } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
 import { addExpense } from "./actions";
 
@@ -56,10 +57,10 @@ function AddExpenseModal({ isOpen, onClose, data }) {
         {data.scopeMode === "all-stores" ? (
           <label className="block text-sm text-slate-700">
             <span className="mb-2 block font-medium">Which store is this for?</span>
-            <select name="storeId" defaultValue="" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3">
+            <Select name="storeId" defaultValue="" wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
               <option value="">Choose a store</option>
               {data.stores.map((store) => <option key={store.id} value={store.id}>{store.nameEn}</option>)}
-            </select>
+            </Select>
           </label>
         ) : null}
         <div>
@@ -148,10 +149,10 @@ export function ExpenseTrackingClient({ data, canManage }) {
           <div className="grid gap-4 xl:grid-cols-[180px_180px_minmax(0,1fr)]">
             <input type="date" value={data.filters.from} onChange={(event) => updateFilters({ from: event.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400" aria-label="From date" />
             <input type="date" value={data.filters.to} onChange={(event) => updateFilters({ to: event.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400" aria-label="To date" />
-            <select value={data.filters.type} onChange={(event) => updateFilters({ type: event.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400">
+            <Select value={data.filters.type} onChange={(event) => updateFilters({ type: event.target.value })} wrapperClassName="w-full" className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-2xs hover:border-slate-300">
               <option value="">All cost types</option>
               {data.expenseTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
-            </select>
+            </Select>
           </div>
         </Card>
 

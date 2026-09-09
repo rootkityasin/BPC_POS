@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { I18nText } from "@/components/i18n/i18n-text";
 import { deleteManager, resetManagerPassword, saveManagerOverrides, toggleManagerActive } from "./actions";
@@ -294,16 +295,16 @@ export function RolesClient({ managers, permissionSections, stats }) {
               placeholder="Search by manager, email, or store..."
               className="h-12 rounded-2xl"
             />
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-400">
+            <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} wrapperClassName="w-full" className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-2xs hover:border-slate-300">
               <option value="all">All statuses</option>
               <option value="active">Active only</option>
               <option value="inactive">Inactive only</option>
-            </select>
-            <select value={assignmentFilter} onChange={(event) => setAssignmentFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-400">
+            </Select>
+            <Select value={assignmentFilter} onChange={(event) => setAssignmentFilter(event.target.value)} wrapperClassName="w-full" className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-2xs hover:border-slate-300">
               <option value="all">All assignments</option>
               <option value="assigned">Assigned only</option>
               <option value="unassigned">Unassigned only</option>
-            </select>
+            </Select>
           </div>
           <div className="mt-3 text-sm text-slate-500">Showing {filteredManagers.length} of {managers.length} managers.</div>
         </Card>

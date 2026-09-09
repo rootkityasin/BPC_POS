@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Store } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
+import { Select } from "@/components/ui/select";
 
 export function StoreSelector({ stores, activeStoreId }) {
   const router = useRouter();
@@ -45,14 +46,14 @@ export function StoreSelector({ stores, activeStoreId }) {
   if (!stores || stores.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2" data-no-translate="true">
-      <Store className="h-4 w-4 text-slate-400" />
-      <select
+    <div className="flex items-center" data-no-translate="true">
+      <Select
         value={activeStoreId || ""}
         onChange={(e) => handleStoreChange(e.target.value)}
         disabled={isSwitching}
-        data-no-translate="true"
-        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:border-[#2771cb] focus:ring-1 focus:ring-[#2771cb] disabled:opacity-50"
+        icon={Store}
+        align="right"
+        className="h-10 min-w-[150px] rounded-xl border-slate-200/90 bg-white text-sm font-semibold text-slate-800 shadow-2xs hover:border-slate-300"
       >
         <option value="">{t("header.allStores")}</option>
         {stores.map((store) => (
@@ -60,7 +61,7 @@ export function StoreSelector({ stores, activeStoreId }) {
             {getStoreLabel(store)}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { buildReportHtml, buildTableSectionHtml, downloadCsv, openPrintWindow } 
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Select } from "@/components/ui/select";
 
 const ORDER_STATUS_OPTIONS = ["PENDING", "PROCESSING", "COMPLETED", "CANCELLED"];
 function getAggregatePrintStatus(items) {
@@ -397,15 +398,16 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">{t("orders.status")}</label>
-            <select
+            <Select
               value={form.status}
               onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]"
+              wrapperClassName="w-full"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
             >
               {ORDER_STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>{getOrderStatusLabel(t, status)}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>

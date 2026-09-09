@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Select } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { buildReportHtml, buildTableSectionHtml, downloadCsv, openPrintWindow } from "@/modules/reports/report-export";
@@ -465,17 +466,17 @@ export function SalesReportClient({ report }) {
 
           {/* Breakdown Select for Accumulated View */}
           {activeView === "accumulated" && report.filters?.breakdownOptions?.length > 0 ? (
-            <select
+            <Select
               value={report.filters.breakdown}
               onChange={(e) => updateFilters({ breakdown: e.target.value })}
-              className="h-10 rounded-2xl border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-700 outline-none shadow-2xs hover:border-slate-300 focus:border-[#2771cb]"
+              className="h-10 min-w-[170px] rounded-2xl border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300"
             >
               {report.filters.breakdownOptions.map((opt) => (
                 <option key={opt} value={opt}>
                   {opt === "category" ? "Category Breakdown" : opt === "subcategory" ? "Item Breakdown" : opt === "store" ? "Store Breakdown" : "Daily Breakdown"}
                 </option>
               ))}
-            </select>
+            </Select>
           ) : null}
 
           {/* Export Actions */}

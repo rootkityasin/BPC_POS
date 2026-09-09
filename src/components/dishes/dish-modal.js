@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { X, ImagePlus } from "lucide-react";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select } from "@/components/ui/select";
 
 const INITIAL_FORM = {
   nameEn: "",
@@ -154,16 +155,16 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.category")}</label>
-              <select value={form.categoryId} onChange={(e) => setForm((c) => ({ ...c, categoryId: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]">
+              <Select value={form.categoryId} onChange={(e) => setForm((c) => ({ ...c, categoryId: e.target.value }))} wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
                 {categories.map((cat) => (<option key={cat.id} value={cat.id}>{translateContent(cat.nameEn)}</option>))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.subCategory")}</label>
-              <select value={form.subCategoryId} onChange={(e) => setForm((c) => ({ ...c, subCategoryId: e.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]">
+              <Select value={form.subCategoryId} onChange={(e) => setForm((c) => ({ ...c, subCategoryId: e.target.value }))} wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
                 <option value="">{t("common.noSubCategory")}</option>
                 {availableSubCategories.map((sc) => (<option key={sc.id} value={sc.id}>{translateContent(sc.nameEn)}</option>))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.createdBy")}</label>

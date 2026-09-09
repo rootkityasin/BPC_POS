@@ -14,6 +14,7 @@ import { formatOrderId } from "@/lib/order-id";
 import { useTranslation } from "react-i18next";
 import { SetTimeModal } from "@/components/pos/set-time-modal";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Select } from "@/components/ui/select";
 import { ReturnItemModal } from "@/components/pos/return-item-modal";
 import { QuickRestockModal } from "@/components/pos/quick-restock-modal";
 
@@ -420,11 +421,11 @@ function PaymentDetailsModal({
           <div className="grid gap-3 sm:grid-cols-[1fr_140px] sm:items-end">
             <label className="block text-sm font-semibold text-slate-700">
               <span className="mb-2 block">Split by:</span>
-              <select value={splitCount} onChange={(event) => onSplitCountChange(Number(event.target.value))} className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2f6fc6]">
+              <Select value={splitCount} onChange={(event) => onSplitCountChange(Number(event.target.value))} wrapperClassName="w-full" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 outline-none">
                 {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
                   <option key={count} value={count}>{count} person</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <div className="text-sm font-semibold text-slate-700">
               <div className="mb-2">Amount per head:</div>
@@ -843,14 +844,18 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
                 </div>
 
                 {showStoreNames ? (
-                  <div data-no-translate="true" className="flex h-14 items-center rounded-2xl border border-slate-200/80 bg-white px-4 shadow-sm">
-                    <Store className="mr-2 h-4 w-4 text-slate-400" />
-                    <select value={selectedStoreFilter} onChange={(event) => setSelectedStoreFilter(event.target.value)} className="bg-transparent text-sm text-slate-700 outline-none">
+                  <div data-no-translate="true" className="shrink-0">
+                    <Select
+                      value={selectedStoreFilter}
+                      onChange={(event) => setSelectedStoreFilter(event.target.value)}
+                      icon={Store}
+                      className="h-14 min-w-[170px] rounded-2xl border-slate-200/80 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm hover:border-slate-300"
+                    >
                       <option value="all">{t("header.allStores")}</option>
                       {stores.map((entry) => (
                         <option key={entry.id} value={entry.id}>{getStoreLabel(entry.nameEn, entry.nameBn)}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 ) : null}
 

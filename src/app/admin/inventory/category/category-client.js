@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Download, ListFilter, Pencil, Plus, Trash2, 
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { SearchBar } from "@/components/ui/search-bar";
+import { Select } from "@/components/ui/select";
 
 const CATEGORY_FORM = { nameEn: "", color: "#2771cb" };
 
@@ -415,17 +416,18 @@ export function CategoryClient({
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.category")}</label>
-                    <select
+                    <Select
                       value={subCategoryForm.categoryId}
                       onChange={(event) => setSubCategoryForm((current) => ({ ...current, categoryId: event.target.value }))}
-                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[#2771cb]"
+                      wrapperClassName="w-full"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
                     >
                       {subCategoryChoices.map((category) => (
                         <option key={category.id} value={category.id}>
                           {translateContent(category.nameEn)}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 </>
               )}

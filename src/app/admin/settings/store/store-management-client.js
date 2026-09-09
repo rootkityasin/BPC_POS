@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ModalShell } from "@/components/ui/modal-shell";
+import { Select } from "@/components/ui/select";
 import { SearchBar } from "@/components/ui/search-bar";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { assignStoreManager, createStoreManager, saveStoreDetails, unassignStoreManager } from "./actions";
@@ -242,7 +243,7 @@ function AssignManagerModal({ isOpen, selectedStore, managers, onClose, onToast,
 
         <label className="block text-sm text-slate-700">
           <span className="mb-2 block font-medium">{t("storeManagement.manager")}</span>
-          <select name="managerId" defaultValue="" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <Select name="managerId" defaultValue="" wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
             <option value="">{t("storeManagement.selectManager")}</option>
             {managerOptions.map((manager) => (
               <option key={manager.id} value={manager.id}>
@@ -258,7 +259,7 @@ function AssignManagerModal({ isOpen, selectedStore, managers, onClose, onToast,
                     })}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <ModalActions pending={pending} submitLabel={t("storeManagement.assignManager")} onCancel={onClose} />
