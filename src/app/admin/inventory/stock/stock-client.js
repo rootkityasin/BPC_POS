@@ -32,6 +32,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
     quantity: "",
     supplier: "",
     createdBy: "",
+    buyingPrice: "",
     price: ""
   });
 
@@ -74,7 +75,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
 
   function resetForm() {
     setEditingItem(null);
-    setFormData({ name: "", nameBn: "", quantity: "", supplier: "", createdBy: "", price: "" });
+    setFormData({ name: "", nameBn: "", quantity: "", supplier: "", createdBy: "", buyingPrice: "", price: "" });
     setError("");
   }
 
@@ -92,6 +93,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
       quantity: String(item.quantity ?? ""),
       supplier: item.supplier || "",
       createdBy: item.createdBy || "",
+      buyingPrice: item.buyingPrice === null || item.buyingPrice === undefined ? "" : String(item.buyingPrice),
       price: item.price === null || item.price === undefined ? "" : String(item.price)
     });
     setError("");
@@ -146,6 +148,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           quantity: Number(formData.quantity || 0),
           supplier: formData.supplier,
           createdBy: formData.createdBy,
+          buyingPrice: formData.buyingPrice === "" ? null : Number(formData.buyingPrice),
           price: formData.price === "" ? null : Number(formData.price)
         })
       });
@@ -224,7 +227,14 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                     )}
                   </td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.quantity}</td>
-                  <td className="px-8 py-5 font-medium text-slate-800">{formatCurrency(item.price)}</td>
+                  <td className="px-8 py-5">
+                    <div className="font-semibold text-slate-800">{formatCurrency(item.price)}</div>
+                    {item.buyingPrice !== null && item.buyingPrice !== undefined && item.buyingPrice !== "" && (
+                      <div className="mt-0.5 text-xs text-slate-400 font-normal">
+                        {i18n.language === "bn" ? `ক্রয়: ${formatCurrency(item.buyingPrice)}` : `Cost: ${formatCurrency(item.buyingPrice)}`}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{translateContent(item.supplier)}</td>
                   {showStoreColumn ? <td className="px-8 py-5 font-medium text-slate-800">{item.store?.nameEn || "Unknown store"}</td> : null}
@@ -344,8 +354,53 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
             </div>
           </div>
 
-          {/* Quantity and Price */}
+          {/* Buying Price and Selling Price */}
           <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>{t("stock.buyingPrice")}</span>
+                <span className="text-[11px] font-normal text-slate-400 lowercase">
+                  ({i18n.language === "bn" ? "ঐচ্ছিক" : "optional"})
+                </span>
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">৳</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.buyingPrice}
+                  onChange={(event) => setFormData((current) => ({ ...current, buyingPrice: event.target.value }))}
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                  placeholder={t("stock.buyingPricePlaceholder")}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>{t("stock.sellingPrice")}</span>
+                <span className="text-[11px] font-normal text-slate-400 lowercase">
+                  ({i18n.language === "bn" ? "ঐচ্ছিক" : "optional"})
+                </span>
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">৳</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.price}
+                  onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                  placeholder={t("stock.sellingPricePlaceholder")}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Quantity and Supplier */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                 {t("common.quantity")}
@@ -361,27 +416,6 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
             </div>
 
             <div>
-              <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                <span>{t("stock.priceOptional")}</span>
-              </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">৳</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={formData.price}
-                  onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
-                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                  placeholder={t("stock.pricePlaceholder")}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Supplier and Created By */}
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                 {t("common.supplier")}
               </label>
@@ -393,19 +427,20 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                 placeholder={t("stock.supplierPlaceholder")}
               />
             </div>
+          </div>
 
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                {t("common.createdBy")}
-              </label>
-              <input
-                type="text"
-                value={formData.createdBy}
-                onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
-                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                placeholder={t("stock.createdByPlaceholder")}
-              />
-            </div>
+          {/* Created By */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+              {t("common.createdBy")}
+            </label>
+            <input
+              type="text"
+              value={formData.createdBy}
+              onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder={t("stock.createdByPlaceholder")}
+            />
           </div>
 
           {error ? (
