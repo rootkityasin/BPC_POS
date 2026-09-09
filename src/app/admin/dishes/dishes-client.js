@@ -231,11 +231,11 @@ export function DishesClient({ dishes, categories, stockItems, canManage, userEm
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{i18n.language === "bn" && dish.nameBn?.trim() ? dish.nameBn : translateContent(dish.nameEn)}</div>
+                      <div className="font-semibold text-slate-900" data-no-translate="true">{i18n.language === "bn" && dish.nameBn?.trim() ? dish.nameBn : translateContent(dish.nameEn)}</div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {dish.ingredients.length > 0 ? (
                           dish.ingredients.slice(0, 3).map((ing) => (
-                            <span key={ing.id} className="rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#2771cb]">
+                            <span key={ing.id} data-no-translate="true" className="rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#2771cb]">
                               {i18n.language === "bn" && ing.stockItem?.nameBn?.trim() ? ing.stockItem.nameBn : translateContent(ing.stockItem?.name || "Item")}
                             </span>
                           ))

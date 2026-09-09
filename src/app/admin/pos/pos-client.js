@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronDown, Clock3, Heart, PencilLine, ShoppingCart, Store, Trash2, Wallet } from "lucide-react";
+import { AlertCircle, ChevronDown, Clock3, CreditCard, Heart, PencilLine, ShoppingCart, Store, Trash2, Wallet } from "lucide-react";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { usePosStore } from "@/modules/pos/pos-store";
 import { createOrder } from "@/modules/pos/pos-actions";
@@ -242,7 +242,7 @@ function useCachedStoreLabels(storeEntries) {
 }
 
 function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -274,7 +274,11 @@ function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
         </div>
         <div className="pt-3">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-[15px] font-semibold text-slate-900 line-clamp-1">{translateContent(product.nameEn)}</h3>
+            <h3 className="text-[15px] font-semibold text-slate-900 line-clamp-1" data-no-translate="true">
+              {i18n.language === "bn" && product.nameBn?.trim()
+                ? product.nameBn
+                : translateContent(product.nameEn)}
+            </h3>
           </div>
           {showStoreName ? <div data-no-translate="true" className="mt-1 text-xs font-medium text-slate-400">{storeLabel}</div> : null}
           <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-slate-500">
@@ -303,8 +307,8 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName,
   const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
 
-  const displayName = i18n.language === "bn" && (item.nameBn?.trim() || item.name?.trim())
-    ? (item.nameBn?.trim() || item.name)
+  const displayName = i18n.language === "bn" && item.nameBn?.trim()
+    ? item.nameBn
     : translateContent(item.nameEn || item.name);
 
   return (
@@ -316,7 +320,7 @@ function CartItem({ item, onUpdateQuantity, onRemove, onEditNote, showStoreName,
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h4 className="text-[13px] font-semibold text-slate-800">{displayName}</h4>
+              <h4 className="text-[13px] font-semibold text-slate-800" data-no-translate="true">{displayName}</h4>
               {showStoreName ? <div data-no-translate="true" className="mt-0.5 text-[11px] text-slate-400">{storeLabel}</div> : null}
               {item.note ? <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{t("pos.note", { note: item.note })}</p> : null}
             </div>
@@ -381,93 +385,168 @@ function PaymentDetailsModal({
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-4xl" onBackdropClick={onClose}>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_320px]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_330px]">
         <div>
-          <h3 className="text-3xl font-bold text-[#2f6fc6]">Payment Details</h3>
-
-          <div className="mt-8 space-y-5">
-            <div className="grid gap-3 md:grid-cols-[130px_minmax(0,1fr)] md:items-center">
-              <label className="text-xl font-medium text-slate-700">Customer Name</label>
-              <div>
-                <input type="text" value={customerName} onChange={(event) => onCustomerNameChange(event.target.value)} placeholder="Enter customer name" className={`w-full rounded-xl border px-4 py-3 text-base outline-none ${hasValidName ? "border-slate-200 focus:border-[#2f6fc6]" : "border-red-300 focus:border-red-500"}`} />
-                {!hasValidName ? <p className="mt-2 text-xs text-red-500">Use a real name with Bangla or English letters only.</p> : null}
-              </div>
+          <div className="mb-6 flex items-start gap-4 pr-8">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+              <CreditCard className="h-6 w-6 stroke-[2.2]" />
             </div>
-            <div className="grid gap-3 md:grid-cols-[130px_minmax(0,1fr)] md:items-center">
-              <label className="text-xl font-medium text-slate-700">Contact Number</label>
-              <div>
-                <div className={`flex items-center rounded-xl border bg-white ${hasValidPhone ? "border-slate-200 focus-within:border-[#2f6fc6]" : "border-red-300 focus-within:border-red-500"}`}>
-                  <span className="rounded-l-xl bg-slate-50 px-4 py-3 text-base font-medium text-slate-500">+880</span>
-                  <input type="tel" inputMode="numeric" value={normalizedCustomerPhone} onChange={(event) => onCustomerPhoneChange(normalizeBangladeshPhone(event.target.value))} placeholder="1712345678" className="w-full rounded-r-xl border-0 px-4 py-3 text-base outline-none placeholder:text-slate-400" />
-                </div>
-                {!hasValidPhone ? <p className="mt-2 text-xs text-red-500">Use a valid Bangladesh number like `01XXXXXXXXX` or `+8801XXXXXXXXX`.</p> : null}
-              </div>
+            <div>
+              <h3 className="text-xl font-bold tracking-tight text-slate-900">Payment Details</h3>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                Enter customer details and select a payment method to complete the sale.
+              </p>
             </div>
           </div>
 
-          <div className="mt-8 space-y-3">
-            {PAYMENT_METHODS.map((method) => {
-              const active = paymentMethod === method.id;
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">Customer Name</label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(event) => onCustomerNameChange(event.target.value)}
+                placeholder="Enter customer name"
+                className={`h-11 w-full rounded-xl border bg-slate-50/50 px-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:bg-white focus:ring-2 ${
+                  hasValidName
+                    ? "border-slate-200/90 focus:border-[#2771cb] focus:ring-[#2771cb]/15"
+                    : "border-rose-300 focus:border-rose-500 focus:ring-rose-500/15"
+                }`}
+              />
+              {!hasValidName ? <p className="mt-1.5 text-xs font-medium text-rose-500">Use a real name with Bangla or English letters only.</p> : null}
+            </div>
 
-              return (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => onPaymentMethodChange(method.id)}
-                  className={`flex w-full max-w-[220px] items-center gap-3 rounded-2xl px-5 py-4 text-left text-lg font-medium transition-colors ${active ? "bg-[#2f6fc6] text-white" : "text-slate-500 hover:bg-slate-50"}`}
-                >
-                  <Wallet className="h-5 w-5" />
-                  {method.label}
-                </button>
-              );
-            })}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">Contact Number</label>
+              <div
+                className={`flex h-11 items-center overflow-hidden rounded-xl border bg-slate-50/50 transition-all duration-150 focus-within:bg-white focus-within:ring-2 ${
+                  hasValidPhone
+                    ? "border-slate-200/90 focus-within:border-[#2771cb] focus-within:ring-[#2771cb]/15"
+                    : "border-rose-300 focus-within:border-rose-500 focus-within:ring-rose-500/15"
+                }`}
+              >
+                <span className="flex h-full items-center border-r border-slate-200/80 bg-slate-100/70 px-3.5 text-xs font-bold text-slate-500">+880</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={normalizedCustomerPhone}
+                  onChange={(event) => onCustomerPhoneChange(normalizeBangladeshPhone(event.target.value))}
+                  placeholder="1712345678"
+                  className="h-full w-full bg-transparent px-3.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                />
+              </div>
+              {!hasValidPhone ? <p className="mt-1.5 text-xs font-medium text-rose-500">Use a valid Bangladesh number like `01XXXXXXXXX` or `+8801XXXXXXXXX`.</p> : null}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label className="mb-2 block text-xs font-semibold text-slate-700">Payment Method</label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {PAYMENT_METHODS.map((method) => {
+                const active = paymentMethod === method.id;
+
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => onPaymentMethodChange(method.id)}
+                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 px-2 text-xs font-bold transition-all ${
+                      active
+                        ? "border-[#2771cb] bg-[#e5f1ff] text-[#2771cb] shadow-xs"
+                        : "border-slate-200/90 bg-slate-50/50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                    }`}
+                  >
+                    <Wallet className="h-4 w-4" />
+                    <span>{method.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         <div>
-          <div className="grid gap-3 sm:grid-cols-[1fr_140px] sm:items-end">
-            <label className="block text-sm font-semibold text-slate-700">
-              <span className="mb-2 block">Split by:</span>
-              <Select value={splitCount} onChange={(event) => onSplitCountChange(Number(event.target.value))} wrapperClassName="w-full" className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 outline-none">
+          <div className="grid gap-3 sm:grid-cols-[1fr_130px] sm:items-end">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">Split by:</label>
+              <Select
+                value={splitCount}
+                onChange={(event) => onSplitCountChange(Number(event.target.value))}
+                wrapperClassName="w-full"
+                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3 text-xs font-semibold text-slate-800 outline-none focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              >
                 {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
-                  <option key={count} value={count}>{count} person</option>
+                  <option key={count} value={count}>{count} {count === 1 ? "person" : "people"}</option>
                 ))}
               </Select>
-            </label>
-            <div className="text-sm font-semibold text-slate-700">
-              <div className="mb-2">Amount per head:</div>
-              <div className="rounded-xl border border-slate-200 px-4 py-3 text-right text-lg font-bold text-slate-900">{formatCurrency(amountPerHead)}</div>
+            </div>
+            <div>
+              <div className="mb-1.5 text-xs font-semibold text-slate-700">Per head:</div>
+              <div className="flex h-11 items-center justify-end rounded-xl border border-slate-200/90 bg-slate-50/50 px-3 text-sm font-bold text-slate-900">
+                {formatCurrency(amountPerHead)}
+              </div>
             </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-[#9bc1ff] bg-white">
-            <div className="space-y-3 px-5 py-4 text-sm text-slate-600">
-              <div className="flex items-center justify-between"><span>Total Items</span><span className="font-semibold text-slate-900">{itemCount}</span></div>
-              <div className="flex items-center justify-between"><span>Subtotal</span><span className="font-semibold text-slate-900">{formatCurrency(totals.subtotalAmount)}</span></div>
-              <div className="flex items-center justify-between"><span>Included VAT</span><span className="font-semibold text-slate-900">{formatCurrency(totals.vatAmount)}</span></div>
-              <div className="flex items-center justify-between"><span>Items Total</span><span className="font-semibold text-slate-900">{formatCurrency(totals.grossAmount)}</span></div>
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="space-y-2 bg-slate-50/60 px-5 py-4 text-xs font-medium text-slate-600">
+              <div className="flex items-center justify-between"><span>Total Items</span><span className="font-bold text-slate-900">{itemCount}</span></div>
+              <div className="flex items-center justify-between"><span>Subtotal</span><span className="font-bold text-slate-900">{formatCurrency(totals.subtotalAmount)}</span></div>
+              <div className="flex items-center justify-between"><span>Included VAT</span><span className="font-bold text-slate-900">{formatCurrency(totals.vatAmount)}</span></div>
+              <div className="flex items-center justify-between"><span>Items Total</span><span className="font-bold text-slate-900">{formatCurrency(totals.grossAmount)}</span></div>
             </div>
-            <div className="border-t border-[#9bc1ff] px-5 py-4">
-              <div className="flex items-center justify-between text-3xl font-bold text-slate-900">
+            <div className="border-t border-b border-slate-200/90 bg-white px-5 py-3">
+              <div className="flex items-center justify-between text-2xl font-black text-slate-900">
                 <span>Total:</span>
-                <span>{formatCurrency(totals.totalAmount)}</span>
+                <span className="text-[#2771cb]">{formatCurrency(totals.totalAmount)}</span>
               </div>
             </div>
-            <div className="space-y-4 px-5 py-4">
-              <div className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3">
-                <div className="font-medium text-emerald-600">{paymentMethod === "cash" ? "Cash Received" : paymentMethod === "ssl" ? "SSL Payment" : "Mobile Payment"}</div>
-                <input type="number" min="0" step="0.01" value={amountPaid} onChange={(event) => onAmountPaidChange(event.target.value)} className="w-full rounded-none border border-[#f7c8a8] px-3 py-2 text-right outline-none focus:border-[#2f6fc6]" />
+            <div className="space-y-3 bg-slate-50/30 px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                  {paymentMethod === "cash" ? "Cash Received" : paymentMethod === "ssl" ? "SSL Payment" : "Mobile Payment"}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={amountPaid}
+                  onChange={(event) => onAmountPaidChange(event.target.value)}
+                  className="h-10 w-32 rounded-xl border border-slate-200/90 bg-white px-3 text-right text-sm font-bold text-slate-900 outline-none transition focus:border-[#2771cb] focus:ring-2 focus:ring-[#2771cb]/15"
+                />
               </div>
-              <div className="flex items-center justify-between text-sm"><span className="text-[#13508b]">Due</span><span className="font-semibold text-slate-900">{formatCurrency(due)}</span></div>
-              <div className="flex items-center justify-between text-3xl font-bold text-slate-900"><span>Change Due</span><span>{formatCurrency(changeDue)}</span></div>
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-[#2771cb]">Due</span>
+                <span className="font-bold text-slate-900">{formatCurrency(due)}</span>
+              </div>
+              <div className="flex items-center justify-between text-base font-bold text-slate-900">
+                <span>Change Due</span>
+                <span className="text-emerald-600">{formatCurrency(changeDue)}</span>
+              </div>
             </div>
           </div>
 
-          <div className="mt-4 space-y-3">
-            <button type="button" onClick={onConfirm} disabled={isProcessing || !canConfirm} className="w-full rounded-2xl bg-[#2f6fc6] px-5 py-4 text-lg font-semibold text-white transition-colors hover:bg-[#255ca8] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500">
-              {isProcessing ? "Processing..." : "Complete Order & Print"}
-            </button>
-            {(!hasValidName || !hasValidPhone) ? <p className="text-sm text-amber-600">Fix the invalid customer information before completing the order.</p> : null}
+          <div className="mt-5 space-y-2">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-11 flex-1 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={isProcessing || !canConfirm}
+                className="h-11 flex-1 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isProcessing ? "Processing..." : "Complete & Print"}
+              </button>
+            </div>
+            {(!hasValidName || !hasValidPhone) ? (
+              <p className="text-center text-xs font-medium text-amber-600">Fix the invalid customer information before completing the order.</p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -694,7 +773,12 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
       });
 
       const receiptPaperWidth = result.store?.receiptPaperWidth || "58mm";
-      const receiptHtml = buildReceiptHtml(result, t, (item) => item.itemName || "Item", {
+      const receiptHtml = buildReceiptHtml(result, t, (item) => {
+        if (i18n.language === "bn" && (item.dish?.nameBn?.trim() || item.stockItem?.nameBn?.trim() || item.nameBn?.trim())) {
+          return item.dish?.nameBn?.trim() || item.stockItem?.nameBn?.trim() || item.nameBn?.trim();
+        }
+        return item.itemName || "Item";
+      }, {
         paperWidthOverride: receiptPaperWidth
       });
       printHtmlDirect(receiptHtml);
@@ -744,10 +828,18 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
       items: cart.map((item) => ({
         id: item.id,
         itemName: item.name,
+        nameBn: item.nameBn || "",
         quantity: item.quantity,
         unitPrice: item.price,
         note: item.note || ""
       }))
+    };
+
+    const getItemDraftLabel = (item) => {
+      if (i18n.language === "bn" && (item.nameBn?.trim() || item.dish?.nameBn?.trim() || item.stockItem?.nameBn?.trim())) {
+        return item.nameBn?.trim() || item.dish?.nameBn?.trim() || item.stockItem?.nameBn?.trim();
+      }
+      return item.itemName || "Item";
     };
 
     const popup = openPrintPreview({
@@ -755,8 +847,8 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
       defaultPaperWidth: previewStore.receiptPaperWidth || "58mm",
       printers: previewStore.terminals || [],
       previews: {
-        "58mm": buildReceiptHtml(draftOrder, t, (item) => item.itemName || "Item", { paperWidthOverride: "58mm" }),
-        "80mm": buildReceiptHtml(draftOrder, t, (item) => item.itemName || "Item", { paperWidthOverride: "80mm" })
+        "58mm": buildReceiptHtml(draftOrder, t, getItemDraftLabel, { paperWidthOverride: "58mm" }),
+        "80mm": buildReceiptHtml(draftOrder, t, getItemDraftLabel, { paperWidthOverride: "80mm" })
       }
     });
 

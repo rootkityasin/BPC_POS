@@ -150,13 +150,21 @@ function ModalActions({ pending, submitLabel, onCancel }) {
   const { t } = useTranslation();
 
   return (
-    <div className="mt-8 flex gap-3">
-      <button type="button" onClick={onCancel} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">
+    <div className="mt-6 flex items-center gap-3 border-t border-slate-100/90 pt-3">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="flex-1 h-11 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+      >
         {t("common.cancel")}
       </button>
-      <Button type="submit" className="flex-1 rounded-2xl py-3" disabled={pending}>
+      <button
+        type="submit"
+        disabled={pending}
+        className="flex-1 h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+      >
         {pending ? t("common.saving") : submitLabel}
-      </Button>
+      </button>
     </div>
   );
 }
@@ -176,34 +184,75 @@ function StoreDetailsModal({ isOpen, selectedStore, allowUserStoreFallback, onCl
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-2xl" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">{selectedStore ? t("storeManagement.editStore") : t("storeManagement.createStore")}</h3>
-      <p className="mt-2 text-sm text-slate-500">{t("storeManagement.storeModalSubtitle")}</p>
-      <form action={formAction} className="mt-6 space-y-5">
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+          <Store className="h-6 w-6 stroke-[2.2]" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {selectedStore ? t("storeManagement.editStore") : t("storeManagement.createStore")}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {t("storeManagement.storeModalSubtitle")}
+          </p>
+        </div>
+      </div>
+
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
         <input type="hidden" name="allowUserStoreFallback" value={String(allowUserStoreFallback)} />
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <StoreLogoInput selectedStore={selectedStore} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <StoreLogoInput selectedStore={selectedStore} />
+          </div>
 
-          <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">{t("storeManagement.storeName")}</span>
-            <input name="storeName" type="text" required defaultValue={selectedStore?.nameEn || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.storeNamePlaceholder")} />
-          </label>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.storeName")}</label>
+            <input
+              name="storeName"
+              type="text"
+              required
+              defaultValue={selectedStore?.nameEn || ""}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder={t("storeManagement.storeNamePlaceholder")}
+            />
+          </div>
 
-          <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">{t("storeManagement.storeLocation")}</span>
-            <input name="storeLocation" type="text" defaultValue={selectedStore?.location || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.storeLocationPlaceholder")} />
-          </label>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.storeLocation")}</label>
+            <input
+              name="storeLocation"
+              type="text"
+              defaultValue={selectedStore?.location || ""}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder={t("storeManagement.storeLocationPlaceholder")}
+            />
+          </div>
 
-          <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">{t("storeManagement.vatNumber")}</span>
-            <input name="vatNumber" type="text" defaultValue={selectedStore?.vatNumber || ""} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.vatNumberPlaceholder")} />
-          </label>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.vatNumber")}</label>
+            <input
+              name="vatNumber"
+              type="text"
+              defaultValue={selectedStore?.vatNumber || ""}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder={t("storeManagement.vatNumberPlaceholder")}
+            />
+          </div>
 
-          <label className="block text-sm text-slate-700">
-            <span className="mb-2 block font-medium">{t("storeManagement.vatPercentage")}</span>
-            <input name="vatPercentage" type="number" min="0" step="0.01" defaultValue={selectedStore?.vatPercentage ?? 0} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="5" />
-          </label>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.vatPercentage")}</label>
+            <input
+              name="vatPercentage"
+              type="number"
+              min="0"
+              step="0.01"
+              defaultValue={selectedStore?.vatPercentage ?? 0}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder="5"
+            />
+          </div>
         </div>
 
         <ModalActions pending={pending} submitLabel={selectedStore ? t("storeManagement.saveStore") : t("storeManagement.createStore")} onCancel={onClose} />
@@ -236,14 +285,31 @@ function AssignManagerModal({ isOpen, selectedStore, managers, onClose, onToast,
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-lg" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">{t("storeManagement.assignExistingManager")}</h3>
-      <p className="mt-2 text-sm text-slate-500">{t("storeManagement.assignManagerSubtitle", { storeName: selectedStore?.nameEn ? translateContent(selectedStore.nameEn) : t("storeManagement.thisStore") })}</p>
-      <form action={formAction} className="mt-6 space-y-4">
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+          <Users className="h-6 w-6 stroke-[2.2]" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {t("storeManagement.assignExistingManager")}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {t("storeManagement.assignManagerSubtitle", { storeName: selectedStore?.nameEn ? translateContent(selectedStore.nameEn) : t("storeManagement.thisStore") })}
+          </p>
+        </div>
+      </div>
+
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
 
-        <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">{t("storeManagement.manager")}</span>
-          <Select name="managerId" defaultValue="" wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.manager")}</label>
+          <Select
+            name="managerId"
+            defaultValue=""
+            wrapperClassName="w-full"
+            className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-semibold text-slate-800 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+          >
             <option value="">{t("storeManagement.selectManager")}</option>
             {managerOptions.map((manager) => (
               <option key={manager.id} value={manager.id}>
@@ -260,7 +326,7 @@ function AssignManagerModal({ isOpen, selectedStore, managers, onClose, onToast,
               </option>
             ))}
           </Select>
-        </label>
+        </div>
 
         <ModalActions pending={pending} submitLabel={t("storeManagement.assignManager")} onCancel={onClose} />
       </form>
@@ -284,26 +350,53 @@ function CreateManagerModal({ isOpen, selectedStore, onClose, onToast, onSuccess
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-lg" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">{t("storeManagement.createManager")}</h3>
-      <p className="mt-2 text-sm text-slate-500">{t("storeManagement.createManagerSubtitle", { storeName: selectedStore?.nameEn ? translateContent(selectedStore.nameEn) : t("storeManagement.thisStore") })}</p>
-      <form action={formAction} className="mt-6 space-y-4">
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+          <UserPlus className="h-6 w-6 stroke-[2.2]" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {t("storeManagement.createManager")}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {t("storeManagement.createManagerSubtitle", { storeName: selectedStore?.nameEn ? translateContent(selectedStore.nameEn) : t("storeManagement.thisStore") })}
+          </p>
+        </div>
+      </div>
+
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="storeId" value={selectedStore?.id || ""} />
 
-        <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">{t("storeManagement.managerName")}</span>
-          <input name="managerName" type="text" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.managerNamePlaceholder")} />
-        </label>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.managerName")}</label>
+          <input
+            name="managerName"
+            type="text"
+            className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+            placeholder={t("storeManagement.managerNamePlaceholder")}
+          />
+        </div>
 
-        <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">{t("storeManagement.managerEmail")}</span>
-          <input name="managerEmail" type="email" className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder={t("storeManagement.managerEmailPlaceholder")} />
-        </label>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.managerEmail")}</label>
+          <input
+            name="managerEmail"
+            type="email"
+            className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+            placeholder={t("storeManagement.managerEmailPlaceholder")}
+          />
+        </div>
 
-        <label className="block text-sm text-slate-700">
-          <span className="mb-2 block font-medium">{t("storeManagement.password")}</span>
-          <input name="managerPassword" type="text" defaultValue={DEFAULT_MANAGER_PASSWORD} className="w-full rounded-2xl border border-slate-200 px-4 py-3" />
-          <span className="mt-2 block text-xs text-slate-500">{t("storeManagement.defaultPasswordHint", { password: DEFAULT_MANAGER_PASSWORD })}</span>
-        </label>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("storeManagement.password")}</label>
+          <input
+            name="managerPassword"
+            type="text"
+            defaultValue={DEFAULT_MANAGER_PASSWORD}
+            className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+          />
+          <span className="mt-1.5 block text-xs text-slate-500">{t("storeManagement.defaultPasswordHint", { password: DEFAULT_MANAGER_PASSWORD })}</span>
+        </div>
 
         <ModalActions pending={pending} submitLabel={t("storeManagement.createManager")} onCancel={onClose} />
       </form>
@@ -326,9 +419,21 @@ function UnassignManagerModal({ isOpen, manager, storeId, onClose, onToast, onSu
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-md" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-slate-900">{t("storeManagement.removeManager")}</h3>
-      <p className="mt-2 text-sm text-slate-500">{manager ? t("storeManagement.removeManagerPrompt", { name: manager.name }) : t("storeManagement.removeManagerFallback")}</p>
-      <form action={formAction} className="mt-6">
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 shadow-xs">
+          <UserMinus className="h-6 w-6 stroke-[2.2]" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {t("storeManagement.removeManager")}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {manager ? t("storeManagement.removeManagerPrompt", { name: manager.name }) : t("storeManagement.removeManagerFallback")}
+          </p>
+        </div>
+      </div>
+
+      <form action={formAction}>
         <input type="hidden" name="managerId" value={manager?.id || ""} />
         <input type="hidden" name="storeId" value={storeId || ""} />
         <ModalActions pending={pending} submitLabel={t("storeManagement.removeManager")} onCancel={onClose} />

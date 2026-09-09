@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Store } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { cn } from "@/lib/utils";
@@ -115,17 +115,24 @@ export function AdminSidebar({ sessionUser, unreadCount, activeStoreId }) {
   return (
     <>
       <ModalShell isOpen={Boolean(storePromptTarget)} maxWidthClass="max-w-md" onBackdropClick={() => setStorePromptTarget(null)}>
-        <h3 className="text-xl font-bold text-slate-900">Select a Store First</h3>
-        <p className="mt-2 text-xs leading-5 text-slate-500">
-          You are currently viewing <strong>All Stores</strong>. Choose a specific store from the top bar before opening this store-specific section.
-        </p>
-        <div className="mt-5 flex gap-3">
+        <div className="mb-6 flex items-start gap-4 pr-8">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+            <Store className="h-6 w-6 stroke-[2.2]" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-900">Select a Store First</h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              You are currently viewing <strong>All Stores</strong>. Choose a specific store from the top bar before opening this store-specific section.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end border-t border-slate-100/90 pt-3">
           <button
             type="button"
             onClick={() => setStorePromptTarget(null)}
-            className="flex-1 rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+            className="w-full h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] flex items-center justify-center"
           >
-            Close
+            Got It
           </button>
         </div>
       </ModalShell>

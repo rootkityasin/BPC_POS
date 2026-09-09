@@ -12,7 +12,7 @@ export async function GET(_, { params }) {
   }
 
   const receiptUrl = `${env.appUrl.replace(/\/$/, "")}/r/${encodeURIComponent(order.receiptPublicCode)}`;
-  const html = buildReceiptHtml(order, null, (item) => item.itemName || item.dish?.nameEn || item.stockItem?.name || "Item", {
+  const html = buildReceiptHtml(order, null, (item) => item.dish?.nameBn || item.stockItem?.nameBn || item.nameBn || item.itemName || item.dish?.nameEn || item.stockItem?.name || "Item", {
     paperWidthOverride: order.store?.receiptPaperWidth,
     qrValueOverride: receiptUrl
   });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
 import { getActiveStoreId } from "@/modules/auth/active-store";
-import { translateTexts } from "@/modules/i18n/libretranslate-service";
+import { translateTexts, registerExplicitTranslation } from "@/modules/i18n/libretranslate-service";
 import { FEATURE_KEYS, canManage, canView } from "@/core/policies/permission-policy";
 
 async function resolveTargetStoreId(user, providedStoreId = "") {
@@ -66,7 +66,19 @@ export async function POST(request) {
     }
   });
 
-  await translateTexts({ texts: [name, stockItem.supplier], sourceLanguage: "en", targetLanguage: "bn" });
+  if (nameBn) {
+    await registerExplicitTranslation({
+      sourceText: name,
+      translatedText: nameBn,
+      sourceLanguage: "en",
+      targetLanguage: "bn"
+    });
+    if (stockItem.supplier) {
+      await translateTexts({ texts: [stockItem.supplier], sourceLanguage: "en", targetLanguage: "bn" });
+    }
+  } else {
+    await translateTexts({ texts: [name, stockItem.supplier], sourceLanguage: "en", targetLanguage: "bn" });
+  }
 
   return NextResponse.json(stockItem);
 }
@@ -107,6 +119,20 @@ export async function PATCH(request) {
       price: body.price === null || body.price === undefined || body.price === "" ? null : Number(body.price)
     }
   });
+
+  if (nameBn) {
+    await registerExplicitTranslation({
+      sourceText: name,
+      translatedText: nameBn,
+      sourceLanguage: "en",
+      targetLanguage: "bn"
+    });
+    if (updatedItem.supplier && updatedItem.supplier !== existingItem.supplier) {
+      await translateTexts({ texts: [updatedItem.supplier], sourceLanguage: "en", targetLanguage: "bn" });
+    }
+  } else if (name !== existingItem.name) {
+    await translateTexts({ texts: [name], sourceLanguage: "en", targetLanguage: "bn" });
+  }
 
   return NextResponse.json(updatedItem);
 }

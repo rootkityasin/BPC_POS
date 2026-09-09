@@ -96,7 +96,7 @@ export default async function PublicReceiptPage({ params }) {
             <div className="divide-y divide-slate-200">
               {order.items.map((item) => (
                 <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_80px_120px] gap-4 px-5 py-4 text-sm text-slate-700">
-                  <div>{item.itemName || item.dish?.nameEn || item.stockItem?.name || "Item"}</div>
+                  <div data-no-translate="true">{item.dish?.nameBn || item.stockItem?.nameBn || item.nameBn || item.itemName || item.dish?.nameEn || item.stockItem?.name || "Item"}</div>
                   <div className="text-center font-semibold text-slate-900">x{item.quantity}</div>
                   <div className="text-right font-semibold text-slate-900">{formatCurrency(Number(item.unitPrice || 0) * Number(item.quantity || 0))}</div>
                 </div>

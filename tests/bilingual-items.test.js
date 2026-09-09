@@ -59,4 +59,17 @@ describe("Bilingual item name resolution with fallback", () => {
     expect(getItemDisplayName(stockItemNoBn, "bn")).toBe("Salt");
     expect(getItemDisplayName(stockItemNoBn, "en")).toBe("Salt");
   });
+
+  it("ensures user-provided Bangla name is preserved verbatim without re-translation", () => {
+    const customUserItem = {
+      name: "Custom Coffee Blend",
+      nameBn: "স্পেশাল কফি ব্লেন্ড"
+    };
+
+    // Verify it uses the exact user string, not any machine translation
+    const resolvedBn = getItemDisplayName(customUserItem, "bn");
+    expect(resolvedBn).toBe("স্পেশাল কফি ব্লেন্ড");
+    expect(resolvedBn).not.toBe(customUserItem.name);
+  });
 });
+

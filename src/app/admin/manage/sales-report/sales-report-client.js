@@ -1079,7 +1079,7 @@ export function SalesReportClient({ report }) {
                       {isFirst ? <Crown className="h-3.5 w-3.5" /> : item.rank}
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate text-xs font-bold text-slate-900">
+                      <div className="truncate text-xs font-bold text-slate-900" data-no-translate="true">
                         {isBangla && item.nameBn ? item.nameBn : item.name}
                       </div>
                       <div className="text-[11px] text-slate-400 font-medium">{item.quantity} units sold</div>

@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/modules/auth/session-service";
 import { getActiveStoreId } from "@/modules/auth/active-store";
-import { translateTexts } from "@/modules/i18n/libretranslate-service";
+import { translateTexts, registerExplicitTranslation } from "@/modules/i18n/libretranslate-service";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -107,7 +107,16 @@ export async function POST(request) {
     }
   });
 
-  await translateTexts({ texts: [nameEn], sourceLanguage: "en", targetLanguage: "bn" });
+  if (nameBn) {
+    await registerExplicitTranslation({
+      sourceText: nameEn,
+      translatedText: nameBn,
+      sourceLanguage: "en",
+      targetLanguage: "bn"
+    });
+  } else {
+    await translateTexts({ texts: [nameEn], sourceLanguage: "en", targetLanguage: "bn" });
+  }
   revalidateDishPages();
 
   return NextResponse.json(dish);
@@ -234,7 +243,17 @@ export async function PATCH(request) {
     }
   });
 
-  if (updateData.nameEn) {
+  const finalNameEn = updateData.nameEn || existingDish.nameEn;
+  const finalNameBn = updateData.nameBn !== undefined ? updateData.nameBn : existingDish.nameBn;
+
+  if (finalNameBn) {
+    await registerExplicitTranslation({
+      sourceText: finalNameEn,
+      translatedText: finalNameBn,
+      sourceLanguage: "en",
+      targetLanguage: "bn"
+    });
+  } else if (updateData.nameEn) {
     await translateTexts({ texts: [updateData.nameEn], sourceLanguage: "en", targetLanguage: "bn" });
   }
   revalidateDishPages();

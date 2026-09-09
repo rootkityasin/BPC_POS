@@ -4,7 +4,7 @@ import { resources } from "@/modules/i18n/resources";
 
 import { LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE } from "@/modules/i18n/constants";
 const RESOURCE_CACHE_KEY = "bpc-admin-i18n-resources";
-const RESOURCE_CACHE_VERSION = "v5";
+const RESOURCE_CACHE_VERSION = "v6";
 export { LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE };
 
 function deepMerge(base, override) {
@@ -80,6 +80,9 @@ if (!i18n.isInitialized) {
   });
 
   cacheResources(resources);
+} else {
+  i18n.addResourceBundle("en", "translation", resources.en.translation, true, true);
+  i18n.addResourceBundle("bn", "translation", resources.bn.translation, true, true);
 }
 
 export { i18n };

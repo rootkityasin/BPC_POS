@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Download, ListFilter, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ListFilter, Pencil, Plus, Trash2, X, FolderPlus, Loader2 } from "lucide-react";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { SearchBar } from "@/components/ui/search-bar";
 import { Select } from "@/components/ui/select";
+import { ModalShell } from "@/components/ui/modal-shell";
 
 const CATEGORY_FORM = { nameEn: "", color: "#2771cb" };
 
@@ -361,100 +362,110 @@ export function CategoryClient({
         </div>
       </div>
 
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="popup-scrollbar w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[32px] bg-white p-8 shadow-2xl">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-[#2771cb]">{editingItem ? t("common.edit") : modalTitle}</h3>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                aria-label="Close popup"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 hover:text-red-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {activeTab === "categories" ? (
-                <>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">{t("categoryPage.categoryNameEnglish")}</label>
-                    <input
-                      type="text"
-                      value={categoryForm.nameEn}
-                      onChange={(event) => setCategoryForm((current) => ({ ...current, nameEn: event.target.value }))}
-                       className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-                      placeholder={t("categoryPage.categoryNamePlaceholder")}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">{t("categoryPage.color")}</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={categoryForm.color}
-                        onChange={(event) => setCategoryForm((current) => ({ ...current, color: event.target.value }))}
-                        className="h-12 w-12 cursor-pointer rounded-xl border border-slate-200"
-                      />
-                      <span className="font-medium text-[#2771cb]">{categoryForm.color}</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">{t("categoryPage.subCategoryNameEnglish")}</label>
-                    <input
-                      type="text"
-                      value={subCategoryForm.nameEn}
-                      onChange={(event) => setSubCategoryForm((current) => ({ ...current, nameEn: event.target.value }))}
-                       className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-                      placeholder={t("categoryPage.subCategoryNamePlaceholder")}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.category")}</label>
-                    <Select
-                      value={subCategoryForm.categoryId}
-                      onChange={(event) => setSubCategoryForm((current) => ({ ...current, categoryId: event.target.value }))}
-                      wrapperClassName="w-full"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
-                    >
-                      {subCategoryChoices.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {translateContent(category.nameEn)}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              {error && <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div>}
-
-              <div className="mt-8 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200"
-                >
-                  {t("common.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                   className="flex-1 rounded-2xl bg-[#2771cb] py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50"
-                >
-                  {isSaving ? t("common.saving") : editingItem ? t("common.save") : activeTab === "categories" ? t("categoryPage.saveCategory") : t("categoryPage.saveSubCategory")}
-                </button>
-              </div>
-            </div>
+      <ModalShell
+        isOpen={isAddModalOpen}
+        maxWidthClass="max-w-lg"
+        onBackdropClick={() => setIsAddModalOpen(false)}
+      >
+        <div className="mb-6 flex items-start gap-4 pr-8">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+            <FolderPlus className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-900">
+              {editingItem ? t("common.edit") : modalTitle}
+            </h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {activeTab === "categories"
+                ? (editingItem ? "Update category details and color theme" : "Create and configure a menu category")
+                : (editingItem ? "Update sub-category details and parent category" : "Assign and configure a menu sub-category")}
+            </p>
           </div>
         </div>
-      )}
+
+        <div className="space-y-4">
+          {activeTab === "categories" ? (
+            <>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("categoryPage.categoryNameEnglish")}</label>
+                <input
+                  type="text"
+                  value={categoryForm.nameEn}
+                  onChange={(event) => setCategoryForm((current) => ({ ...current, nameEn: event.target.value }))}
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                  placeholder={t("categoryPage.categoryNamePlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("categoryPage.color")}</label>
+                <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5">
+                  <input
+                    type="color"
+                    value={categoryForm.color}
+                    onChange={(event) => setCategoryForm((current) => ({ ...current, color: event.target.value }))}
+                    className="h-7 w-7 cursor-pointer rounded-lg border-0 bg-transparent"
+                  />
+                  <span className="text-sm font-semibold text-slate-700">{categoryForm.color}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("categoryPage.subCategoryNameEnglish")}</label>
+                <input
+                  type="text"
+                  value={subCategoryForm.nameEn}
+                  onChange={(event) => setSubCategoryForm((current) => ({ ...current, nameEn: event.target.value }))}
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                  placeholder={t("categoryPage.subCategoryNamePlaceholder")}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("common.category")}</label>
+                <Select
+                  value={subCategoryForm.categoryId}
+                  onChange={(event) => setSubCategoryForm((current) => ({ ...current, categoryId: event.target.value }))}
+                  wrapperClassName="w-full"
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-medium text-slate-800 outline-none focus:border-[#2771cb] focus:bg-white"
+                >
+                  {subCategoryChoices.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {translateContent(category.nameEn)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </>
+          )}
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-xs font-medium text-rose-700">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-500" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="mt-6 flex items-center gap-3 border-t border-slate-100/90 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="flex-1 h-11 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>{isSaving ? t("common.saving") : editingItem ? t("common.save") : activeTab === "categories" ? t("categoryPage.saveCategory") : t("categoryPage.saveSubCategory")}</span>
+            </button>
+          </div>
+        </div>
+      </ModalShell>
     </div>
   );
 }

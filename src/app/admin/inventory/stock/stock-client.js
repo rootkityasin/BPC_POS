@@ -19,6 +19,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
+  const isBn = i18n.language === "bn";
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -174,7 +175,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
     <div className="flex flex-col bg-[#fdfdfd]">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="pl-3 pt-1 sm:pl-4">
-          <h2 className="text-[26px] font-bold text-slate-900">{t("stock.title")}</h2>
+          <h2 className="text-[26px] font-bold text-slate-900">{t("stock.title", isBn ? "স্টক" : "Stock")}</h2>
         </div>
 
         <div className="flex w-full max-w-[620px] items-center gap-3">
@@ -182,7 +183,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
             <SearchBar
               value={searchQuery}
               onChange={(val) => setSearchQuery(val)}
-              placeholder={i18n.language === "bn" ? "স্টক আইটেম বা ডিশ অনুসন্ধান করুন..." : "Search stock items or dishes..."}
+              placeholder={isBn ? "স্টক আইটেম বা ডিশ অনুসন্ধান করুন..." : "Search stock items or dishes..."}
             />
           </div>
           <button
@@ -192,7 +193,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
             className="flex h-14 shrink-0 items-center gap-2 rounded-2xl bg-[#2771cb] px-6 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-[#13508b] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
-            <span>{canCreate ? t("common.addItem") : "Select store"}</span>
+            <span>{canCreate ? t("common.addItem", isBn ? "আইটেম যোগ করুন" : "Add Item") : (isBn ? "স্টোর নির্বাচন করুন" : "Select store")}</span>
           </button>
         </div>
       </div>
@@ -202,27 +203,27 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           <table className="w-full text-[15px]">
             <thead>
               <tr className="border-b border-slate-100/80">
-                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("stock.name")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.quantity")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.price")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.createdBy")}</th>
-                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.supplier")}</th>
-                {showStoreColumn ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">Store</th> : null}
-                {canManage ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.action")}</th> : null}
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("stock.name", isBn ? "নাম" : "Name")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.quantity", isBn ? "পরিমাণ" : "Quantity")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.price", isBn ? "দাম" : "Price")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.createdBy", isBn ? "যিনি তৈরি করেছেন" : "Created By")}</th>
+                <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.supplier", isBn ? "সরবরাহকারী" : "Supplier")}</th>
+                {showStoreColumn ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{isBn ? "স্টোর" : "Store"}</th> : null}
+                {canManage ? <th className="px-8 py-5 text-left font-bold text-[#2771cb]">{t("common.action", isBn ? "অ্যাকশন" : "Action")}</th> : null}
               </tr>
             </thead>
             <tbody>
               {paginatedItems.map((item) => (
                 <tr key={item.id} className="select-none border-b border-slate-50/50 transition-colors hover:bg-slate-50/50">
                   <td className="px-8 py-5">
-                    <div className="font-semibold text-[#2771cb]">
-                      {i18n.language === "bn" && item.nameBn?.trim()
+                    <div className="font-semibold text-[#2771cb]" data-no-translate="true">
+                      {isBn && item.nameBn?.trim()
                         ? item.nameBn
                         : translateContent(item.name || item.dish?.nameEn)}
                     </div>
                     {item.name && item.nameBn && (
-                      <div className="mt-0.5 text-xs text-slate-400 font-normal">
-                        {i18n.language === "bn" ? item.name : item.nameBn}
+                      <div className="mt-0.5 text-xs text-slate-400 font-normal" data-no-translate="true">
+                        {isBn ? item.name : item.nameBn}
                       </div>
                     )}
                   </td>
@@ -312,12 +313,12 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           </div>
           <div className="pr-8">
             <h3 className="text-xl font-bold tracking-tight text-slate-900">
-              {editingItem ? t("common.edit") : t("stock.addNewItem")}
+              {editingItem ? t("common.edit", isBn ? "এডিট" : "Edit") : t("stock.addNewItem", isBn ? "নতুন আইটেম যোগ করুন" : "Add New Item")}
             </h3>
             <p className="mt-1 text-xs font-medium text-slate-500">
               {editingItem
-                ? (i18n.language === "bn" ? "আইটেমের বিবরণ ও ইনভেন্টরি আপডেট করুন" : "Update stock item specifications and quantity")
-                : t("stock.modalSubtitle")}
+                ? (isBn ? "আইটেমের বিবরণ ও ইনভেন্টরি আপডেট করুন" : "Update stock item specifications and quantity")
+                : t("stock.modalSubtitle", isBn ? "আইটেমের বিবরণ ও ইনভেন্টরির তথ্য যুক্ত করুন" : "Enter item specifications and stock details")}
             </p>
           </div>
         </div>
@@ -327,7 +328,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                <span>{t("stock.itemNameEn")}</span>
+                <span>{t("stock.itemNameEn", isBn ? "আইটেমের নাম (ইংরেজি)" : "Item Name (English)")}</span>
                 <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">EN</span>
               </label>
               <input
@@ -335,13 +336,13 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                 value={formData.name}
                 onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
                 className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                placeholder={t("stock.itemNameEnPlaceholder")}
+                placeholder={t("stock.itemNameEnPlaceholder", isBn ? "যেমন: Flour" : "e.g. Flour")}
               />
             </div>
 
             <div>
               <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                <span>{t("stock.itemNameBn")}</span>
+                <span>{t("stock.itemNameBn", isBn ? "আইটেমের নাম (বাংলা)" : "Item Name (বাংলা)")}</span>
                 <span className="rounded-md bg-[#e5f1ff] px-1.5 py-0.5 text-[10px] font-bold text-[#2771cb]">বাংলা</span>
               </label>
               <input
@@ -349,7 +350,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                 value={formData.nameBn}
                 onChange={(event) => setFormData((current) => ({ ...current, nameBn: event.target.value }))}
                 className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                placeholder={t("stock.itemNameBnPlaceholder")}
+                placeholder={t("stock.itemNameBnPlaceholder", isBn ? "যেমন: ময়দা" : "যেমন: ময়দা")}
               />
             </div>
           </div>
@@ -358,9 +359,9 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           <div className="grid grid-cols-2 gap-3.5">
             <div>
               <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                <span>{t("stock.buyingPrice")}</span>
+                <span>{t("stock.buyingPrice", isBn ? "ক্রয়মূল্য" : "Buying Price")}</span>
                 <span className="text-[11px] font-normal text-slate-400 lowercase">
-                  ({i18n.language === "bn" ? "ঐচ্ছিক" : "optional"})
+                  ({isBn ? "ঐচ্ছিক" : "optional"})
                 </span>
               </label>
               <div className="relative">
@@ -372,16 +373,16 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                   value={formData.buyingPrice}
                   onChange={(event) => setFormData((current) => ({ ...current, buyingPrice: event.target.value }))}
                   className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                  placeholder={t("stock.buyingPricePlaceholder")}
+                  placeholder={t("stock.buyingPricePlaceholder", isBn ? "যেমন: ১০০" : "e.g. 100")}
                 />
               </div>
             </div>
 
             <div>
               <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
-                <span>{t("stock.sellingPrice")}</span>
+                <span>{t("stock.sellingPrice", isBn ? "বিক্রয়মূল্য" : "Selling Price")}</span>
                 <span className="text-[11px] font-normal text-slate-400 lowercase">
-                  ({i18n.language === "bn" ? "ঐচ্ছিক" : "optional"})
+                  ({isBn ? "ঐচ্ছিক" : "optional"})
                 </span>
               </label>
               <div className="relative">
@@ -393,7 +394,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                   value={formData.price}
                   onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
                   className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                  placeholder={t("stock.sellingPricePlaceholder")}
+                  placeholder={t("stock.sellingPricePlaceholder", isBn ? "যেমন: ১২০" : "e.g. 120")}
                 />
               </div>
             </div>
@@ -403,7 +404,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                {t("common.quantity")}
+                {t("common.quantity", isBn ? "পরিমাণ" : "Quantity")}
               </label>
               <input
                 type="number"
@@ -411,20 +412,20 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
                 value={formData.quantity}
                 onChange={(event) => setFormData((current) => ({ ...current, quantity: event.target.value }))}
                 className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                placeholder={t("stock.quantityPlaceholder")}
+                placeholder={t("stock.quantityPlaceholder", isBn ? "০" : "0")}
               />
             </div>
 
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                {t("common.supplier")}
+                {t("common.supplier", isBn ? "সরবরাহকারী" : "Supplier")}
               </label>
               <input
                 type="text"
                 value={formData.supplier}
                 onChange={(event) => setFormData((current) => ({ ...current, supplier: event.target.value }))}
                 className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-                placeholder={t("stock.supplierPlaceholder")}
+                placeholder={t("stock.supplierPlaceholder", isBn ? "সরবরাহকারীর নাম" : "Supplier name")}
               />
             </div>
           </div>
@@ -432,14 +433,14 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
           {/* Created By */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-              {t("common.createdBy")}
+              {t("common.createdBy", isBn ? "যিনি তৈরি করেছেন" : "Created By")}
             </label>
             <input
               type="text"
               value={formData.createdBy}
               onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
               className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
-              placeholder={t("stock.createdByPlaceholder")}
+              placeholder={t("stock.createdByPlaceholder", isBn ? "জেন কুপার" : "Jane Cooper")}
             />
           </div>
 
@@ -456,7 +457,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
               onClick={() => setIsAddModalOpen(false)}
               className="flex-1 h-11 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
-              {t("common.cancel")}
+              {t("common.cancel", isBn ? "বাতিল" : "Cancel")}
             </button>
             <button
               type="button"
@@ -465,7 +466,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
               className="flex-1 h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>{isSaving ? t("common.saving") : editingItem ? t("common.save") : t("stock.saveItem")}</span>
+              <span>{isSaving ? t("common.saving", isBn ? "সংরক্ষণ হচ্ছে..." : "Saving...") : editingItem ? t("common.save", isBn ? "সংরক্ষণ" : "Save") : t("stock.saveItem", isBn ? "আইটেম সংরক্ষণ করুন" : "Save Item")}</span>
             </button>
           </div>
         </div>

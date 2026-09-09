@@ -107,3 +107,43 @@ export async function translateTexts({ texts, sourceLanguage = "en", targetLangu
 
   return results;
 }
+
+export async function registerExplicitTranslation({
+  sourceText,
+  translatedText,
+  sourceLanguage = "en",
+  targetLanguage = "bn"
+}) {
+  const src = String(sourceText || "").trim();
+  const trg = String(translatedText || "").trim();
+  if (!src || !trg || targetLanguage === sourceLanguage) {
+    return;
+  }
+
+  const cacheKey = getCacheKey(sourceLanguage, targetLanguage, src);
+  translationCache.set(cacheKey, trg);
+
+  try {
+    await prisma.translationCache.upsert({
+      where: {
+        sourceLanguage_targetLanguage_sourceText: {
+          sourceLanguage,
+          targetLanguage,
+          sourceText: src
+        }
+      },
+      update: {
+        translatedText: trg
+      },
+      create: {
+        sourceLanguage,
+        targetLanguage,
+        sourceText: src,
+        translatedText: trg
+      }
+    });
+  } catch {
+    // Ignore db upsert errors
+  }
+}
+

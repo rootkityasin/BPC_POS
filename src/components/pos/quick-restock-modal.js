@@ -117,20 +117,22 @@ export function QuickRestockModal({
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-xl" onBackdropClick={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Header */}
-        <div className="border-b border-slate-100 pb-3 pr-10">
-          <div className="flex items-center gap-2.5">
-            <PackagePlus className="h-5 w-5 text-slate-700" />
-            <h3 className="text-lg font-bold text-slate-900">
+        <div className="mb-6 flex items-start gap-4 pr-8">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+            <PackagePlus className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-900">
               {isBangla ? "স্টক বৃদ্ধি করুন" : "Add Stock / Restock"}
             </h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {isBangla
+                ? "কম স্টক থাকা পণ্যে দ্রুত নতুন স্টক যোগ করুন এবং সংরক্ষণ করুন।"
+                : "Quickly increase inventory quantity for low-stock items."}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            {isBangla
-              ? "কম স্টক থাকা পণ্যে দ্রুত নতুন স্টক যোগ করুন এবং সংরক্ষণ করুন।"
-              : "Quickly increase inventory quantity for low-stock items."}
-          </p>
         </div>
 
         {/* Low Stock Items List */}
@@ -215,7 +217,7 @@ export function QuickRestockModal({
         ) : null}
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+        <div className="mt-6 flex items-center justify-between border-t border-slate-100/90 pt-3">
           <button
             type="button"
             onClick={handleGoToInventory}
@@ -229,16 +231,16 @@ export function QuickRestockModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              className="h-11 rounded-xl border border-slate-200/90 bg-white px-5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
               {isBangla ? "বাতিল" : "Cancel"}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex h-9 items-center gap-2 rounded-xl bg-slate-900 px-5 text-xs font-semibold text-white hover:bg-black transition disabled:opacity-40"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#2771cb] px-6 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <PackagePlus className="h-3.5 w-3.5" />
+              <PackagePlus className="h-4 w-4" />
               <span>
                 {isSubmitting
                   ? (isBangla ? "সংরক্ষণ হচ্ছে..." : "Saving...")

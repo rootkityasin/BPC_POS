@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
-import { X, ImagePlus } from "lucide-react";
+import { X, ImagePlus, UtensilsCrossed, Loader2 } from "lucide-react";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
@@ -22,7 +22,7 @@ const INITIAL_FORM = {
 };
 
 export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSave }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { translateContent } = useTranslatedContent();
   const [form, setForm] = useState({ ...INITIAL_FORM, categoryId: categories[0]?.id || "" });
   const [error, setError] = useState("");
@@ -142,35 +142,85 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
       maxWidthClass="max-w-2xl"
       onBackdropClick={onClose}
     >
-      <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{isEditing ? t("dishes.editDish") : t("dishes.createDish")}</h3>
-      <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameEnglish", "Dish Name (English)")} *</label>
-              <input type="text" value={form.nameEn} onChange={(e) => setForm((c) => ({ ...c, nameEn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.dishNamePlaceholder", "e.g. Chicken Biryani")} required />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishNameBangla", "Dish Name (বাংলা)")} <span className="text-xs text-slate-400 font-normal">({t("common.optional", "Optional")})</span></label>
-              <input type="text" value={form.nameBn} onChange={(e) => setForm((c) => ({ ...c, nameBn: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder="যেমন: চিকেন বিরিয়ানি" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.category")}</label>
-              <Select value={form.categoryId} onChange={(e) => setForm((c) => ({ ...c, categoryId: e.target.value }))} wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
-                {categories.map((cat) => (<option key={cat.id} value={cat.id}>{translateContent(cat.nameEn)}</option>))}
-              </Select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.subCategory")}</label>
-              <Select value={form.subCategoryId} onChange={(e) => setForm((c) => ({ ...c, subCategoryId: e.target.value }))} wrapperClassName="w-full" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800">
-                <option value="">{t("common.noSubCategory")}</option>
-                {availableSubCategories.map((sc) => (<option key={sc.id} value={sc.id}>{translateContent(sc.nameEn)}</option>))}
-              </Select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.createdBy")}</label>
-              <input type="text" value={form.createdBy} onChange={(e) => setForm((c) => ({ ...c, createdBy: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.createdByPlaceholder")} />
-            </div>
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+          <UtensilsCrossed className="h-6 w-6" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {isEditing ? t("dishes.editDish", "Edit Dish") : t("dishes.createDish", "Create Dish")}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {isEditing
+              ? (i18n.language === "bn" ? "ডিশের বিবরণ, মূল্য এবং উপাদান আপডেট করুন" : "Update dish specifications, pricing, and linked ingredients")
+              : (i18n.language === "bn" ? "নতুন ডিশের বিবরণ, মূল্য এবং ইনভেন্টরি তথ্য যুক্ত করুন" : "Enter dish specifications, pricing, and link inventory ingredients")}
+          </p>
+        </div>
+      </div>
+
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span>{t("dishes.dishNameEnglish", "Dish Name (English)")} *</span>
+              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">EN</span>
+            </label>
+            <input
+              type="text"
+              value={form.nameEn}
+              onChange={(e) => setForm((c) => ({ ...c, nameEn: e.target.value }))}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder={t("dishes.dishNamePlaceholder", "e.g. Chicken Biryani")}
+              required
+            />
           </div>
+          <div>
+            <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span>{t("dishes.dishNameBangla", "Dish Name (বাংলা)")}</span>
+              <span className="rounded-md bg-[#e5f1ff] px-1.5 py-0.5 text-[10px] font-bold text-[#2771cb]">বাংলা</span>
+            </label>
+            <input
+              type="text"
+              value={form.nameBn}
+              onChange={(e) => setForm((c) => ({ ...c, nameBn: e.target.value }))}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder="যেমন: চিকেন বিরিয়ানি"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("common.category")}</label>
+            <Select
+              value={form.categoryId}
+              onChange={(e) => setForm((c) => ({ ...c, categoryId: e.target.value }))}
+              wrapperClassName="w-full"
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-medium text-slate-800 outline-none focus:border-[#2771cb] focus:bg-white"
+            >
+              {categories.map((cat) => (<option key={cat.id} value={cat.id}>{translateContent(cat.nameEn)}</option>))}
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("common.subCategory")}</label>
+            <Select
+              value={form.subCategoryId}
+              onChange={(e) => setForm((c) => ({ ...c, subCategoryId: e.target.value }))}
+              wrapperClassName="w-full"
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-medium text-slate-800 outline-none focus:border-[#2771cb] focus:bg-white"
+            >
+              <option value="">{t("common.noSubCategory")}</option>
+              {availableSubCategories.map((sc) => (<option key={sc.id} value={sc.id}>{translateContent(sc.nameEn)}</option>))}
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("common.createdBy")}</label>
+            <input
+              type="text"
+              value={form.createdBy}
+              onChange={(e) => setForm((c) => ({ ...c, createdBy: e.target.value }))}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+              placeholder={t("dishes.createdByPlaceholder")}
+            />
+          </div>
+        </div>
 
           {/* Image Upload */}
           <div>
@@ -227,7 +277,9 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
                       wrapperClassName="mt-0.5"
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-slate-900">{translateContent(item.name)}</div>
+                      <div className="font-semibold text-slate-900" data-no-translate="true">
+                        {i18n.language === "bn" && item.nameBn?.trim() ? item.nameBn : translateContent(item.name)}
+                      </div>
                       <div className="text-sm text-slate-500">{t("dishes.qtyPrice", { quantity: item.quantity, price: item.price === null ? t("common.optional") : formatCurrency(item.price) })}</div>
                     </div>
                   </label>
@@ -237,19 +289,48 @@ export function DishModal({ isOpen, onClose, categories, stockItems, dish, onSav
           </div>
 
           {/* Price */}
-          <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-end">
+          <div className="grid gap-3.5 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-center">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("dishes.dishPrice")}</label>
-               <input type="number" min="0" step="0.01" value={form.price} onChange={(e) => { setPriceTouched(true); setForm((c) => ({ ...c, price: e.target.value })); }} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]" placeholder={t("dishes.autoSuggested")} />
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("dishes.dishPrice")}</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">৳</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.price}
+                  onChange={(e) => { setPriceTouched(true); setForm((c) => ({ ...c, price: e.target.value })); }}
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                  placeholder={t("dishes.autoSuggested")}
+                />
+              </div>
             </div>
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{t("dishes.suggestedHelp")}</div>
+            <div className="rounded-xl bg-slate-50/70 border border-slate-200/70 px-3.5 py-2.5 text-xs text-slate-500 mt-5 sm:mt-0">{t("dishes.suggestedHelp")}</div>
           </div>
 
-          {error && <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div>}
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-xs font-medium text-rose-700">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-500" />
+              <span>{error}</span>
+            </div>
+          )}
 
-          <div className="mt-8 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
-            <button type="submit" disabled={isSaving} className="rounded-2xl bg-[#2771cb] px-5 py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">{isSaving ? t("common.saving") : isEditing ? t("common.save") : t("dishes.createDish")}</button>
+          <div className="mt-6 flex items-center gap-3 border-t border-slate-100/90 pt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-11 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="flex-1 h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>{isSaving ? t("common.saving") : isEditing ? t("common.save") : t("dishes.createDish")}</span>
+            </button>
           </div>
       </form>
     </ModalShell>

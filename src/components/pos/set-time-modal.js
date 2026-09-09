@@ -76,24 +76,26 @@ export function SetTimeModal({ isOpen, onClose, mealPeriods, onSavePeriods }) {
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-xl" onBackdropClick={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Header */}
-        <div className="border-b border-slate-100 pb-3 pr-10">
-          <div className="flex items-center gap-2.5">
-            <Clock className="h-5 w-5 text-slate-700" />
-            <h3 className="text-lg font-bold text-slate-900">
+        <div className="mb-6 flex items-start gap-4 pr-8">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+            <Clock className="h-6 w-6 stroke-[2.2]" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-900">
               {isBangla ? "খাবারের সময় নির্ধারণ" : "Meal Period Settings"}
             </h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {isBangla
+                ? "পস সেকশনে সময় অনুযায়ী ক্যাটাগরি স্বয়ংক্রিয় নির্বাচনের সময়সূচি নির্ধারণ করুন।"
+                : "Configure time intervals for automatic category tab selection in POS."}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            {isBangla
-              ? "পস সেকশনে সময় অনুযায়ী ক্যাটাগরি স্বয়ংক্রিয় নির্বাচনের সময়সূচি নির্ধারণ করুন।"
-              : "Configure time intervals for automatic category tab selection in POS."}
-          </p>
         </div>
 
-        {/* Clean Structured Info Bar: No spark emoji, no faux button shapes */}
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+        {/* Clean Structured Info Bar */}
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/60 px-4 py-3 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-slate-500">
+            <span className="font-medium text-slate-500">
               {isBangla ? "বর্তমান সময়:" : "Current Time:"}
             </span>
             <span className="font-bold text-slate-900 tabular-nums">
@@ -102,10 +104,10 @@ export function SetTimeModal({ isOpen, onClose, mealPeriods, onSavePeriods }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-500">
+            <span className="font-medium text-slate-500">
               {isBangla ? "সক্রিয় সময়কাল:" : "Active Period:"}
             </span>
-            <span className="font-bold text-slate-900">
+            <span className="font-bold text-[#2771cb]">
               {form[activePeriodKey]
                 ? (isBangla ? form[activePeriodKey].labelBn : form[activePeriodKey].labelEn)
                 : activePeriodKey}
@@ -123,26 +125,32 @@ export function SetTimeModal({ isOpen, onClose, mealPeriods, onSavePeriods }) {
             return (
               <div
                 key={period.key}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border p-3 transition-colors ${
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-3.5 transition-all ${
                   isActive
-                    ? "border-slate-400 bg-slate-50/70"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                    ? "border-[#2771cb]/40 bg-[#f0f7ff]/50 shadow-xs"
+                    : "border-slate-200/80 bg-white hover:border-slate-300"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600">
-                    <Icon className="h-4 w-4" />
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
+                      isActive
+                        ? "border-[#2771cb]/30 bg-[#e5f1ff] text-[#2771cb]"
+                        : "border-slate-200/80 bg-slate-50 text-slate-600"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-slate-900">{title}</h4>
+                      <h4 className="text-sm font-bold text-slate-900">{title}</h4>
                       {isActive && (
-                        <span className="rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                        <span className="rounded-md border border-[#2771cb]/25 bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-bold text-[#2771cb]">
                           {isBangla ? "সক্রিয়" : "Active"}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] font-medium text-slate-400">
                       {period.start} – {period.end}
                     </p>
                   </div>
@@ -150,29 +158,29 @@ export function SetTimeModal({ isOpen, onClose, mealPeriods, onSavePeriods }) {
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   <div>
-                    <label className="mb-1 block text-[10px] font-semibold text-slate-500">
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {isBangla ? "শুরু" : "Start"}
                     </label>
                     <input
                       type="time"
                       value={period.start}
                       onChange={(e) => handleTimeChange(period.key, "start", e.target.value)}
-                      className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-slate-400"
+                      className="h-9 rounded-xl border border-slate-200/90 bg-slate-50/50 px-2.5 text-xs font-bold text-slate-800 outline-none transition focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
                       required
                     />
                   </div>
 
-                  <span className="mt-4 text-xs font-medium text-slate-400">–</span>
+                  <span className="mt-4 text-xs font-semibold text-slate-300">–</span>
 
                   <div>
-                    <label className="mb-1 block text-[10px] font-semibold text-slate-500">
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {isBangla ? "শেষ" : "End"}
                     </label>
                     <input
                       type="time"
                       value={period.end}
                       onChange={(e) => handleTimeChange(period.key, "end", e.target.value)}
-                      className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-800 outline-none transition focus:border-slate-400"
+                      className="h-9 rounded-xl border border-slate-200/90 bg-slate-50/50 px-2.5 text-xs font-bold text-slate-800 outline-none transition focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
                       required
                     />
                   </div>
@@ -183,7 +191,7 @@ export function SetTimeModal({ isOpen, onClose, mealPeriods, onSavePeriods }) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+        <div className="mt-6 flex items-center justify-between border-t border-slate-100/90 pt-3">
           <button
             type="button"
             onClick={handleReset}
@@ -193,19 +201,19 @@ export function SetTimeModal({ isOpen, onClose, mealPeriods, onSavePeriods }) {
             <span>{isBangla ? "ডিফল্ট সময় রিসেট" : "Reset Defaults"}</span>
           </button>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              className="h-11 rounded-xl border border-slate-200/90 bg-white px-5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
             >
               {isBangla ? "বাতিল" : "Cancel"}
             </button>
             <button
               type="submit"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-slate-900 px-5 text-xs font-semibold text-white hover:bg-black transition"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#2771cb] px-6 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99]"
             >
-              <Check className="h-4 w-4" />
+              <Check className="h-4 w-4 stroke-[2.5]" />
               <span>{isBangla ? "সংরক্ষণ করুন" : "Save Settings"}</span>
             </button>
           </div>

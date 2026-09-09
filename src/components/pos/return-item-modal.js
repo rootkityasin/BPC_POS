@@ -168,20 +168,22 @@ export function ReturnItemModal({
 
   return (
     <ModalShell isOpen={isOpen} maxWidthClass="max-w-xl" onBackdropClick={onClose}>
-      <div className="space-y-5">
-        {/* Header: Clean, structured typography with right padding to clear close button */}
-        <div className="border-b border-slate-100 pb-3 pr-10">
-          <div className="flex items-center gap-2.5">
-            <RotateCcw className="h-5 w-5 text-slate-700" />
-            <h3 className="text-lg font-bold text-slate-900">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="mb-6 flex items-start gap-4 pr-8">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+            <RotateCcw className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-slate-900">
               {isBangla ? "আইটেম ফেরত" : "Item Return"}
             </h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {isBangla
+                ? "আইটেম ফেরত সম্পন্ন করতে ইনভয়েস নম্বর দিয়ে অনুসন্ধান করুন।"
+                : "Search by invoice number to process returns and update stock."}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
-            {isBangla
-              ? "আইটেম ফেরত সম্পন্ন করতে ইনভয়েস নম্বর দিয়ে অনুসন্ধান করুন।"
-              : "Search by invoice number to process returns and update stock."}
-          </p>
         </div>
 
         {/* Step 1: Invoice Search */}
@@ -193,20 +195,20 @@ export function ReturnItemModal({
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     placeholder={isBangla ? "যেমন: 00001 বা INV-..." : "e.g. 00001 or INV-..."}
                     value={invoiceQuery}
                     onChange={(e) => setInvoiceQuery(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-slate-400"
+                    className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-10 pr-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
                     autoFocus
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isSearching || !invoiceQuery.trim()}
-                  className="h-10 rounded-xl bg-slate-900 px-5 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
+                  className="h-11 rounded-xl bg-[#2771cb] px-6 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isSearching ? (isBangla ? "অনুসন্ধান..." : "Searching...") : (isBangla ? "খুঁজুন" : "Search")}
                 </button>
@@ -360,20 +362,20 @@ export function ReturnItemModal({
             ) : null}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2.5 pt-1">
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100/90 pt-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="h-9 rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className="flex-1 h-11 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
               >
                 {isBangla ? "বাতিল" : "Cancel"}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !hasSelectedReturns}
-                className="inline-flex h-9 items-center gap-2 rounded-xl bg-slate-900 px-5 text-xs font-semibold text-white hover:bg-black transition disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex-1 h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="h-4 w-4" />
                 <span>
                   {isSubmitting
                     ? (isBangla ? "প্রসেসিং..." : "Processing...")

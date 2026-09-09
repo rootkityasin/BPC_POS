@@ -62,7 +62,10 @@ function getPrintStatusLabel(t, status) {
   return t("orders.printStatusValues.notPrinted");
 }
 
-function getItemLabel(item, translateContent) {
+function getItemLabel(item, translateContent, isBn = false) {
+  if (isBn && (item.dish?.nameBn?.trim() || item.stockItem?.nameBn?.trim() || item.nameBn?.trim())) {
+    return item.dish?.nameBn?.trim() || item.stockItem?.nameBn?.trim() || item.nameBn?.trim();
+  }
   return translateContent(item.dish?.nameEn || item.stockItem?.name || item.itemName || "Item");
 }
 
@@ -118,6 +121,7 @@ function printHtmlDirect(html) {
 
 
 function OrderRefundModal({ order, onClose, onSave, t, translateContent, canManage = false }) {
+  const { i18n } = useTranslation();
   const [managerEmail, setManagerEmail] = useState("");
   const [managerPassword, setManagerPassword] = useState("");
   const [refundData, setRefundData] = useState({});
@@ -227,20 +231,29 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
 
   return (
     <ModalShell isOpen maxWidthClass="max-w-2xl" onBackdropClick={onClose}>
-      <h3 className="text-2xl font-bold text-orange-600">{t("orders.refundOrder", { defaultValue: "Refund Order" })}</h3>
-      <p className="mt-2 text-sm text-slate-500">
-        {t("orders.refundOrderSubtitle", { orderId: formatOrderId(order.invoiceNumber) || "----", defaultValue: "Select items and quantities to return from this order." })}
-      </p>
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+          <RotateCcw className="h-6 w-6 stroke-[2.2]" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {t("orders.refundOrder", { defaultValue: "Refund Order" })}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {t("orders.refundOrderSubtitle", { orderId: formatOrderId(order.invoiceNumber) || "----", defaultValue: "Select items and quantities to return from this order." })}
+          </p>
+        </div>
+      </div>
 
       {!hasRefundableItems ? (
-        <div className="mt-6 rounded-2xl bg-slate-50 p-6 text-center text-sm font-medium text-slate-500">
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-6 text-center text-sm font-medium text-slate-500">
           {t("orders.noRefundableItems", { defaultValue: "All items in this order have been fully refunded." })}
         </div>
       ) : (
-        <form onSubmit={handleRefundSubmit} className="mt-6 space-y-6">
-          <div className="overflow-hidden rounded-2xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-left font-medium text-slate-500">
+        <form onSubmit={handleRefundSubmit} className="space-y-4">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xs">
+            <table className="min-w-full divide-y divide-slate-100 text-sm">
+              <thead className="bg-slate-50/75 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Item</th>
                   <th className="px-4 py-3">Price</th>
@@ -256,16 +269,16 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
                   const isDish = Boolean(item.dishId);
                   
                   return (
-                    <tr key={item.id}>
-                      <td className="px-4 py-3 font-medium text-slate-800">
-                        {getItemLabel(item, translateContent)}
+                    <tr key={item.id} className="transition-colors hover:bg-slate-50/50">
+                      <td className="px-4 py-3 font-semibold text-slate-800" data-no-translate="true">
+                        {getItemLabel(item, translateContent, i18n?.language === "bn")}
                         {isRemoved ? (
-                          <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-orange-600">
+                          <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-rose-600">
                             Removed
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{formatCurrency(item.unitPrice)}</td>
+                      <td className="px-4 py-3 font-medium text-slate-600">{formatCurrency(item.unitPrice)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <input
@@ -275,19 +288,23 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
                             value={currentQty || ""}
                             disabled={isRemoved || isDish}
                             onChange={(e) => handleQuantityChange(item.id, maxQty, e.target.value, isDish)}
-                            className="w-20 rounded-xl border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-orange-500"
+                            className="h-9 w-20 rounded-xl border border-slate-200/90 bg-slate-50/50 px-2.5 text-xs font-bold text-slate-800 outline-none transition focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15 disabled:opacity-50"
                           />
-                          <span className="text-xs text-slate-400">/ {maxQty}</span>
+                          <span className="text-xs font-medium text-slate-400">/ {maxQty}</span>
                         </div>
                         {isDish ? (
-                          <div className="mt-1 text-xs text-slate-400">Full dish only</div>
+                          <div className="mt-1 text-[11px] font-medium text-slate-400">Full dish only</div>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
                           onClick={() => toggleRemoveItem(item.id, maxQty)}
-                          className={`inline-flex items-center justify-center rounded-full border p-2 transition ${isRemoved ? "border-orange-200 bg-orange-50 text-orange-600" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition-all ${
+                            isRemoved
+                              ? "border-rose-200 bg-rose-50 text-rose-600"
+                              : "border-slate-200/80 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-700"
+                          }`}
                           aria-label="Remove item"
                         >
                           <X className="h-4 w-4" />
@@ -301,14 +318,14 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
           </div>
 
           {hasSelection && (
-            <div className="rounded-2xl bg-orange-50 px-5 py-4 flex items-center justify-between">
-              <span className="text-sm font-medium text-orange-700">{t("orders.refundAmount", { defaultValue: "Refund Amount" })}</span>
-              <span className="text-lg font-bold text-orange-700">{formatCurrency(totalRefundAmount)}</span>
+            <div className="flex items-center justify-between rounded-2xl border border-blue-100 bg-[#e5f1ff]/60 px-5 py-3.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#2771cb]">{t("orders.refundAmount", { defaultValue: "Refund Amount" })}</span>
+              <span className="text-lg font-bold text-slate-900">{formatCurrency(totalRefundAmount)}</span>
             </div>
           )}
 
           {!canManage ? (
-            <div className="rounded-2xl border border-amber-300 bg-amber-50/80 p-4 space-y-3">
+            <div className="rounded-2xl border border-amber-200/90 bg-amber-50/60 p-4 space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                 <Lock className="h-4 w-4 text-amber-700" />
                 <span>Manager or Admin Authorization Required</span>
@@ -322,7 +339,7 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
                   placeholder="Manager / Admin Email"
                   value={managerEmail}
                   onChange={(e) => setManagerEmail(e.target.value)}
-                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#2771cb]"
+                  className="h-10 rounded-xl border border-amber-200/90 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:border-[#2771cb] focus:ring-2 focus:ring-[#2771cb]/15"
                   required
                 />
                 <input
@@ -330,28 +347,32 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
                   placeholder="Password"
                   value={managerPassword}
                   onChange={(e) => setManagerPassword(e.target.value)}
-                  className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#2771cb]"
+                  className="h-10 rounded-xl border border-amber-200/90 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:border-[#2771cb] focus:ring-2 focus:ring-[#2771cb]/15"
                   required
                 />
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold text-slate-700">
-              <ShieldCheck className="h-4 w-4 text-slate-500" />
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-2.5 text-xs font-semibold text-slate-700">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
               <span>Authorized: Manager / Super Admin Direct Permission</span>
             </div>
           )}
 
-          {error && <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+          {error && <div className="rounded-xl border border-rose-200/80 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">{error}</div>}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100/90 pt-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 rounded-xl border border-slate-200/90 bg-white px-5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+            >
               {t("common.cancel", { defaultValue: "Cancel" })}
             </button>
             <button
               type="submit"
               disabled={isProcessing || !hasSelection}
-              className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white hover:bg-black transition disabled:opacity-50"
+              className="flex items-center justify-center gap-2 h-11 rounded-xl bg-[#2771cb] px-6 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isProcessing ? t("common.processing", { defaultValue: "Processing..." }) : t("orders.processRefund", { defaultValue: "Process Refund" })}
             </button>
@@ -363,6 +384,7 @@ function OrderRefundModal({ order, onClose, onSave, t, translateContent, canMana
 }
 
 function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, t, translateContent }) {
+  const { i18n } = useTranslation();
   if (!order) return null;
 
   return (
@@ -371,78 +393,103 @@ function EditOrderModal({ order, form, setForm, onClose, onSave, saving, error, 
       maxWidthClass="max-w-3xl"
       onBackdropClick={onClose}
     >
-      <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{t("orders.editOrder")}</h3>
-      <form className="space-y-6" onSubmit={onSave}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("orders.customer")}</label>
-              <input
-                type="text"
-                value={form.customerName}
-                onChange={(event) => setForm((current) => ({ ...current, customerName: event.target.value }))}
-                placeholder={t("orders.walkIn")}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("orders.customerPhone")}</label>
-              <input
-                type="text"
-                value={form.customerPhone}
-                onChange={(event) => setForm((current) => ({ ...current, customerPhone: event.target.value }))}
-                placeholder={t("orders.customerPhonePlaceholder")}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              />
-            </div>
-          </div>
+      <div className="mb-6 flex items-start gap-4 pr-8">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+          <Pencil className="h-6 w-6 stroke-[2.2]" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            {t("orders.editOrder")}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            {order.invoiceNumber ? `Invoice #${formatOrderId(order.invoiceNumber)}` : "Update customer and order details"}
+          </p>
+        </div>
+      </div>
 
+      <form className="space-y-4" onSubmit={onSave}>
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">{t("orders.status")}</label>
-            <Select
-              value={form.status}
-              onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
-              wrapperClassName="w-full"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
-            >
-              {ORDER_STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status}>{getOrderStatusLabel(t, status)}</option>
-              ))}
-            </Select>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("orders.customer")}</label>
+            <input
+              type="text"
+              value={form.customerName}
+              onChange={(event) => setForm((current) => ({ ...current, customerName: event.target.value }))}
+              placeholder={t("orders.walkIn")}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+            />
           </div>
-
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t("orders.orderItems")}</h3>
-              <span className="text-sm text-slate-500">{order.items.length} {t("orders.items")}</span>
-            </div>
-            <div className="space-y-3">
-              {order.items.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 p-4">
-                  <div>
-                    <div className="font-semibold text-slate-900">{getItemLabel(item, translateContent)}</div>
-                    <div className="mt-1 text-sm text-slate-500">
-                      {t("orders.itemMeta", {
-                        quantity: item.quantity,
-                        price: formatCurrency(item.unitPrice)
-                      })}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-400">{getPrintStatusLabel(t, item.printStatus || "Not Printed")}</div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("orders.customerPhone")}</label>
+            <input
+              type="text"
+              value={form.customerPhone}
+              onChange={(event) => setForm((current) => ({ ...current, customerPhone: event.target.value }))}
+              placeholder={t("orders.customerPhonePlaceholder")}
+              className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">{t("orders.status")}</label>
+          <Select
+            value={form.status}
+            onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
+            wrapperClassName="w-full"
+            className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-semibold text-slate-800 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+          >
+            {ORDER_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>{getOrderStatusLabel(t, status)}</option>
+            ))}
+          </Select>
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-700">{t("orders.orderItems")}</label>
+            <span className="text-xs font-medium text-slate-400">{order.items.length} {t("orders.items")}</span>
+          </div>
+          <div className="max-h-56 overflow-y-auto space-y-2.5 pr-1">
+            {order.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/40 p-3 transition-colors hover:border-slate-300">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900" data-no-translate="true">
+                    {getItemLabel(item, translateContent, i18n?.language === "bn")}
+                  </div>
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {t("orders.itemMeta", {
+                      quantity: item.quantity,
+                      price: formatCurrency(item.unitPrice)
+                    })}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="text-xs font-medium text-slate-400">
+                  {getPrintStatusLabel(t, item.printStatus || "Not Printed")}
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {error ? <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div> : null}
+        {error ? <div className="rounded-xl border border-rose-200/80 bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700">{error}</div> : null}
 
-          <div className="mt-8 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200">
-              {t("common.cancel")}
-            </button>
-            <button type="submit" disabled={saving} className="rounded-2xl bg-[#2771cb] px-5 py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">
-              {saving ? t("common.saving") : t("orders.saveChanges")}
-            </button>
-          </div>
+        <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100/90 pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-11 rounded-xl border border-slate-200/90 bg-white px-5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 h-11 rounded-xl bg-[#2771cb] px-6 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:opacity-50"
+          >
+            {saving ? t("common.saving") : t("orders.saveChanges")}
+          </button>
+        </div>
       </form>
     </ModalShell>
   );
@@ -546,8 +593,8 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
       defaultPaperWidth: order.store?.receiptPaperWidth || "58mm",
       printers: order.store?.terminals || [],
       previews: {
-        "58mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), { paperWidthOverride: "58mm" }),
-        "80mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), { paperWidthOverride: "80mm" })
+        "58mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent, i18n?.language === "bn"), { paperWidthOverride: "58mm" }),
+        "80mm": buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent, i18n?.language === "bn"), { paperWidthOverride: "80mm" })
       }
     }, {
       onPrint: async () => {
@@ -585,7 +632,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
 
   async function handlePrintUpdated(order) {
     const receiptPaperWidth = order.store?.receiptPaperWidth || "58mm";
-    const receiptHtml = buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent), {
+    const receiptHtml = buildReceiptHtml(order, t, (item) => getItemLabel(item, translateContent, i18n?.language === "bn"), {
       paperWidthOverride: receiptPaperWidth,
       forceUpdated: true,
       updatedAtOverride: order.updatedAt
@@ -613,7 +660,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
     const rows = filteredOrders.map((order) => {
       const printStatus = getAggregatePrintStatus(order.items);
       const itemsLabel = order.items
-        .map((item) => `${getItemLabel(item, translateContent)} x${Number(item.quantity || 0)}`)
+        .map((item) => `${getItemLabel(item, translateContent, i18n?.language === "bn")} x${Number(item.quantity || 0)}`)
         .join("; ");
 
       return [
@@ -654,7 +701,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
     const rows = filteredOrders.map((order) => {
       const printStatus = getAggregatePrintStatus(order.items);
       const itemsLabel = order.items
-        .map((item) => `${getItemLabel(item, translateContent)} x${Number(item.quantity || 0)}`)
+        .map((item) => `${getItemLabel(item, translateContent, i18n?.language === "bn")} x${Number(item.quantity || 0)}`)
         .join("; ");
 
       return [
@@ -790,7 +837,7 @@ export function OrdersClient({ orders: initialOrders, canManage, showStoreColumn
                       <td className="px-5 py-4">{formatCurrency(order.totalAmount)}</td>
                       <td className="px-5 py-4">
                         <div className="font-medium text-slate-800">{order.items.length}</div>
-                        <div className="mt-1 text-xs text-slate-500">{order.items.slice(0, 2).map((item) => getItemLabel(item, translateContent)).join(", ")}{order.items.length > 2 ? ` +${order.items.length - 2}` : ""}</div>
+                        <div className="mt-1 text-xs text-slate-500" data-no-translate="true">{order.items.slice(0, 2).map((item) => getItemLabel(item, translateContent, i18n?.language === "bn")).join(", ")}{order.items.length > 2 ? ` +${order.items.length - 2}` : ""}</div>
                       </td>
                       <td className="px-5 py-4">
                         <button
