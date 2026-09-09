@@ -245,43 +245,45 @@ function ProductCard({ product, onAddToCart, showStoreName, storeLabel }) {
   const showImage = Boolean(product.imageUrl) && !hasImageError;
 
   return (
-    <article className="group relative rounded-[26px] border border-slate-100 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_20px_50px_rgba(15,23,42,0.1)]">
-      <div className="relative h-28 rounded-[20px] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          {showImage ? (
-            <img src={product.imageUrl} alt={product.nameEn} onError={() => setHasImageError(true)} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-4xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
-          )}
-        </div>
-        <button type="button" className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#2771cb] shadow-sm transition-transform hover:scale-110">
-          <Heart className="h-3.5 w-3.5" />
-        </button>
-        {product.isLowStock ? (
-          <div className="absolute left-2 top-2 rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#13508b]">
-            {t("pos.lowStock")}
+    <article className="group relative flex flex-col justify-between rounded-[24px] border border-slate-100 bg-white p-3.5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] transition-shadow hover:shadow-[0_20px_50px_rgba(15,23,42,0.1)]">
+      <div>
+        <div className="relative h-44 rounded-[18px] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center">
+            {showImage ? (
+              <img src={product.imageUrl} alt={product.nameEn} onError={() => setHasImageError(true)} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-5xl">{product.productType === "stock" ? "📦" : product.category?.icon || "🍽️"}</span>
+            )}
           </div>
-        ) : null}
-      </div>
-      <div className="pt-3">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[15px] font-semibold text-slate-900">{translateContent(product.nameEn)}</h3>
-        </div>
-        {showStoreName ? <div data-no-translate="true" className="mt-2 text-xs font-medium text-slate-400">{storeLabel}</div> : null}
-        <p className="mt-1 min-h-[21px] text-xs leading-[14px] text-slate-500">
-          {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || "")}
-        </p>
-        <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-          <span className="flex items-center gap-1">
-            <Clock3 className="h-3.5 w-3.5" /> {t("pos.inStock", { count: product.stock || 0 })}
-          </span>
-        </div>
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="text-[31px] font-black leading-none text-[#2771cb]">{formatCurrency(product.price)}</span>
-          <button type="button" onClick={() => onAddToCart(product)} className="rounded-2xl bg-[#2771cb] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#13508b] active:scale-95">
-            {t("pos.addToCart")}
+          <button type="button" className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#2771cb] shadow-sm transition-transform hover:scale-110">
+            <Heart className="h-3.5 w-3.5" />
           </button>
+          {product.isLowStock ? (
+            <div className="absolute left-2.5 top-2.5 rounded-full bg-[#e5f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#13508b]">
+              {t("pos.lowStock")}
+            </div>
+          ) : null}
         </div>
+        <div className="pt-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-[15px] font-semibold text-slate-900 line-clamp-1">{translateContent(product.nameEn)}</h3>
+          </div>
+          {showStoreName ? <div data-no-translate="true" className="mt-1 text-xs font-medium text-slate-400">{storeLabel}</div> : null}
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-slate-500">
+            <span className="truncate">
+              {product.productType === "stock" ? translateContent(product.supplier || "Inventory item") : translateContent(product.category?.nameEn || "")}
+            </span>
+            <span className="ml-auto flex shrink-0 items-center gap-1 font-medium text-slate-500">
+              <Clock3 className="h-3.5 w-3.5 text-slate-400" /> {t("pos.inStock", { count: product.stock || 0 })}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-2 pt-1">
+        <span className="text-[24px] font-black leading-none text-[#2771cb]">{formatCurrency(product.price)}</span>
+        <button type="button" onClick={() => onAddToCart(product)} className="shrink-0 rounded-xl bg-[#2771cb] px-3.5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#13508b] active:scale-95">
+          {t("pos.addToCart")}
+        </button>
       </div>
     </article>
   );
@@ -909,7 +911,7 @@ export function PosClient({ categories, products, storeId, userEmail, userRole, 
               </div>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {filteredProducts.map((product) => <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} showStoreName={showStoreNames} storeLabel={getStoreLabel(product.storeName, product.storeNameBn)} />)}
               {filteredProducts.length === 0 ? <div className="col-span-full py-12 text-center text-slate-500">{t("pos.noProductsFound")}</div> : null}
             </div>
