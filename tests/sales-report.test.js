@@ -3,7 +3,10 @@ import {
   buildMealPeriodBreakdown,
   findPeakHour,
   buildCategoryDistribution,
-  buildRecentOrders
+  buildRecentOrders,
+  buildShiftBreakdown,
+  buildHourlyBreakdown,
+  buildWeeklyBreakdown
 } from "../src/modules/reports/sales-report-service.js";
 
 describe("Sales Report Analytics Engine", () => {
@@ -134,4 +137,40 @@ describe("Sales Report Analytics Engine", () => {
       expect(recent[3].invoiceNumber).toBe("INV-001");
     });
   });
+
+  describe("Real Breakdown Trend Engines", () => {
+    it("buildShiftBreakdown calculates all real series without static fallbacks", () => {
+      const shift = buildShiftBreakdown(sampleOrders);
+      expect(shift.labels).toEqual(["12 AM - 08 AM", "08 AM - 04 PM", "04 PM - 12 AM"]);
+      expect(shift.values).toBeDefined();
+      expect(shift.netSalesValues).toBeDefined();
+      expect(shift.orderCounts).toBeDefined();
+      expect(shift.productsSoldValues).toBeDefined();
+      expect(shift.aovValues).toBeDefined();
+      expect(shift.vatValues).toBeDefined();
+      expect(shift.refundValues).toBeDefined();
+      expect(shift.orderCounts.reduce((a, b) => a + b, 0)).toBe(4);
+    });
+
+    it("buildHourlyBreakdown calculates 24 real hours accurately", () => {
+      const hourly = buildHourlyBreakdown(sampleOrders);
+      expect(hourly.labels).toHaveLength(24);
+      expect(hourly.values).toHaveLength(24);
+      expect(hourly.netSalesValues).toHaveLength(24);
+      expect(hourly.orderCounts).toHaveLength(24);
+      expect(hourly.productsSoldValues).toHaveLength(24);
+      expect(hourly.aovValues).toHaveLength(24);
+      expect(hourly.orderCounts.reduce((a, b) => a + b, 0)).toBe(4);
+    });
+
+    it("buildWeeklyBreakdown calculates 7 rolling days of real metrics", () => {
+      const weekly = buildWeeklyBreakdown(sampleOrders);
+      expect(weekly.labels).toHaveLength(7);
+      expect(weekly.values).toHaveLength(7);
+      expect(weekly.netSalesValues).toHaveLength(7);
+      expect(weekly.orderCounts).toHaveLength(7);
+      expect(weekly.productsSoldValues).toHaveLength(7);
+    });
+  });
 });
+

@@ -9,9 +9,54 @@ function getOrderTotal(order) {
   return Number(order.totalAmount || 0);
 }
 
+function getBangladeshStartOfDay(date = new Date()) {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Dhaka",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+    const dateStr = formatter.format(date);
+    return new Date(`${dateStr}T00:00:00+06:00`);
+  } catch {
+    return startOfDay(date);
+  }
+}
+
+function getBangladeshEndOfDay(date = new Date()) {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Dhaka",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+    const dateStr = formatter.format(date);
+    return new Date(`${dateStr}T23:59:59.999+06:00`);
+  } catch {
+    return endOfDay(date);
+  }
+}
+
+export function getOrderHour(date) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Dhaka",
+      hour: "numeric",
+      hour12: false,
+      hourCycle: "h23"
+    }).formatToParts(new Date(date));
+    const h = parts.find((p) => p.type === "hour")?.value;
+    return h !== undefined ? Number(h) : new Date(date).getHours();
+  } catch {
+    return new Date(date).getHours();
+  }
+}
+
 function getInsightWindow() {
-  const todayEnd = endOfDay(new Date());
-  return { from: startOfDay(subDays(new Date(), 29)), to: todayEnd };
+  const todayEnd = getBangladeshEndOfDay(new Date());
+  return { from: getBangladeshStartOfDay(subDays(new Date(), 29)), to: todayEnd };
 }
 
 function resolveView(filters = {}) {
@@ -22,8 +67,8 @@ function resolveView(filters = {}) {
 
 function resolveWindow(view) {
   const now = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
+  const todayStart = getBangladeshStartOfDay(now);
+  const todayEnd = getBangladeshEndOfDay(now);
 
   if (view === "accumulated") {
     return {
@@ -35,15 +80,15 @@ function resolveWindow(view) {
   }
 
   if (view === "weekly") {
-    const from = startOfDay(subDays(now, 6));
+    const from = getBangladeshStartOfDay(subDays(now, 6));
     const to = todayEnd;
     return {
       view,
       from,
       to,
       previousRange: {
-        from: startOfDay(subDays(from, 7)),
-        to: endOfDay(subDays(from, 1))
+        from: getBangladeshStartOfDay(subDays(from, 7)),
+        to: getBangladeshEndOfDay(subDays(from, 1))
       }
     };
   }
@@ -54,8 +99,8 @@ function resolveWindow(view) {
       from: todayStart,
       to: todayEnd,
       previousRange: {
-        from: startOfDay(subDays(now, 1)),
-        to: endOfDay(subDays(now, 1))
+        from: getBangladeshStartOfDay(subDays(now, 1)),
+        to: getBangladeshEndOfDay(subDays(now, 1))
       }
     };
   }
@@ -65,8 +110,8 @@ function resolveWindow(view) {
     from: todayStart,
     to: todayEnd,
     previousRange: {
-      from: startOfDay(subDays(now, 1)),
-      to: endOfDay(subDays(now, 1))
+      from: getBangladeshStartOfDay(subDays(now, 1)),
+      to: getBangladeshEndOfDay(subDays(now, 1))
     }
   };
 }
@@ -156,63 +201,116 @@ function getShiftLabel(hour) {
   return "04 PM - 12 AM";
 }
 
-function buildShiftBreakdown(orders) {
+export function buildShiftBreakdown(orders) {
   const shiftOrder = ["12 AM - 08 AM", "08 AM - 04 PM", "04 PM - 12 AM"];
-  const totals = new Map(shiftOrder.map((label) => [label, { revenue: 0, orders: 0 }]));
+  const totals = new Map(shiftOrder.map((label) => [label, { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 }]));
 
   for (const order of orders) {
-    const label = getShiftLabel(new Date(order.createdAt).getHours());
-    const curr = totals.get(label) || { revenue: 0, orders: 0 };
-    curr.revenue += getOrderTotal(order);
+    const label = getShiftLabel(getOrderHour(order.createdAt));
+    const curr = totals.get(label) || { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 };
+    const rev = getOrderTotal(order);
+    curr.revenue += rev;
     curr.orders += 1;
+    curr.vat += Number(order.vatAmount || 0);
+
+    for (const item of order.items || []) {
+      curr.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
+      curr.refunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
+    }
     totals.set(label, curr);
   }
 
   return {
     labels: shiftOrder,
     values: shiftOrder.map((label) => clampCurrency(totals.get(label)?.revenue || 0)),
-    orderCounts: shiftOrder.map((label) => totals.get(label)?.orders || 0)
+    netSalesValues: shiftOrder.map((label) => clampCurrency(Math.max(0, (totals.get(label)?.revenue || 0) - (totals.get(label)?.refunds || 0)))),
+    orderCounts: shiftOrder.map((label) => totals.get(label)?.orders || 0),
+    productsSoldValues: shiftOrder.map((label) => totals.get(label)?.productsSold || 0),
+    aovValues: shiftOrder.map((label) => {
+      const o = totals.get(label);
+      return o && o.orders > 0 ? clampCurrency(o.revenue / o.orders) : 0;
+    }),
+    vatValues: shiftOrder.map((label) => clampCurrency(totals.get(label)?.vat || 0)),
+    refundValues: shiftOrder.map((label) => clampCurrency(totals.get(label)?.refunds || 0))
   };
 }
 
 export function buildHourlyBreakdown(orders) {
-  const totals = new Map(Array.from({ length: 24 }, (_, hour) => [hour, { revenue: 0, orders: 0 }]));
+  const totals = new Map(Array.from({ length: 24 }, (_, hour) => [hour, { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 }]));
 
   for (const order of orders) {
-    const hour = new Date(order.createdAt).getHours();
-    const curr = totals.get(hour) || { revenue: 0, orders: 0 };
-    curr.revenue += getOrderTotal(order);
+    const hour = getOrderHour(order.createdAt);
+    const curr = totals.get(hour) || { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 };
+    const rev = getOrderTotal(order);
+    curr.revenue += rev;
     curr.orders += 1;
+    curr.vat += Number(order.vatAmount || 0);
+
+    for (const item of order.items || []) {
+      curr.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
+      curr.refunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
+    }
     totals.set(hour, curr);
   }
 
+  const hours = Array.from({ length: 24 }, (_, hour) => hour);
+
   return {
-    labels: Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, "0")}:00`),
-    values: Array.from({ length: 24 }, (_, hour) => clampCurrency(totals.get(hour)?.revenue || 0)),
-    orderCounts: Array.from({ length: 24 }, (_, hour) => totals.get(hour)?.orders || 0)
+    labels: hours.map((h) => `${String(h).padStart(2, "0")}:00`),
+    values: hours.map((h) => clampCurrency(totals.get(h)?.revenue || 0)),
+    netSalesValues: hours.map((h) => clampCurrency(Math.max(0, (totals.get(h)?.revenue || 0) - (totals.get(h)?.refunds || 0)))),
+    orderCounts: hours.map((h) => totals.get(h)?.orders || 0),
+    productsSoldValues: hours.map((h) => totals.get(h)?.productsSold || 0),
+    aovValues: hours.map((h) => {
+      const o = totals.get(h);
+      return o && o.orders > 0 ? clampCurrency(o.revenue / o.orders) : 0;
+    }),
+    vatValues: hours.map((h) => clampCurrency(totals.get(h)?.vat || 0)),
+    refundValues: hours.map((h) => clampCurrency(totals.get(h)?.refunds || 0))
   };
 }
 
-function buildWeeklyBreakdown(orders) {
+export function buildWeeklyBreakdown(orders) {
   const buckets = new Map();
 
   for (let offset = 6; offset >= 0; offset -= 1) {
-    const day = startOfDay(subDays(new Date(), offset));
-    buckets.set(day.toISOString().slice(0, 10), { label: format(day, "EEE"), revenue: 0, orders: 0 });
+    const day = getBangladeshStartOfDay(subDays(new Date(), offset));
+    buckets.set(day.toISOString().slice(0, 10), {
+      label: format(day, "EEE"),
+      revenue: 0,
+      orders: 0,
+      refunds: 0,
+      productsSold: 0,
+      vat: 0
+    });
   }
 
   for (const order of orders) {
-    const dayKey = startOfDay(new Date(order.createdAt)).toISOString().slice(0, 10);
+    const dayKey = getBangladeshStartOfDay(new Date(order.createdAt)).toISOString().slice(0, 10);
     if (!buckets.has(dayKey)) continue;
     const b = buckets.get(dayKey);
-    b.revenue += getOrderTotal(order);
+    const rev = getOrderTotal(order);
+    b.revenue += rev;
     b.orders += 1;
+    b.vat += Number(order.vatAmount || 0);
+
+    for (const item of order.items || []) {
+      b.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
+      b.refunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
+    }
   }
 
+  const list = [...buckets.values()];
+
   return {
-    labels: [...buckets.values()].map((bucket) => bucket.label),
-    values: [...buckets.values()].map((bucket) => clampCurrency(bucket.revenue)),
-    orderCounts: [...buckets.values()].map((bucket) => bucket.orders)
+    labels: list.map((b) => b.label),
+    values: list.map((b) => clampCurrency(b.revenue)),
+    netSalesValues: list.map((b) => clampCurrency(Math.max(0, b.revenue - b.refunds))),
+    orderCounts: list.map((b) => b.orders),
+    productsSoldValues: list.map((b) => b.productsSold),
+    aovValues: list.map((b) => (b.orders > 0 ? clampCurrency(b.revenue / b.orders) : 0)),
+    vatValues: list.map((b) => clampCurrency(b.vat)),
+    refundValues: list.map((b) => clampCurrency(b.refunds))
   };
 }
 
@@ -281,17 +379,27 @@ function buildBreakdown(orders, scopeMode, breakdown) {
   if (breakdown === "day") {
     for (const order of orders) {
       const label = format(new Date(order.createdAt), "dd MMM");
-      const curr = totals.get(label) || { revenue: 0, orders: 0 };
+      const curr = totals.get(label) || { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 };
       curr.revenue += Number(order.totalAmount || 0);
       curr.orders += 1;
+      curr.vat += Number(order.vatAmount || 0);
+      for (const item of order.items || []) {
+        curr.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
+        curr.refunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
+      }
       totals.set(label, curr);
     }
   } else if (scopeMode === "all-stores") {
     for (const order of orders) {
       const label = order.store?.nameEn || "Unknown store";
-      const curr = totals.get(label) || { revenue: 0, orders: 0 };
+      const curr = totals.get(label) || { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 };
       curr.revenue += Number(order.totalAmount || 0);
       curr.orders += 1;
+      curr.vat += Number(order.vatAmount || 0);
+      for (const item of order.items || []) {
+        curr.productsSold += Math.max(0, Number(item.quantity || 0) - Number(item.refundedQuantity || 0));
+        curr.refunds += Number(item.refundedQuantity || 0) * Number(item.unitPrice || 0);
+      }
       totals.set(label, curr);
     }
   } else {
@@ -300,9 +408,11 @@ function buildBreakdown(orders, scopeMode, breakdown) {
         if (breakdown === "others") {
           if (item.dish) continue;
           const label = item.stockItem?.name || item.itemName || "Others Sell";
-          const curr = totals.get(label) || { revenue: 0, orders: 0 };
-          curr.revenue += (Number(item.unitPrice || 0) * Number(item.quantity || 0));
+          const curr = totals.get(label) || { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 };
+          const sales = Number(item.unitPrice || 0) * Number(item.quantity || 0);
+          curr.revenue += sales;
           curr.orders += Number(item.quantity || 0);
+          curr.productsSold += Number(item.quantity || 0);
           totals.set(label, curr);
           continue;
         }
@@ -310,23 +420,39 @@ function buildBreakdown(orders, scopeMode, breakdown) {
         const label = breakdown === "subcategory"
           ? item.dish?.subCategory?.nameEn || item.dish?.category?.nameEn || item.stockItem?.name || item.itemName || "Uncategorized"
           : item.dish?.category?.nameEn || item.stockItem?.name || item.itemName || "Uncategorized";
-        const curr = totals.get(label) || { revenue: 0, orders: 0 };
-        curr.revenue += (Number(item.unitPrice || 0) * Number(item.quantity || 0));
+        const curr = totals.get(label) || { revenue: 0, orders: 0, refunds: 0, productsSold: 0, vat: 0 };
+        const sales = Number(item.unitPrice || 0) * Number(item.quantity || 0);
+        curr.revenue += sales;
         curr.orders += Number(item.quantity || 0);
+        curr.productsSold += Number(item.quantity || 0);
         totals.set(label, curr);
       }
     }
   }
 
   const entries = [...totals.entries()]
-    .map(([label, val]) => ({ label, value: clampCurrency(val.revenue), orders: val.orders }))
+    .map(([label, val]) => ({
+      label,
+      value: clampCurrency(val.revenue),
+      netSales: clampCurrency(Math.max(0, val.revenue - (val.refunds || 0))),
+      orders: val.orders,
+      productsSold: val.productsSold || 0,
+      aov: val.orders > 0 ? clampCurrency(val.revenue / val.orders) : 0,
+      vat: clampCurrency(val.vat || 0),
+      refunds: clampCurrency(val.refunds || 0)
+    }))
     .sort((left, right) => right.value - left.value)
     .slice(0, 8);
 
   return {
     labels: entries.map((entry) => entry.label),
     values: entries.map((entry) => entry.value),
-    orderCounts: entries.map((entry) => entry.orders)
+    netSalesValues: entries.map((entry) => entry.netSales),
+    orderCounts: entries.map((entry) => entry.orders),
+    productsSoldValues: entries.map((entry) => entry.productsSold),
+    aovValues: entries.map((entry) => entry.aov),
+    vatValues: entries.map((entry) => entry.vat),
+    refundValues: entries.map((entry) => entry.refunds)
   };
 }
 
@@ -348,7 +474,7 @@ export function buildMealPeriodBreakdown(orders) {
   let totalPeriodRevenue = 0;
 
   for (const order of orders) {
-    const hour = new Date(order.createdAt).getHours();
+    const hour = getOrderHour(order.createdAt);
     const amount = getOrderTotal(order);
     totalPeriodRevenue += amount;
 
@@ -375,7 +501,7 @@ export function findPeakHour(orders) {
   if (!orders.length) return null;
   const hourMap = new Map();
   for (const order of orders) {
-    const hour = new Date(order.createdAt).getHours();
+    const hour = getOrderHour(order.createdAt);
     const curr = hourMap.get(hour) || { hour, revenue: 0, orders: 0 };
     curr.revenue += getOrderTotal(order);
     curr.orders += 1;

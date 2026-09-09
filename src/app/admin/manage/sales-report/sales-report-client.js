@@ -46,21 +46,20 @@ const HORIZON_TABS = [
 /* -------------------------------------------------------------
  * 1. Mini SVG Sparkline for Stat Cards
  * ------------------------------------------------------------- */
-function MiniSparkline({ data = [], color = "#2771cb", height = 36, width = 100, isUp = true }) {
-  const pointsData = data && data.length >= 2
-    ? data
-    : isUp
-    ? [10, 14, 12, 18, 16, 24, 30]
-    : [30, 26, 28, 20, 22, 16, 12];
+function MiniSparkline({ data = [], color = "#2771cb", height = 36, width = 100 }) {
+  const pointsData = Array.isArray(data) && data.length > 0
+    ? (data.length === 1 ? [data[0], data[0]] : data)
+    : [0, 0];
 
+  const hasData = Array.isArray(data) && data.length > 0 && data.some((v) => Number(v) > 0);
   const max = Math.max(...pointsData, 1);
   const min = Math.min(...pointsData, 0);
   const range = max - min || 1;
-  const stepX = width / (pointsData.length - 1);
+  const stepX = width / (pointsData.length - 1 || 1);
 
   const coords = pointsData.map((val, idx) => {
     const x = idx * stepX;
-    const y = height - ((val - min) / range) * (height - 8) - 4;
+    const y = height - ((Number(val) - min) / range) * (height - 8) - 4;
     return { x, y };
   });
 
@@ -72,12 +71,21 @@ function MiniSparkline({ data = [], color = "#2771cb", height = 36, width = 100,
     <svg width={width} height={height} className="overflow-visible select-none shrink-0">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="0%" stopColor={color} stopOpacity={hasData ? 0.35 : 0.05} />
           <stop offset="100%" stopColor={color} stopOpacity="0.0" />
         </linearGradient>
       </defs>
       <path d={areaD} fill={`url(#${gradId})`} />
-      <path d={lineD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d={lineD}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeOpacity={hasData ? 1 : 0.3}
+        strokeDasharray={hasData ? undefined : "3 3"}
+      />
     </svg>
   );
 }
@@ -513,7 +521,7 @@ export function SalesReportClient({ report }) {
           icon={TrendingUp}
           tone="hero"
           sparkColor="#2771cb"
-          sparkData={chartValues.slice(0, 7)}
+          sparkData={report.salesBreakdown?.values || []}
         />
         <StatCard
           title={t("reports.netRevenue", { defaultValue: "Net Sales" })}
@@ -523,7 +531,7 @@ export function SalesReportClient({ report }) {
           icon={Receipt}
           tone="success"
           sparkColor="#10b981"
-          sparkData={chartValues.slice(0, 7)}
+          sparkData={report.salesBreakdown?.netSalesValues || []}
         />
         <StatCard
           title={t("reports.aov", { defaultValue: "Avg Order Value (AOV)" })}
@@ -532,7 +540,7 @@ export function SalesReportClient({ report }) {
           delta={report.summary.deltas?.averageOrderValue}
           icon={ShoppingBag}
           sparkColor="#8b5cf6"
-          sparkData={[240, 310, 280, 420, 390, 460, report.summary.averageOrderValue || 350]}
+          sparkData={report.salesBreakdown?.aovValues || []}
         />
         <StatCard
           title={t("reports.totalOrders", { defaultValue: "Completed Orders" })}
@@ -541,7 +549,7 @@ export function SalesReportClient({ report }) {
           delta={report.summary.deltas?.totalOrders}
           icon={CheckCircle2}
           sparkColor="#06b6d4"
-          sparkData={report.salesBreakdown?.orderCounts?.slice(0, 7) || []}
+          sparkData={report.salesBreakdown?.orderCounts || []}
         />
         <StatCard
           title={t("reports.productsSold", { defaultValue: "Products Sold" })}
@@ -550,7 +558,7 @@ export function SalesReportClient({ report }) {
           delta={report.summary.deltas?.productsSold}
           icon={UtensilsCrossed}
           sparkColor="#f59e0b"
-          sparkData={[15, 28, 22, 35, 42, 38, report.summary.productsSold || 45]}
+          sparkData={report.salesBreakdown?.productsSoldValues || []}
         />
         <StatCard
           title="Customer Retention"
@@ -574,7 +582,7 @@ export function SalesReportClient({ report }) {
           subtitle="Government tax portion"
           icon={Layers}
           sparkColor="#64748b"
-          sparkData={[50, 85, 70, 110, 95, 140, report.summary.totalVat || 120]}
+          sparkData={report.salesBreakdown?.vatValues || []}
         />
         <StatCard
           title={t("reports.refunds", { defaultValue: "Total Refunds" })}
@@ -584,7 +592,7 @@ export function SalesReportClient({ report }) {
           icon={RotateCcw}
           tone="warning"
           sparkColor="#f59e0b"
-          sparkData={[0, 0, 50, 0, 120, 0, report.summary.totalRefunds || 0]}
+          sparkData={report.salesBreakdown?.refundValues || []}
         />
       </div>
 
