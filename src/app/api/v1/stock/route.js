@@ -46,7 +46,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const name = String(body.name || "").trim();
+  const name = String(body.name || body.nameBn || "").trim();
   const nameBn = String(body.nameBn || "").trim() || null;
 
   if (!name) {
@@ -93,7 +93,7 @@ export async function PATCH(request) {
     return NextResponse.json({ error: "Stock item not found" }, { status: 404 });
   }
 
-  const name = String(body.name || existingItem.name || "").trim();
+  const name = String(body.name || body.nameBn || existingItem.name || "").trim();
   const nameBn = body.nameBn !== undefined ? (String(body.nameBn || "").trim() || null) : existingItem.nameBn;
   const updatedItem = await prisma.stockItem.update({
     where: { id },

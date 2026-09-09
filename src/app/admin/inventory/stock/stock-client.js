@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Menu, ChevronLeft, ChevronRight, Plus, Package, Loader2 } from "lucide-react";
 import { useTranslatedContent } from "@/modules/i18n/use-translated-content";
 import { useTranslation } from "react-i18next";
 import { ModalShell } from "@/components/ui/modal-shell";
@@ -28,6 +28,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
+    nameBn: "",
     quantity: "",
     supplier: "",
     createdBy: "",
@@ -45,9 +46,14 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredItems = stockItems.filter((item) =>
-    (item.name || item.dish?.nameEn || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = stockItems.filter((item) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const nameEn = (item.name || item.dish?.nameEn || "").toLowerCase();
+    const nameBn = (item.nameBn || item.dish?.nameBn || "").toLowerCase();
+    const supplier = (item.supplier || "").toLowerCase();
+    return nameEn.includes(q) || nameBn.includes(q) || supplier.includes(q);
+  });
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
   const paginatedItems = filteredItems.slice(
@@ -68,7 +74,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
 
   function resetForm() {
     setEditingItem(null);
-    setFormData({ name: "", quantity: "", supplier: "", createdBy: "", price: "" });
+    setFormData({ name: "", nameBn: "", quantity: "", supplier: "", createdBy: "", price: "" });
     setError("");
   }
 
@@ -82,6 +88,7 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
     setEditingItem(item);
     setFormData({
       name: item.name || item.dish?.nameEn || "",
+      nameBn: item.nameBn || item.dish?.nameBn || "",
       quantity: String(item.quantity ?? ""),
       supplier: item.supplier || "",
       createdBy: item.createdBy || "",
@@ -94,7 +101,8 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   async function handleDelete(item) {
     setActiveMenuId(null);
 
-    if (!window.confirm(`Delete ${item.name || item.dish?.nameEn || "this item"}?`)) {
+    const itemName = (i18n.language === "bn" && item.nameBn) || item.name || item.dish?.nameEn || "this item";
+    if (!window.confirm(`Delete ${itemName}?`)) {
       return;
     }
 
@@ -118,6 +126,11 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
   }
 
   async function handleSave() {
+    if (!formData.name.trim() && !formData.nameBn.trim()) {
+      setError(i18n.language === "bn" ? "অনুগ্রহ করে আইটেমের নাম লিখুন।" : "Please enter an item name.");
+      return;
+    }
+
     setIsSaving(true);
     setError("");
 
@@ -128,7 +141,8 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
         body: JSON.stringify({
           id: editingItem?.id,
           storeId: editingItem?.storeId || editingItem?.store?.id || "",
-          name: formData.name,
+          name: formData.name.trim() || formData.nameBn.trim(),
+          nameBn: formData.nameBn.trim() || null,
           quantity: Number(formData.quantity || 0),
           supplier: formData.supplier,
           createdBy: formData.createdBy,
@@ -197,7 +211,18 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
             <tbody>
               {paginatedItems.map((item) => (
                 <tr key={item.id} className="select-none border-b border-slate-50/50 transition-colors hover:bg-slate-50/50">
-                  <td className="px-8 py-5 font-semibold text-[#2771cb]">{translateContent(item.name || item.dish?.nameEn)}</td>
+                  <td className="px-8 py-5">
+                    <div className="font-semibold text-[#2771cb]">
+                      {i18n.language === "bn" && item.nameBn?.trim()
+                        ? item.nameBn
+                        : translateContent(item.name || item.dish?.nameEn)}
+                    </div>
+                    {item.name && item.nameBn && (
+                      <div className="mt-0.5 text-xs text-slate-400 font-normal">
+                        {i18n.language === "bn" ? item.name : item.nameBn}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.quantity}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{formatCurrency(item.price)}</td>
                   <td className="px-8 py-5 font-medium text-slate-800">{item.createdBy}</td>
@@ -268,67 +293,145 @@ export function StockClient({ stockItems, canCreate = true, canManage = true, sh
 
       <ModalShell
         isOpen={isAddModalOpen}
-        maxWidthClass="max-w-md"
+        maxWidthClass="max-w-lg"
         onBackdropClick={() => setIsAddModalOpen(false)}
       >
-        <h3 className="mb-6 text-2xl font-bold text-[#2771cb]">{editingItem ? t("common.edit") : t("stock.addNewItem")}</h3>
+        <div className="mb-6 flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e5f1ff] text-[#2771cb] shadow-xs">
+            <Package className="h-6 w-6" />
+          </div>
+          <div className="pr-8">
+            <h3 className="text-xl font-bold tracking-tight text-slate-900">
+              {editingItem ? t("common.edit") : t("stock.addNewItem")}
+            </h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {editingItem
+                ? (i18n.language === "bn" ? "আইটেমের বিবরণ ও ইনভেন্টরি আপডেট করুন" : "Update stock item specifications and quantity")
+                : t("stock.modalSubtitle")}
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.itemName")}</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              placeholder={t("stock.itemNamePlaceholder")}
-            />
+          {/* 2 Input Fields for Item Name: 1 for English, 1 for Bangla */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>{t("stock.itemNameEn")}</span>
+                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">EN</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
+                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                placeholder={t("stock.itemNameEnPlaceholder")}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>{t("stock.itemNameBn")}</span>
+                <span className="rounded-md bg-[#e5f1ff] px-1.5 py-0.5 text-[10px] font-bold text-[#2771cb]">বাংলা</span>
+              </label>
+              <input
+                type="text"
+                value={formData.nameBn}
+                onChange={(event) => setFormData((current) => ({ ...current, nameBn: event.target.value }))}
+                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                placeholder={t("stock.itemNameBnPlaceholder")}
+              />
+            </div>
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.quantity")}</label>
-            <input
-              type="number"
-              value={formData.quantity}
-              onChange={(event) => setFormData((current) => ({ ...current, quantity: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              placeholder={t("stock.quantityPlaceholder")}
-            />
+
+          {/* Quantity and Price */}
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                {t("common.quantity")}
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.quantity}
+                onChange={(event) => setFormData((current) => ({ ...current, quantity: event.target.value }))}
+                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                placeholder={t("stock.quantityPlaceholder")}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>{t("stock.priceOptional")}</span>
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">৳</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.price}
+                  onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
+                  className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 pl-8 pr-3.5 text-[14px] font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                  placeholder={t("stock.pricePlaceholder")}
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">{t("stock.priceOptional")}</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.price}
-              onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              placeholder={t("stock.pricePlaceholder")}
-            />
+
+          {/* Supplier and Created By */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                {t("common.supplier")}
+              </label>
+              <input
+                type="text"
+                value={formData.supplier}
+                onChange={(event) => setFormData((current) => ({ ...current, supplier: event.target.value }))}
+                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                placeholder={t("stock.supplierPlaceholder")}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                {t("common.createdBy")}
+              </label>
+              <input
+                type="text"
+                value={formData.createdBy}
+                onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
+                className="h-11 w-full rounded-xl border border-slate-200/90 bg-slate-50/50 px-3.5 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 focus:border-[#2771cb] focus:bg-white focus:ring-2 focus:ring-[#2771cb]/15"
+                placeholder={t("stock.createdByPlaceholder")}
+              />
+            </div>
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.supplier")}</label>
-            <input
-              type="text"
-              value={formData.supplier}
-              onChange={(event) => setFormData((current) => ({ ...current, supplier: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              placeholder={t("stock.supplierPlaceholder")}
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.createdBy")}</label>
-            <input
-              type="text"
-              value={formData.createdBy}
-              onChange={(event) => setFormData((current) => ({ ...current, createdBy: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[#2771cb]"
-              placeholder={t("stock.createdByPlaceholder")}
-            />
-          </div>
-          {error ? <div className="rounded-2xl bg-[#e5f1ff] px-4 py-3 text-sm font-medium text-[#13508b]">{error}</div> : null}
-          <div className="mt-8 flex gap-3">
-            <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 rounded-2xl bg-slate-100 py-3 font-semibold text-slate-700 hover:bg-slate-200">{t("common.cancel")}</button>
-            <button type="button" onClick={handleSave} disabled={isSaving} className="flex-1 rounded-2xl bg-[#2771cb] py-3 font-semibold text-white hover:bg-[#13508b] disabled:opacity-50">{isSaving ? t("common.saving") : editingItem ? t("common.save") : t("stock.saveItem")}</button>
+
+          {error ? (
+            <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-xs font-medium text-rose-700">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-500" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex items-center gap-3 border-t border-slate-100/90 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="flex-1 h-11 rounded-xl border border-slate-200/90 bg-white text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.99]"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 h-11 rounded-xl bg-[#2771cb] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#13508b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>{isSaving ? t("common.saving") : editingItem ? t("common.save") : t("stock.saveItem")}</span>
+            </button>
           </div>
         </div>
       </ModalShell>
